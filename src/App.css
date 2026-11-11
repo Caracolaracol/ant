@@ -1,0 +1,58 @@
+/* Estilos globales: variables de color del tema (al estilo de Left) y la distribución de la
+   ventana (editor arriba, barra de estado abajo). */
+
+:root {
+  --fondo: #1d1d1f;
+  --fondo-bajo: #161617;
+  --texto: #e8e8e6;
+  --tenue: #7a7a78;
+  --titulo: #ffffff;
+  --acento: #f9a26c;
+  --codigo: #a9c7f9;
+  --seleccion: #3a3f5c;
+  --coincidencia: #33384d;
+  --fuente: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 15px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  overflow: hidden;
+}
+
+/* La ventana es una columna: el editor ocupa todo el alto disponible y la barra queda al pie. */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.estado {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 16px;
+  font-family: var(--fuente);
+  font-size: 12px;
+  color: var(--tenue);
+  background: var(--fondo-bajo);
+  user-select: none;
+}
+
+.estado-error {
+  color: var(--acento);
+}

@@ -26,15 +26,38 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   se escriben, sin conversiones. Partimos mostrando el Markdown a la vista (como Left) y más
   adelante se puede agregar una vista previa en vivo estilo Obsidian con decoraciones de
   CodeMirror.
+- **React + TypeScript + Vite**: la interfaz que rodea al editor (barra de estado y, más
+  adelante, navegación, ajustes, etc.). CodeMirror maneja su propio DOM: React no debe
+  re-renderizar el texto en cada tecla; se habla con el editor por la ref `EditorHandle`.
 - Gestor de paquetes: **pnpm**.
 
-Pendiente: framework de la interfaz (o ninguno), y documentar aquí cómo instalar dependencias,
-correr la app en desarrollo y compilarla.
+## Comandos
+
+- `pnpm install` — instala las dependencias de la interfaz (las de Rust las baja Cargo solo).
+- `pnpm tauri dev` — abre la app en desarrollo, con recarga en caliente de la interfaz.
+- `pnpm build` — revisa los tipos y compila solo la interfaz (rápido para verificar cambios).
+- `cd src-tauri && cargo check` — verifica que compile el lado Rust.
+- `pnpm tauri build` — genera la app final (`.app` y `.dmg`) en `src-tauri/target/release/bundle/`.
 
 ## Estructura del proyecto
 
-Por definir junto con el stack. Mantener esta sección al día cuando se agreguen carpetas o
-módulos.
+- `src/main.tsx` — punto de entrada; monta React.
+- `src/App.tsx` — ventana principal: editor, barra de estado (nombre, cambios sin guardar,
+  conteo de palabras/líneas/caracteres), título de la ventana y atajos de archivo
+  (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S).
+- `src/App.css` — variables de color del tema (`--fondo`, `--texto`, `--acento`, …) y la
+  distribución. Para cambiar colores, tocar las variables, no los componentes.
+- `src/editor/Editor.tsx` — monta CodeMirror 6 con historial, búsqueda (Cmd+F), Markdown y
+  resaltado de bloques de código; expone `setText`, `getText` y `focus`.
+- `src/editor/tema.ts` — tema de CodeMirror y colores del Markdown, leyendo las variables CSS.
+- `src/notas.ts` — diálogos de abrir/guardar y llamadas a los comandos Rust.
+- `src-tauri/src/lib.rs` — comandos `read_note` y `write_note` (guardado atómico con archivo
+  temporal + renombrar) y registro del plugin de diálogos.
+- `src-tauri/tauri.conf.json` — nombre, identificador y ventana de la app.
+- `src-tauri/capabilities/default.json` — permisos de la interfaz (`core`, `dialog`). Al
+  agregar un plugin, sumar aquí su permiso.
+
+Mantener esta sección al día cuando se agreguen carpetas o módulos.
 
 ## Comentarios en el código
 
