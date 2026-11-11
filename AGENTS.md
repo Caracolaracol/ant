@@ -19,8 +19,17 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 
 ## Stack
 
-Por decidir. Cuando se elija, documentar aquí el stack, cómo instalar dependencias, cómo correr
-la app en desarrollo y cómo compilarla.
+- **Tauri 2**: la ventana de escritorio. Usa el WebView del sistema en vez de traer Chromium, así
+  la app pesa unos MB y no ~150 MB como Left. El lado Rust (`src-tauri/`) se encarga del disco
+  (abrir, guardar, vigilar la carpeta de notas), los menús y los atajos globales.
+- **CodeMirror 6**: el editor de texto. Las notas se guardan como Markdown/texto plano, tal cual
+  se escriben, sin conversiones. Partimos mostrando el Markdown a la vista (como Left) y más
+  adelante se puede agregar una vista previa en vivo estilo Obsidian con decoraciones de
+  CodeMirror.
+- Gestor de paquetes: **pnpm**.
+
+Pendiente: framework de la interfaz (o ninguno), y documentar aquí cómo instalar dependencias,
+correr la app en desarrollo y compilarla.
 
 ## Estructura del proyecto
 
