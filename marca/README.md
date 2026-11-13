@@ -7,7 +7,8 @@ cintura como un círculo oscuro separado, un poco más arriba. Referencia: fotos
 iNaturalist (gáster ovalado de pelo dorado con tonos anaranjados y anillos marcados entre
 segmentos; cuerpo negro).
 
-- Dorado claro al centro de cada segmento, ámbar hacia sus bordes y halo naranja en cada sutura.
+- Segmentos de color parejo (ámbar dorado) y halo naranja en cada sutura. Sin degradado propio
+  por segmento: si cada uno se aclara al centro, parecen tubos inflados (neumáticos).
 - Franjas oscuras en las suturas, difuminadas hacia ambos lados; la del centro es más gruesa.
 - El frente se oscurece hasta el negro al llegar a la cintura, sin borde claro.
 - Volumen: la zona central recibe bastante más luz (brillo dorado) que los costados, que se

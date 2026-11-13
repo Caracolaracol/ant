@@ -10,9 +10,9 @@
 # - El gáster tiene el frente ancho y casi recto (arriba, donde se une la cintura), es más ancho
 #   en su primer tercio y termina redondeado atrás (abajo).
 # - Cada segmento es una franja entre dos curvas que se arquean hacia atrás (como placas vistas
-#   desde arriba), recortada con la forma del gáster. Cada franja tiene su propio degradado: dorado
-#   claro al centro y ámbar hacia los bordes. Sobre cada sutura va una banda oscura con un halo
-#   naranja más ancho, ambos difuminados hacia los dos lados y siguiendo la curva de la sutura.
+#   desde arriba), recortada con la forma del gáster, de color parejo (sin degradado propio, para
+#   que no parezcan tubos). Sobre cada sutura va una banda oscura angosta con un halo naranja algo
+#   más ancho, ambos difuminados hacia los dos lados y siguiendo la curva de la sutura.
 # - Encima, la profundidad: una sombra interior que sigue el contorno (más oscura junto al borde
 #   y aclarándose hacia el centro, como un objeto abombado), más una sombra suave hacia atrás y
 #   un brillo suave arriba a la izquierda.
@@ -73,8 +73,8 @@ SOMBRA_INTERIOR_MAX = 0.85
 SOMBRA_INTERIOR_CURVA = 1.7
 # Pasos de las bandas difuminadas de cada sutura (más pasos, banda más ancha): el halo naranja
 # y la banda oscura, encima.
-HALO_PASOS = 16
-BANDA_PASOS = 8
+HALO_PASOS = 9
+BANDA_PASOS = 5
 # Grosor relativo de cada sutura (una por segmento, la primera es el frente): la del centro es
 # más gruesa, como se ve en las fotos.
 GROSOR_SUTURA = [1, 1, 1.9, 1]
@@ -141,14 +141,14 @@ def halo(y: float, color: str, pasos: int, paso: float, opacidad_max: float) -> 
     return trazos
 
 
-# Una franja y un degradado por segmento: dorado claro en el centro del segmento (donde la placa
-# abombada recibe la luz) y ámbar hacia sus dos bordes.
+# Una franja por segmento, de color parejo: el volumen lo da la luz del abdomen entero (brillo y
+# sombras de encima), no cada segmento por separado; si cada segmento tuviera su propio
+# degradado claro al centro, se verían como tubos inflados (neumáticos).
 degradados, franjas, suturas = [], [], []
 for i, (y1, y2) in enumerate(zip(limites, limites[1:])):
     degradados.append(
         f'    <linearGradient id="segmento{i}" x1="0" y1="{n(y1)}" x2="0" y2="{n(y2)}" gradientUnits="userSpaceOnUse">\n'
         f'      <stop offset="0" stop-color="{DORADO}"/>\n'
-        f'      <stop offset="0.5" stop-color="{DORADO_CLARO}"/>\n'
         f'      <stop offset="1" stop-color="{DORADO}"/>\n'
         f"    </linearGradient>"
     )
