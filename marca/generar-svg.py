@@ -14,8 +14,8 @@
 #   para que cualquier visor lo dibuje igual, y sin sombra sobre el fondo, que es de un solo
 #   color (el mismo de Mantis).
 # - Abajo se ve la parte superior de la cabeza de la hormiga, dibujada encima de las bases de las
-#   antenas (que se recortan para no dibujarse dentro de ella) para que se vea que salen de ella, y desvaneciéndose hacia abajo en el fondo con una
-#   máscara de degradado (blanco = visible, negro = invisible).
+#   antenas (que se recortan para no dibujarse dentro de ella) para que se vea que salen de ella.
+#   La cabeza se corta con un borde recto (CORTE) y es más oscura que las antenas.
 #
 # Uso: python3 marca/generar-svg.py
 
@@ -23,22 +23,22 @@ import math
 from pathlib import Path
 
 # Antena izquierda, de la base a la punta, en un lienzo de 64×64 (la derecha es su espejo).
-PUNTOS = [(28.5, 46), (22, 26), (12, 13)]
-# Cabeza de hormiga vista de frente. Solo se ve su parte de arriba: hacia abajo se desvanece en
-# el fondo (entre las alturas de DESVANECER), así no está completa ni la corta el borde del icono,
-# y lo principal siguen siendo las antenas. Las bases de las antenas quedan bajo la cabeza, sin
-# borde entre ambas, para que se vea que salen de ella. CABEZA_LUZ_EN es el punto más iluminado.
-CABEZA = "M32 39C42 39 47 43.5 47 49.5C47 55.5 40 60 32 60C24 60 17 55.5 17 49.5C17 43.5 22 39 32 39Z"
-CABEZA_LUZ_EN = (27, 42)
-DESVANECER = (42, 48)
+PUNTOS = [(29, 52), (22.5, 30), (12, 14)]
+# Cabeza de hormiga vista de frente, más oscura que las antenas. Solo se ve una franja de su
+# parte de arriba: se corta con un borde recto a la altura CORTE (dentro del icono, no en su
+# borde), así lo principal son las antenas. Las antenas tampoco se dibujan bajo CORTE ni dentro
+# de la cabeza: nacen en su borde, sin separación. CABEZA_LUZ_EN es el punto más iluminado.
+CABEZA = "M32 46C40 46 45 49.5 45 54C45 58.5 40 62 32 62C24 62 19 58.5 19 54C19 49.5 24 46 32 46Z"
+CABEZA_LUZ_EN = (27, 47)
+CORTE = 50.5
 # Franjas para el sombreado difuminado: más franjas, transición más suave.
 FRANJAS = 28
 # Cuánto se adelanta la curva del codo, a cada lado del vértice (en unidades del lienzo).
 REDONDEO = 4.5
 # Grosor en la base y en la punta, y forma del afinado (1 = lineal; mayor = se afina más tarde).
 GRUESO = 6.6
-FINO = 4.4
-CURVA = 2.2
+FINO = 2.6
+CURVA = 5.0
 # Pasos por unidad de largo al recorrer la antena: más pasos, borde más liso.
 PASOS_POR_UNIDAD = 4
 
@@ -48,8 +48,8 @@ DORADO_ARRIBA = "#e8c876"
 DORADO_ABAJO = "#c39a41"
 BRILLO = "#fbe7a8"
 SOMBRA_LATERAL = "#8f6d27"
-CABEZA_LUZ = "#d6b261"
-CABEZA_SOMBRA = "#8a6624"
+CABEZA_LUZ = "#6e5222"
+CABEZA_SOMBRA = "#3a2a12"
 
 
 def n(x: float) -> str:
@@ -165,32 +165,28 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
   <desc id="desc">Dos antenas de hormiga acodadas y sombreadas que salen de la cabeza, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
   <defs>
     <!-- Volumen de la cabeza: más clara arriba a la izquierda, donde pega la luz. -->
-    <radialGradient id="cabeza" cx="{n(CABEZA_LUZ_EN[0])}" cy="{n(CABEZA_LUZ_EN[1])}" r="20" gradientUnits="userSpaceOnUse">
+    <radialGradient id="cabeza" cx="{n(CABEZA_LUZ_EN[0])}" cy="{n(CABEZA_LUZ_EN[1])}" r="16" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="{CABEZA_LUZ}"/>
       <stop offset="1" stop-color="{CABEZA_SOMBRA}"/>
     </radialGradient>
-    <!-- Desvanecido de la cabeza: una máscara que va de blanco (visible) a negro (invisible). -->
-    <linearGradient id="desvanecer" x1="0" y1="{n(DESVANECER[0])}" x2="0" y2="{n(DESVANECER[1])}" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff"/>
-      <stop offset="1" stop-color="#000"/>
-    </linearGradient>
-    <!-- Las antenas no se dibujan dentro de la cabeza: nacen en su borde. Máscara blanca (visible)
-         con la cabeza en negro (invisible); se usa máscara y no clipPath con evenodd porque el
-         renderizador de SVG de macOS no respeta clip-rule. -->
+    <!-- Corte recto: nada (ni cabeza ni antenas) se dibuja bajo esta altura. -->
+    <clipPath id="sobre-el-corte">
+      <rect width="64" height="{n(CORTE)}"/>
+    </clipPath>
+    <!-- Las antenas no se dibujan dentro de la cabeza ni bajo el corte: nacen en el borde de la
+         cabeza. Máscara blanca (visible) hasta el corte, con la cabeza en negro (invisible); se usa
+         máscara y no clipPath con evenodd porque el renderizador de SVG de macOS no respeta clip-rule. -->
     <mask id="fuera-de-cabeza" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
-      <rect width="64" height="64" fill="#fff"/>
+      <rect width="64" height="{n(CORTE)}" fill="#fff"/>
       <!-- El borde blanco achica la zona negra: las antenas entran un poco bajo la cabeza y no
            queda una costura oscura en la unión. -->
       <path d="{CABEZA}" fill="#000" stroke="#fff" stroke-width="1.6"/>
-    </mask>
-    <mask id="cabeza-visible" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
-      <rect width="64" height="64" fill="url(#desvanecer)"/>
     </mask>
     <!-- Las franjas del sombreado se recortan con la forma de las antenas. -->
     <clipPath id="antenas">
       <path d="{entera}"/>
     </clipPath>
-    <linearGradient id="dorado" x1="0" y1="8" x2="0" y2="44" gradientUnits="userSpaceOnUse">
+    <linearGradient id="dorado" x1="0" y1="10" x2="0" y2="50" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="{DORADO_ARRIBA}"/>
       <stop offset="1" stop-color="{DORADO_ABAJO}"/>
     </linearGradient>
@@ -202,7 +198,7 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
 {franjas}
     </g>
   </g>
-  <path d="{CABEZA}" fill="url(#cabeza)" mask="url(#cabeza-visible)"/>
+  <path d="{CABEZA}" fill="url(#cabeza)" clip-path="url(#sobre-el-corte)"/>
 </svg>
 """
 Path(__file__).with_name("ant-icono.svg").write_text(svg)
