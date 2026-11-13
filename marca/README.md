@@ -11,7 +11,7 @@ sin degradados, sombras ni filtros.
 - Ojos: puntos del color del fondo a los lados de la cabeza.
 - Dos mandíbulas curvas que se cierran abajo.
 - Figura amarilla `#e5ea15` sobre fondo liso `#1d1d20`, sin sombra detrás.
-- Mismo encuadre que Mantis: lienzo 64×64, radio 14, figura escalada ×1,8 al centro.
+- Mismo encuadre que Mantis: lienzo 64×64, radio 14, figura escalada ×1,55 al centro (un poco más chica que en Mantis, que usa ×1,8).
 
 Historia (ver el historial de git): primero fueron dos antenas doradas y después el abdomen
 (gáster) de *Camponotus chilensis*, con sombreado y difuminado hechos con Core Image. Ninguno

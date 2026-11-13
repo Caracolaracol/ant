@@ -2,7 +2,7 @@
   <title id="title">Ant · cabeza</title>
   <desc id="desc">Cara de hormiga de frente: antenas acodadas, ojos y mandíbulas, plana y amarilla sobre fondo oscuro.</desc>
   <rect width="64" height="64" rx="14" fill="#1d1d20"/>
-  <g transform="translate(32 32) scale(1.8) translate(-32 -17.5)">
+  <g transform="translate(32 32) scale(1.55) translate(-32 -17.5)">
     <path d="M28.5 15L26 8L20.5 6M35.5 15L38 8L43.5 6" fill="none" stroke="#e5ea15" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M28 24.5Q27.5 28.5 30.6 29M36 24.5Q36.5 28.5 33.4 29" fill="none" stroke="#e5ea15" stroke-width="2.4" stroke-linecap="round"/>
     <path fill="#e5ea15" d="M21 16Q32 11 43 16Q44 22 38.5 25Q32 28 25.5 25Q20 22 21 16Z"/>
