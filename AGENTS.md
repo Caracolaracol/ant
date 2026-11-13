@@ -47,9 +47,13 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   cambios sin guardar), nota activa, carpeta de trabajo (de los ajustes), árbol de la carpeta
   (se relee al cambiar la carpeta, al guardar y al volver el foco a la ventana), barra de estado,
   título de la ventana y atajos (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [, `Cmd+\`).
-- `src/BarraLateral.tsx` — barra lateral: árbol de la carpeta de trabajo (carpetas plegables,
-  notas abiertas con botón para cerrar), los títulos de la nota activa bajo su archivo, y la
-  sección «Abiertas» para notas fuera de la carpeta o sin guardar.
+- `src/BarraLateral.tsx` — barra lateral, de arriba abajo: «Fijados» (notas y carpetas fijadas
+  con clic derecho → Fijar arriba, al estilo de Arc/Zen; lo fijado no se repite en el árbol),
+  «Abiertas» (notas fuera de la carpeta o sin guardar) y el árbol de la carpeta de trabajo
+  (carpetas plegables, notas abiertas con botón para cerrar). Bajo la nota activa, sus títulos.
+  Los fijados se guardan en `Ajustes.fijados` y solo se muestran los que están dentro de la
+  carpeta actual.
+- `src/MenuContextual.tsx` — menú de clic derecho propio (se cierra con clic fuera, scroll o Escape).
 - `src/marcadores.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de código).
 - `src/carpeta.ts` — tipo `Entrada` y llamadas a `listar_carpeta` y `abrir_ajustes`; utilidades
   de rutas (`estaDentro`, `carpetasPadre`).
@@ -80,6 +84,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   flotan sobre la franja `.arrastre`, que sirve para arrastrarla.
 - `src-tauri/capabilities/default.json` — permisos de las ventanas `main` y `ajustes`. Al
   agregar un plugin o una ventana, sumarlos aquí.
+
+- `marca/` — icono de la app (SVG fuente, PNG de 1024 y script); ver `marca/README.md` para
+  regenerar `src-tauri/icons/`. Sigue el sistema visual de Mantis (`~/Code/meeting-recorder`).
 
 Mantener esta sección al día cuando se agreguen carpetas o módulos.
 

@@ -116,6 +116,49 @@ body,
   color: var(--texto);
 }
 
+/* Sección de fijados: separada del resto con una línea, como las pestañas fijadas de Arc o Zen. */
+.barra-fijados {
+  padding-bottom: 12px;
+  margin-right: 12px;
+  border-bottom: 1px solid var(--seleccion);
+}
+
+.barra-fijados .barra-encabezado {
+  color: var(--acento);
+}
+
+/* Elemento fijado que ya no existe en la carpeta (se borró o se movió). */
+.barra-nota.perdida {
+  opacity: 0.5;
+  font-style: italic;
+  cursor: default;
+}
+
+/* Menú de clic derecho de la barra lateral. */
+.menu-contextual {
+  position: fixed;
+  z-index: 10;
+  min-width: 150px;
+  padding: 4px;
+  border: 1px solid var(--seleccion);
+  border-radius: 8px;
+  background: var(--fondo-bajo);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  font-family: var(--fuente);
+  font-size: 12px;
+  color: var(--texto);
+}
+
+.menu-opcion {
+  padding: 4px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.menu-opcion:hover {
+  background: var(--seleccion);
+}
+
 .barra-vacia {
   padding: 0 8px 8px 4px;
 }

@@ -1,6 +1,6 @@
-// Ventana principal: barra lateral con la carpeta de trabajo y los títulos de la nota visible,
+// Ventana principal: barra lateral con los fijados, la carpeta de trabajo y los títulos de la nota visible,
 // el editor y una barra de estado abajo, como en Left. Lleva la lista de notas abiertas (ruta,
-// texto y si tienen cambios sin guardar), cuál está visible, la carpeta de trabajo (de Ajustes)
+// texto y si tienen cambios sin guardar), cuál está visible, los ajustes (carpeta de trabajo y fijados)
 // y los atajos de teclado:
 //   Cmd+N nueva · Cmd+O abrir · Cmd+S guardar · Cmd+Shift+S guardar como
 //   Cmd+Shift+] / Cmd+Shift+[ nota siguiente / anterior · Cmd+\ mostrar u ocultar la barra lateral
@@ -11,7 +11,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { Editor, EditorHandle } from "./editor/Editor";
 import { BarraLateral, NotaResumen } from "./BarraLateral";
-import { escucharAjustes, leerAjustes } from "./ajustes";
+import { Ajustes, escucharAjustes, guardarAjustes, leerAjustes } from "./ajustes";
 import { Entrada, abrirAjustes, listarCarpeta } from "./carpeta";
 import { elegirNota, elegirRutaGuardado, guardarNota, leerNota, nombreArchivo } from "./notas";
 import "./App.css";
@@ -39,7 +39,8 @@ function App() {
   const [activa, setActiva] = useState(() => notas[0].id);
   const [cursor, setCursor] = useState(0);
   const [barraVisible, setBarraVisible] = useState(true);
-  const [carpeta, setCarpeta] = useState<string | null>(null);
+  const [ajustes, setAjustes] = useState<Ajustes>({ carpeta: null, fijados: [] });
+  const carpeta = ajustes.carpeta;
   const [arbol, setArbol] = useState<Entrada[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,15 +51,25 @@ function App() {
   activaRef.current = activa;
   const carpetaRef = useRef(carpeta);
   carpetaRef.current = carpeta;
+  const ajustesRef = useRef(ajustes);
+  ajustesRef.current = ajustes;
 
   /** Muestra un error en la barra de estado. */
   const fallo = useCallback((e: unknown) => setError(String(e)), []);
 
-  // Carga la carpeta de trabajo al iniciar y la actualiza cuando se cambia en Ajustes.
+  // Carga los ajustes (carpeta de trabajo y fijados) al iniciar y los actualiza cuando cambian
+  // en cualquier ventana.
   useEffect(() => {
-    leerAjustes().then((a) => setCarpeta(a.carpeta), fallo);
-    const dejar = escucharAjustes((a) => setCarpeta(a.carpeta));
+    leerAjustes().then(setAjustes, fallo);
+    const dejar = escucharAjustes(setAjustes);
     return () => void dejar.then((f) => f());
+  }, [fallo]);
+
+  /** Cambia la lista de fijados: se muestra al instante y se guarda en los ajustes. */
+  const cambiarFijados = useCallback((cambiar: (fijados: string[]) => string[]) => {
+    const nuevos = { ...ajustesRef.current, fijados: cambiar(ajustesRef.current.fijados) };
+    setAjustes(nuevos);
+    guardarAjustes(nuevos).catch(fallo);
   }, [fallo]);
 
   /** Vuelve a leer el árbol de la carpeta de trabajo (tras guardar, o al volver a la ventana). */
@@ -211,6 +222,9 @@ function App() {
           <BarraLateral
             carpeta={carpeta}
             arbol={arbol}
+            fijados={ajustes.fijados}
+            onFijar={(ruta) => cambiarFijados((f) => (f.includes(ruta) ? f : [...f, ruta]))}
+            onDesfijar={(ruta) => cambiarFijados((f) => f.filter((r) => r !== ruta))}
             notas={notas}
             activa={activa}
             cursor={cursor}

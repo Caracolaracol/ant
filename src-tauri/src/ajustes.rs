@@ -1,4 +1,4 @@
-// Ajustes de la app (por ahora solo la carpeta de trabajo), guardados como JSON en la carpeta de
+// Ajustes de la app (carpeta de trabajo y elementos fijados en la barra lateral), guardados como JSON en la carpeta de
 // configuración de la app (en macOS, ~/Library/Application Support/cl.agus.ant/ajustes.json).
 // Cada vez que se guardan, se avisa a todas las ventanas con el evento `ajustes-cambiados`,
 // así la ventana principal se entera de lo que se cambió en la de Ajustes.
@@ -18,6 +18,9 @@ pub struct Ajustes {
     /// Carpeta donde el usuario trabaja; la barra lateral muestra su contenido.
     #[serde(default)]
     pub carpeta: Option<String>,
+    /// Notas y carpetas fijadas arriba en la barra lateral (rutas completas, en el orden en que se fijaron).
+    #[serde(default)]
+    pub fijados: Vec<String>,
 }
 
 /// Ruta del archivo de ajustes dentro de la carpeta de configuración de la app.

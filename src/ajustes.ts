@@ -8,6 +8,8 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 export interface Ajustes {
   /** Carpeta de trabajo que muestra la barra lateral, o `null` si aún no se eligió. */
   carpeta: string | null;
+  /** Notas y carpetas fijadas arriba en la barra lateral (rutas completas, en orden de fijado). */
+  fijados: string[];
 }
 
 /** Lee los ajustes guardados (o los valores por defecto si no hay). */
