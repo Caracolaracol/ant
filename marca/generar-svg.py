@@ -62,17 +62,19 @@ TORAX = False
 # Cintura: radio del círculo y espacio entre él y el frente del gáster.
 CINTURA_RADIO = 3.2
 CINTURA_SEPARACION = 1.8
+# Cuánto más adentro se recorta el dorado de base respecto de las sombras (evita el borde claro).
+ORILLA = 0.1
 # Sombra interior que da profundidad: hasta qué distancia del borde llega (en unidades del
 # lienzo), en cuántos pasos, qué tan oscura es junto al borde y qué tan suave se desvanece hacia
 # el centro (mayor CURVA = se aclara antes y termina más suave, sin corte visible).
-SOMBRA_INTERIOR_ANCHO = 13
+SOMBRA_INTERIOR_ANCHO = 17
 SOMBRA_INTERIOR_PASOS = 40
-SOMBRA_INTERIOR_MAX = 0.9
-SOMBRA_INTERIOR_CURVA = 2.4
+SOMBRA_INTERIOR_MAX = 0.85
+SOMBRA_INTERIOR_CURVA = 1.7
 # Pasos de las bandas difuminadas de cada sutura (más pasos, banda más ancha): el halo naranja
 # y la banda oscura, encima.
-HALO_PASOS = 8
-BANDA_PASOS = 4
+HALO_PASOS = 16
+BANDA_PASOS = 8
 # Grosor relativo de cada sutura (una por segmento, la primera es el frente): la del centro es
 # más gruesa, como se ve en las fotos.
 GROSOR_SUTURA = [1, 1, 1.9, 1]
@@ -84,12 +86,13 @@ def n(x: float) -> str:
     return f"{x:.2f}".rstrip("0").rstrip(".")
 
 
-def gaster() -> str:
+def gaster(adentro: float = 0.0) -> str:
     """
     Contorno del gáster: frente ancho y casi recto (donde se une la cintura), costados que se
     abren hasta el punto más ancho en el primer tercio, y la parte de atrás redondeada.
+    `adentro` lo achica esa distancia por todos lados (para el recorte del dorado de base).
     """
-    cx, a, b, r = CENTRO_X, ADELANTE, ATRAS, ANCHO / 2
+    cx, a, b, r = CENTRO_X, ADELANTE + adentro, ATRAS - adentro, ANCHO / 2 - adentro
     ancho_en = a + (b - a) * 0.36  # altura del punto más ancho
     frente = r * 0.62  # medio ancho del frente
     return (
@@ -117,6 +120,9 @@ def borde(y: float) -> str:
 
 
 contorno = gaster()
+# El dorado de base se recorta un poco más adentro que las sombras: así la orilla queda solo con
+# el tono oscuro de las sombras y no aparece un hilo dorado (borde) en el contorno.
+contorno_base = gaster(ORILLA)
 limites = SEGMENTOS + [ATRAS + 8]
 
 def halo(y: float, color: str, pasos: int, paso: float, opacidad_max: float) -> list[str]:
@@ -154,15 +160,18 @@ for i, (y1, y2) in enumerate(zip(limites, limites[1:])):
     if i == 0:
         continue
     g = GROSOR_SUTURA[i]
-    suturas += halo(y1, NARANJA, HALO_PASOS, 0.6, 0.45)
-    suturas += halo(y1, BANDA, round(BANDA_PASOS * g), 0.45, min(0.85, 0.6 * g))
+    # Pasos cortos (0.3 y 0.225) para que las bandas se vean lisas y no rayadas.
+    suturas += halo(y1, NARANJA, HALO_PASOS, 0.3, 0.45)
+    suturas += halo(y1, BANDA, round(BANDA_PASOS * g), 0.225, min(0.85, 0.6 * g))
     suturas.append(f'    <path fill="none" stroke="{SUTURA}" stroke-width="{n(0.6 * g)}" stroke-opacity="0.9" d="{borde(y1)}"/>')
 
 # Sombra interior que sigue la forma del gáster: el contorno trazado varias veces, cada vez más
 # ancho y muy tenue. Como el recorte deja solo la mitad interior de cada trazo, la sombra se
 # acumula junto al borde y se aclara hacia el centro, copiando la curva del abdomen.
 # La oscuridad buscada a una distancia d del borde es MAX·(1 − d/ANCHO)^CURVA: se desvanece de
-# a poco y llega a cero sin corte. Cada trazo aporta la diferencia de esa curva en su tramo.
+# a poco y llega a cero sin corte. Las capas semitransparentes no se suman sino que se multiplican
+# (cada una deja pasar 1 − opacidad), así que la opacidad de cada trazo se calcula para que el
+# producto dé exactamente esa oscuridad en cada tramo.
 def oscuridad(d: float) -> float:
     return SOMBRA_INTERIOR_MAX * max(0.0, 1 - d / SOMBRA_INTERIOR_ANCHO) ** SOMBRA_INTERIOR_CURVA
 
@@ -171,7 +180,7 @@ sombra_interior = []
 for k in range(SOMBRA_INTERIOR_PASOS):
     dentro = SOMBRA_INTERIOR_ANCHO * k / SOMBRA_INTERIOR_PASOS
     fuera = SOMBRA_INTERIOR_ANCHO * (k + 1) / SOMBRA_INTERIOR_PASOS
-    opacidad = oscuridad(dentro) - oscuridad(fuera)
+    opacidad = 1 - (1 - oscuridad(dentro)) / (1 - oscuridad(fuera))
     sombra_interior.append(
         f'    <path fill="none" stroke="{NEGRO}" stroke-opacity="{opacidad:.4f}" '
         f'stroke-width="{n(2 * fuera)}" d="{contorno}"/>'
@@ -194,10 +203,15 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
     <clipPath id="gaster">
       <path d="{contorno}"/>
     </clipPath>
-    <!-- Brillo difuminado arriba a la izquierda, donde pega la luz. -->
-    <radialGradient id="brillo" cx="{n(CENTRO_X - 6)}" cy="{n(ADELANTE + 9)}" r="17" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#fff0c8" stop-opacity="0.42"/>
-      <stop offset="1" stop-color="#fff6d8" stop-opacity="0"/>
+    <clipPath id="gaster-base">
+      <path d="{contorno_base}"/>
+    </clipPath>
+    <!-- Brillo: la zona que recibe más luz, en el centro un poco hacia arriba a la izquierda, bien
+         más clara que los costados para que se lea el volumen. -->
+    <radialGradient id="brillo" cx="{n(CENTRO_X - 3)}" cy="{n(ADELANTE + 16)}" r="15" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffe089" stop-opacity="0.7"/>
+      <stop offset="0.5" stop-color="#ffd476" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#ffd476" stop-opacity="0"/>
     </radialGradient>
     <!-- Sombra difuminada en el costado derecho y hacia atrás, el lado contrario a la luz. -->
     <radialGradient id="sombra" cx="{n(CENTRO_X - 7)}" cy="{n(ADELANTE + 12)}" r="30" gradientUnits="userSpaceOnUse">
@@ -235,9 +249,11 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
   {f'<path fill="url(#cintura)" d="M{n(CENTRO_X - 6)} {n(ADELANTE - 6)}C{n(CENTRO_X - 7)} {n(ADELANTE - 11)} {n(CENTRO_X - 4)} {n(ADELANTE - 14)} {n(CENTRO_X)} {n(ADELANTE - 14)}C{n(CENTRO_X + 4)} {n(ADELANTE - 14)} {n(CENTRO_X + 7)} {n(ADELANTE - 11)} {n(CENTRO_X + 6)} {n(ADELANTE - 6)}Z"/>' if TORAX else ""}
   <!-- Cintura: un nudo corto y oscuro que asoma por delante del gáster (solo si CINTURA). -->
   {cintura if CINTURA else ""}
-  <g clip-path="url(#gaster)">
+  <g clip-path="url(#gaster-base)">
 {chr(10).join(franjas)}
 {chr(10).join(suturas)}
+  </g>
+  <g clip-path="url(#gaster)">
     <path fill="url(#sombra)" d="{contorno}"/>
 {sombra_interior}
     <path fill="url(#brillo)" d="{contorno}"/>

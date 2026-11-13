@@ -10,10 +10,13 @@ segmentos; cuerpo negro).
 - Dorado claro al centro de cada segmento, ámbar hacia sus bordes y halo naranja en cada sutura.
 - Franjas oscuras en las suturas, difuminadas hacia ambos lados; la del centro es más gruesa.
 - El frente se oscurece hasta el negro al llegar a la cintura, sin borde claro.
-- Profundidad: sombra interior que sigue el contorno y se desvanece suave hacia el centro, y más
-  sombra hacia la punta de atrás. Brillo suave arriba a la izquierda.
-- Sin borde en el contorno (el renderizador dejaba un hilo dorado en la orilla; se tapa con un
-  trazo finísimo del mismo tono oscuro de la sombra). Máscaras no: macOS las dibuja pixeladas.
+- Volumen: la zona central recibe bastante más luz (brillo dorado) que los costados, que se
+  oscurecen con una sombra interior que sigue el contorno y se desvanece suave hacia el centro;
+  más sombra hacia la punta de atrás. La opacidad de cada capa de sombra se calcula
+  multiplicando (no sumando), para que la sombra llegue de verdad a la oscuridad buscada.
+- Sin borde en el contorno: el renderizador dejaba un hilo dorado en la orilla, así que el dorado
+  de base se recorta una fracción de píxel más adentro (`ORILLA`) que las sombras. Máscaras no:
+  macOS las dibuja pixeladas.
 - Fondo siempre liso `#232031` (el de Mantis) y sin sombra detrás.
 
 Historia: antes el icono eran dos antenas de hormiga (ver el historial de git); se cambió al
