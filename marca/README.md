@@ -24,7 +24,7 @@ segmentos; cuerpo negro).
   de base se recorta una fracción de píxel más adentro (`ORILLA`) que las sombras. Máscaras no:
   macOS las dibuja pixeladas.
 - Todo el abdomen va difuminado por dentro (`DIFUMINADO`), con la silueta nítida.
-- Fondo siempre liso `#232031` (el de Mantis) y sin sombra detrás.
+- Fondo siempre liso `#1d1d20` y sin sombra detrás (antes `#232031`, el de Mantis).
 
 Historia: antes el icono eran dos antenas de hormiga (ver el historial de git); se cambió al
 abdomen. Del abdomen se descartaron la versión en diagonal y las que tenían cintura (pegada o

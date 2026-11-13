@@ -27,7 +27,7 @@
 #   Para eso este script escribe también, en marca/capas/, el fondo, el interior del abdomen (sin
 #   recortar) y su silueta, y el valor de DIFUMINADO.
 # Sin clip-rule evenodd ni máscaras (el renderizador de SVG de macOS no respeta el primero y
-# pixela las segundas) y sin sombra sobre el fondo, que es de un solo color (el de Mantis).
+# pixela las segundas) y sin sombra sobre el fondo, que es de un solo color (FONDO).
 #
 # Uso: python3 marca/generar-svg.py
 
@@ -36,7 +36,7 @@ from pathlib import Path
 # Colores. El gáster de C. chilensis es dorado con tonos anaranjados: claro dorado en los
 # brillos (centro de cada segmento), ámbar hacia los bordes del segmento y naranja intenso en el
 # halo difuminado de cada sutura.
-FONDO = "#232031"
+FONDO = "#1d1d20"
 DORADO_CLARO = "#f4c862"
 DORADO = "#e9922f"
 NARANJA = "#d9631a"

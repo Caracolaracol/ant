@@ -60,7 +60,7 @@
       <stop offset="1" stop-color="#0b0806"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="#232031"/>
+  <rect width="64" height="64" rx="14" fill="#1d1d20"/>
   <g transform="rotate(0 32 32)">
   <!-- Final del tórax, delante de la cintura (solo si TORAX). -->
   
