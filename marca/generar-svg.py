@@ -77,7 +77,10 @@ HALO_PASOS = 9
 BANDA_PASOS = 5
 # Grosor relativo de cada sutura (una por segmento, la primera es el frente): la del centro es
 # más gruesa, como se ve en las fotos.
-GROSOR_SUTURA = [1, 1, 3.2, 1]
+GROSOR_SUTURA = [1, 1, 1.9, 1]
+# La franja central (la sutura más gruesa) se refuerza encima del brillo con una banda oscura de
+# este ancho (en unidades del lienzo), sólida al centro y difuminada en sus bordes.
+ANCHO_FRANJA_CENTRAL = 3.4
 
 
 
@@ -162,11 +165,8 @@ for i, (y1, y2) in enumerate(zip(limites, limites[1:])):
     g = GROSOR_SUTURA[i]
     # Pasos cortos (0.3 y 0.225) para que las bandas se vean lisas y no rayadas.
     suturas += halo(y1, NARANJA, HALO_PASOS, 0.3, 0.45)
-    suturas += halo(y1, BANDA, round(BANDA_PASOS * g), 0.225, min(0.95, 0.6 * g))
-    # Núcleo de la banda: oscuro y sólido, más ancho cuanto mayor es GROSOR_SUTURA. Va en el
-    # tono de la banda (no en el café de SUTURA, que aclaraba el centro de las franjas anchas).
-    suturas.append(f'    <path fill="none" stroke="{BANDA}" stroke-width="{n(0.45 * g)}" stroke-opacity="0.9" d="{borde(y1)}"/>')
-    suturas.append(f'    <path fill="none" stroke="{SUTURA}" stroke-width="0.5" stroke-opacity="0.9" d="{borde(y1)}"/>')
+    suturas += halo(y1, BANDA, round(BANDA_PASOS * g), 0.225, min(0.85, 0.6 * g))
+    suturas.append(f'    <path fill="none" stroke="{SUTURA}" stroke-width="{n(0.6 * g)}" stroke-opacity="0.9" d="{borde(y1)}"/>')
 
 # Sombra interior que sigue la forma del gáster: el contorno trazado varias veces, cada vez más
 # ancho y muy tenue. Como el recorte deja solo la mitad interior de cada trazo, la sombra se
@@ -191,6 +191,17 @@ for k in range(SOMBRA_INTERIOR_PASOS):
 sombra_interior = "\n".join(sombra_interior)
 
 # Cintura: un círculo oscuro separado del gáster, un poco más arriba.
+# Refuerzo de la franja central: trazos superpuestos sobre su sutura, del más ancho al más
+# angosto y cada uno semitransparente, así queda oscura al centro y con los bordes suaves. Va
+# encima del brillo (para que la luz no la aclare) y debajo de las sombras de los costados (para
+# que se funda con ellas como las demás franjas).
+central = SEGMENTOS[GROSOR_SUTURA.index(max(GROSOR_SUTURA))]
+franja_central = "\n".join(
+    f'    <path fill="none" stroke="{NEGRO}" stroke-opacity="0.38" '
+    f'stroke-width="{n(ANCHO_FRANJA_CENTRAL * (1 - k / 7) + 0.3)}" d="{borde(central)}"/>'
+    for k in range(7)
+)
+
 cintura = (
     f'<circle fill="url(#cintura)" cx="{n(CENTRO_X)}" cy="{n(ADELANTE - CINTURA_SEPARACION - CINTURA_RADIO)}" '
     f'r="{n(CINTURA_RADIO)}"/>'
@@ -252,14 +263,13 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
   {f'<path fill="url(#cintura)" d="M{n(CENTRO_X - 6)} {n(ADELANTE - 6)}C{n(CENTRO_X - 7)} {n(ADELANTE - 11)} {n(CENTRO_X - 4)} {n(ADELANTE - 14)} {n(CENTRO_X)} {n(ADELANTE - 14)}C{n(CENTRO_X + 4)} {n(ADELANTE - 14)} {n(CENTRO_X + 7)} {n(ADELANTE - 11)} {n(CENTRO_X + 6)} {n(ADELANTE - 6)}Z"/>' if TORAX else ""}
   <!-- Cintura: un nudo corto y oscuro que asoma por delante del gáster (solo si CINTURA). -->
   {cintura if CINTURA else ""}
-  <!-- Orden de capas: dorado de base, su brillo, las franjas de las suturas (encima del brillo
-       para que no las aclare) y al final las sombras, que oscurecen los costados de todo. -->
   <g clip-path="url(#gaster-base)">
 {chr(10).join(franjas)}
-    <path fill="url(#brillo)" d="{contorno}"/>
 {chr(10).join(suturas)}
   </g>
   <g clip-path="url(#gaster)">
+    <path fill="url(#brillo)" d="{contorno}"/>
+{franja_central}
     <path fill="url(#sombra)" d="{contorno}"/>
 {sombra_interior}
     <path fill="url(#hacia-punta)" d="{contorno}"/>
