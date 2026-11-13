@@ -2,9 +2,12 @@
 
 ## Icono
 
-Dos antenas de hormiga rectas y gruesas, con la maza redonda en la punta, saliendo en diagonal
-desde abajo hacia arriba. Se probó una versión acodada, pero se prefirió la recta por simple.
+Dos antenas de hormiga acodadas (escapo largo y flagelo doblado hacia afuera) que salen en
+diagonal desde abajo y se afinan hacia la punta, como las antenas reales. Sin maza en la punta.
+Se probó una versión recta, pero se descartó por ser demasiado simple.
 
+- `generar-svg.py`: genera `ant-icono.svg`. Las antenas son figuras rellenas (no trazos) para
+  poder afinarlas; la forma se ajusta con `PUNTOS` y `GROSORES`.
 - `ant-icono.svg`: fuente vectorial. Sigue el mismo sistema que Mantis (`~/Code/meeting-recorder/Resources/Brand`):
   lienzo de 64×64, radio 14, fondo `#232031`, figura plana sin filtros ni degradados.
   Antenas en dorado `#d9b45a` (color provisional).
@@ -16,6 +19,7 @@ desde abajo hacia arriba. Se probó una versión acodada, pero se prefirió la r
 ## Regenerar los iconos de la app
 
 ```sh
+python3 marca/generar-svg.py
 swift marca/generar-icono.swift marca/ant-icono.svg marca/ant-icono-1024.png
 pnpm tauri icon marca/ant-icono-1024.png
 rm -rf src-tauri/icons/android src-tauri/icons/ios   # la app es solo de escritorio

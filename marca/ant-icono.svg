@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Ant · antenas</title>
-  <desc id="desc">Dos antenas de hormiga rectas, saliendo en diagonal desde abajo, en dorado sobre fondo oscuro.</desc>
+  <desc id="desc">Dos antenas de hormiga acodadas que se afinan hacia la punta, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
   <rect width="64" height="64" rx="14" fill="#232031"/>
-  <path d="M28 51L17 19M36 51L47 19" fill="none" stroke="#d9b45a" stroke-width="7.5" stroke-linecap="round"/>
-  <path fill="#d9b45a" d="M17 19m-5.5 0a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0M47 19m-5.5 0a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0"/>
+  <path fill="#d9b45a" d="M30.89 51.11L24.71 30.29L19.29 31.71L24.11 52.89ZM24.2 29.26L13.75 18.01L11.25 19.99L19.8 32.74ZM24 52a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0ZM19.2 31a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0 -5.6 0ZM10.9 19a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0ZM39.89 52.89L44.71 31.71L39.29 30.29L33.11 51.11ZM44.2 32.74L52.75 19.99L50.25 18.01L39.8 29.26ZM33 52a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0ZM39.2 31a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0 -5.6 0ZM49.9 19a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0Z"/>
 </svg>
