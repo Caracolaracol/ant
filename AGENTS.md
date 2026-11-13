@@ -44,7 +44,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/main.tsx` — punto de entrada; monta React.
 - `src/App.tsx` — ventana principal: lista de notas abiertas (`NotaResumen`: ruta, texto,
   cambios sin guardar), nota activa, barra de estado, título de la ventana y atajos
-  (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [, Cmd+\\).
+  (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [, `Cmd+\`).
 - `src/BarraLateral.tsx` — barra lateral estilo Left: notas abiertas (con botón para cerrar) y
   los títulos de la nota activa, marcando el título donde está el cursor.
 - `src/marcadores.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de código).
