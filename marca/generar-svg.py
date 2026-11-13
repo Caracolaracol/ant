@@ -13,9 +13,9 @@
 #   redondeadas. Encima va un degradado dorado de arriba (más claro) hacia abajo. Sin filtros,
 #   para que cualquier visor lo dibuje igual, y sin sombra sobre el fondo, que es de un solo
 #   color (el mismo de Mantis).
-# - La cabeza de la hormiga está completa en la parte de abajo, dibujada encima de las bases de
-#   las antenas para que se vea que salen de ella. Un borde fino del color del fondo la separa
-#   de las antenas.
+# - Abajo se ve la parte superior de la cabeza de la hormiga, dibujada encima de las bases de las
+#   antenas (que se recortan para no dibujarse dentro de ella) para que se vea que salen de ella, y desvaneciéndose hacia abajo en el fondo con una
+#   máscara de degradado (blanco = visible, negro = invisible).
 #
 # Uso: python3 marca/generar-svg.py
 
@@ -23,12 +23,14 @@ import math
 from pathlib import Path
 
 # Antena izquierda, de la base a la punta, en un lienzo de 64×64 (la derecha es su espejo).
-PUNTOS = [(28, 42), (22, 25), (12.5, 13)]
-# Cabeza de hormiga vista de frente, completa en la parte de abajo del icono: ancha arriba y más
-# angosta hacia abajo (donde irían las mandíbulas). Las bases de las antenas quedan escondidas
-# bajo su borde superior. CABEZA_LUZ_EN es el punto más iluminado de su degradado.
-CABEZA = "M32 35C41.5 35 46 39.5 46 45.5C46 51.5 39.5 57 32 57C24.5 57 18 51.5 18 45.5C18 39.5 22.5 35 32 35Z"
-CABEZA_LUZ_EN = (27, 40)
+PUNTOS = [(28.5, 46), (22, 26), (12, 13)]
+# Cabeza de hormiga vista de frente. Solo se ve su parte de arriba: hacia abajo se desvanece en
+# el fondo (entre las alturas de DESVANECER), así no está completa ni la corta el borde del icono,
+# y lo principal siguen siendo las antenas. Las bases de las antenas quedan bajo la cabeza, sin
+# borde entre ambas, para que se vea que salen de ella. CABEZA_LUZ_EN es el punto más iluminado.
+CABEZA = "M32 39C42 39 47 43.5 47 49.5C47 55.5 40 60 32 60C24 60 17 55.5 17 49.5C17 43.5 22 39 32 39Z"
+CABEZA_LUZ_EN = (27, 42)
+DESVANECER = (42, 48)
 # Franjas para el sombreado difuminado: más franjas, transición más suave.
 FRANJAS = 28
 # Cuánto se adelanta la curva del codo, a cada lado del vértice (en unidades del lienzo).
@@ -167,6 +169,23 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
       <stop offset="0" stop-color="{CABEZA_LUZ}"/>
       <stop offset="1" stop-color="{CABEZA_SOMBRA}"/>
     </radialGradient>
+    <!-- Desvanecido de la cabeza: una máscara que va de blanco (visible) a negro (invisible). -->
+    <linearGradient id="desvanecer" x1="0" y1="{n(DESVANECER[0])}" x2="0" y2="{n(DESVANECER[1])}" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <!-- Las antenas no se dibujan dentro de la cabeza: nacen en su borde. Máscara blanca (visible)
+         con la cabeza en negro (invisible); se usa máscara y no clipPath con evenodd porque el
+         renderizador de SVG de macOS no respeta clip-rule. -->
+    <mask id="fuera-de-cabeza" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect width="64" height="64" fill="#fff"/>
+      <!-- El borde blanco achica la zona negra: las antenas entran un poco bajo la cabeza y no
+           queda una costura oscura en la unión. -->
+      <path d="{CABEZA}" fill="#000" stroke="#fff" stroke-width="1.6"/>
+    </mask>
+    <mask id="cabeza-visible" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect width="64" height="64" fill="url(#desvanecer)"/>
+    </mask>
     <!-- Las franjas del sombreado se recortan con la forma de las antenas. -->
     <clipPath id="antenas">
       <path d="{entera}"/>
@@ -177,11 +196,13 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="14" fill="{FONDO}"/>
-  <path fill="url(#dorado)" d="{entera}"/>
-  <g clip-path="url(#antenas)">
+  <g mask="url(#fuera-de-cabeza)">
+    <path fill="url(#dorado)" d="{entera}"/>
+    <g clip-path="url(#antenas)">
 {franjas}
+    </g>
   </g>
-  <path d="{CABEZA}" fill="url(#cabeza)" stroke="{FONDO}" stroke-width="1.2"/>
+  <path d="{CABEZA}" fill="url(#cabeza)" mask="url(#cabeza-visible)"/>
 </svg>
 """
 Path(__file__).with_name("ant-icono.svg").write_text(svg)

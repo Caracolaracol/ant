@@ -2,17 +2,22 @@
 
 ## Icono
 
-La cabeza de una hormiga vista de frente, completa en la parte de abajo del icono (ancha arriba,
-más angosta hacia abajo), y dos antenas acodadas que salen de ella en diagonal hacia arriba. Las
-antenas se afinan suavemente hacia la punta y su codo es curvo, sin esquina en el lado interior.
-Sombreado difuminado como cilindro, con luz desde arriba a la izquierda, y degradado dorado; la
-cabeza lleva un degradado radial con la misma luz y un borde fino del color del fondo que la
-separa de las antenas. Sin sombra sobre el fondo; el fondo es siempre de un solo color, `#232031`.
+Dos antenas de hormiga acodadas, protagonistas del icono, que salen en diagonal hacia arriba
+desde la parte superior de la cabeza. De la cabeza solo se ve la parte de arriba: se desvanece
+hacia abajo en el fondo (sin quedar cortada por el borde del icono). Las antenas nacen en el
+borde de la cabeza, sin borde ni salto entre ambas. Se afinan suavemente hacia la punta, su codo
+es curvo (sin esquina en el lado interior) y tienen sombreado difuminado de cilindro con luz
+desde arriba a la izquierda y degradado dorado. Sin sombra sobre el fondo; el fondo es siempre
+de un solo color, `#232031`.
 Versiones descartadas: recta (demasiado simple), con maza redonda en la punta, con bandas de luz
-marcadas y con la cabeza cortada por el borde inferior.
+marcadas, con la cabeza cortada por el borde inferior, con la cabeza completa y con un borde
+oscuro entre cabeza y antenas.
+
+Nota técnica: el renderizador de SVG de macOS (con el que se genera el PNG) no respeta
+`clip-rule="evenodd"`; para restar figuras se usan máscaras.
 
 - `generar-svg.py`: genera `ant-icono.svg`. Las antenas son figuras rellenas (no trazos) para
-  poder afinarlas; la forma se ajusta con `PUNTOS`, `REDONDEO` (curva del codo), `CABEZA` (forma de la cabeza), `GRUESO`, `FINO` y `CURVA`
+  poder afinarlas; la forma se ajusta con `PUNTOS`, `REDONDEO` (curva del codo), `CABEZA` (forma de la cabeza), `DESVANECER` (alturas donde la cabeza se desvanece), `GRUESO`, `FINO` y `CURVA`
   (afinado suave, no lineal), `FRANJAS` (suavidad del sombreado), y los colores con las constantes de arriba del script.
 - `ant-icono.svg`: fuente vectorial. Sigue el mismo sistema que Mantis (`~/Code/meeting-recorder/Resources/Brand`):
   lienzo de 64×64, radio 14 y el mismo fondo liso `#232031`. A diferencia de Mantis (plano), las
