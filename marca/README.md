@@ -13,7 +13,9 @@ segmentos; cuerpo negro).
   (`ANCHO_FRANJA_CENTRAL`): una banda café de tono parejo, bordes apenas suavizados y debajo de
   la luz, para que se lea como pigmento de la superficie. Descartado: negra sólida encima del
   brillo (parecía un hueco o ranura) y oscura al centro aclarándose a los bordes (hendidura).
-- El frente se oscurece hasta el negro al llegar a la cintura, sin borde claro.
+- El frente es una cúpula amplia y redondeada que se oscurece hasta casi negro con un degradado
+  parejo, sin borde claro. Descartado: frente casi recto con una mancha negra concentrada en el
+  centro de arriba (parecía una abertura, como la boca de un frasco).
 - Volumen: la zona central recibe bastante más luz (brillo dorado) que los costados, que se
   oscurecen con una sombra interior que sigue el contorno y se desvanece suave hacia el centro;
   más sombra hacia la punta de atrás. La opacidad de cada capa de sombra se calcula

@@ -16,9 +16,9 @@
 # - Encima, la profundidad: una sombra interior que sigue el contorno (más oscura junto al borde
 #   y aclarándose hacia el centro, como un objeto abombado), más una sombra suave hacia atrás y
 #   un brillo suave arriba a la izquierda.
-# - Hacia la cintura el gáster se oscurece hasta llegar al negro (como en las fotos): un degradado
-#   que oscurece todo el frente y otro radial, más intenso, centrado en la unión con la cintura;
-#   ambos se desvanecen hacia atrás. Sin borde claro: el frente queda negro.
+# - Hacia la cintura (el frente, en cúpula) el gáster se oscurece hasta casi negro (como en las
+#   fotos) con un degradado parejo que se desvanece hacia atrás. Sin mancha concentrada en el
+#   centro de arriba: hacía que se viera como una abertura. Sin borde claro: el frente queda negro.
 # - Hacia la punta de atrás el gáster también se oscurece de a poco.
 # - Adelante, separada del gáster, la cintura: un círculo casi negro.
 # - Todo el conjunto se gira en diagonal (GIRO) para que se lea como parte de un insecto.
@@ -96,20 +96,25 @@ def n(x: float) -> str:
 
 def gaster(adentro: float = 0.0) -> str:
     """
-    Contorno del gáster: frente ancho y casi recto (donde se une la cintura), costados que se
-    abren hasta el punto más ancho en el primer tercio, y la parte de atrás redondeada.
+    Contorno del gáster: frente en cúpula redondeada (hacia la cintura), costados que se abren
+    hasta el punto más ancho en el primer tercio, y la parte de atrás redondeada.
     `adentro` lo achica esa distancia por todos lados (para el recorte del dorado de base).
     """
     cx, a, b, r = CENTRO_X, ADELANTE + adentro, ATRAS - adentro, ANCHO / 2 - adentro
     ancho_en = a + (b - a) * 0.36  # altura del punto más ancho
-    frente = r * 0.62  # medio ancho del frente
+    frente = r * 0.78  # medio ancho donde termina la cúpula del frente
+    alto = 3.5  # cuánto baja la cúpula desde su punto más alto hasta donde empiezan los costados
+    # El frente es una cúpula amplia y redondeada (no un borde casi recto, que con el
+    # oscurecimiento se veía como la boca de un frasco). El primer punto de control de cada
+    # costado sigue la tangente de la cúpula, para que la unión sea suave y sin «hombros».
+    tx, ty = frente * 0.25, 2 * alto * 0.25  # prolongación de la tangente al final de la cúpula
     return (
-        f"M{n(cx - frente)} {n(a + 1.5)}"
-        f"Q{n(cx)} {n(a - 1.5)} {n(cx + frente)} {n(a + 1.5)}"
-        f"C{n(cx + r * 0.92)} {n(a + 3)} {n(cx + r)} {n(ancho_en - 4)} {n(cx + r)} {n(ancho_en)}"
+        f"M{n(cx - frente)} {n(a + alto)}"
+        f"Q{n(cx)} {n(a - alto)} {n(cx + frente)} {n(a + alto)}"
+        f"C{n(cx + frente + tx)} {n(a + alto + ty)} {n(cx + r)} {n(ancho_en - 4)} {n(cx + r)} {n(ancho_en)}"
         f"C{n(cx + r)} {n(ancho_en + 13)} {n(cx + r * 0.62)} {n(b)} {n(cx)} {n(b)}"
         f"C{n(cx - r * 0.62)} {n(b)} {n(cx - r)} {n(ancho_en + 13)} {n(cx - r)} {n(ancho_en)}"
-        f"C{n(cx - r)} {n(ancho_en - 4)} {n(cx - r * 0.92)} {n(a + 3)} {n(cx - frente)} {n(a + 1.5)}Z"
+        f"C{n(cx - r)} {n(ancho_en - 4)} {n(cx - frente - tx)} {n(a + alto + ty)} {n(cx - frente)} {n(a + alto)}Z"
     )
 
 
@@ -220,8 +225,7 @@ interior_luz = f"""    <path fill="url(#brillo)" d="{GRANDE}"/>
     <path fill="url(#sombra)" d="{GRANDE}"/>
 {sombra_interior}
     <path fill="url(#hacia-punta)" d="{GRANDE}"/>
-    <path fill="url(#frente)" d="{GRANDE}"/>
-    <path fill="url(#hacia-cintura)" d="{GRANDE}"/>"""
+    <path fill="url(#frente)" d="{GRANDE}"/>"""
 
 svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Ant · abdomen</title>
@@ -253,9 +257,9 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
       <stop offset="1" stop-color="{NEGRO}" stop-opacity="0"/>
     </radialGradient>
     <!-- Oscurecimiento de todo el frente: negro adelante, transparente hacia atrás. -->
-    <linearGradient id="frente" x1="0" y1="{n(ADELANTE - 1)}" x2="0" y2="{n(ADELANTE + 12)}" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="{NEGRO}" stop-opacity="1"/>
-      <stop offset="0.45" stop-color="{NEGRO}" stop-opacity="0.6"/>
+    <linearGradient id="frente" x1="0" y1="{n(ADELANTE - 1)}" x2="0" y2="{n(ADELANTE + 13)}" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="{NEGRO}" stop-opacity="0.92"/>
+      <stop offset="0.5" stop-color="{NEGRO}" stop-opacity="0.5"/>
       <stop offset="1" stop-color="{NEGRO}" stop-opacity="0"/>
     </linearGradient>
     <!-- Sombra hacia la punta de atrás: transparente a media altura, oscura en la punta. -->
