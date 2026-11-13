@@ -1,26 +1,39 @@
-# Genera marca/ant-icono.svg: dos antenas de hormiga acodadas que se afinan de la base a la punta.
-# Un trazo SVG tiene grosor fijo, así que cada antena se dibuja como figura rellena: se recorre
-# la antena en muchos pasos cortos y cada paso es un trapecio con círculos en sus extremos (que
-# redondean la base, el codo y la punta). El grosor sigue una curva: casi igual en la mayor parte
-# de la antena y afinándose suavemente hacia la punta.
-# Para ajustar el diseño, cambiar PUNTOS (izquierda; la derecha es su espejo), GRUESO, FINO y CURVA.
+# Genera marca/ant-icono.svg: dos antenas de hormiga acodadas, en dorado sobre fondo oscuro.
+#
+# Cómo se dibuja cada antena:
+# - Su línea central es una polilínea (PUNTOS) cuyo codo se redondea con una curva (REDONDEO), así
+#   el lado interior del codo («la axila») queda curvo y no en esquina.
+# - Un trazo SVG tiene grosor fijo, así que la antena es una figura rellena: se recorre la línea
+#   central en pasos cortos y a cada lado se desplaza medio grosor. El grosor sigue una curva:
+#   casi igual en casi toda la antena y afinándose suavemente hacia la punta (GRUESO, FINO, CURVA).
+# - Sombreado como un cilindro con luz desde arriba a la izquierda: una banda clara en el lado
+#   iluminado y una oscura en el contrario (mismas figuras, pero entre dos desplazamientos), un
+#   degradado dorado de arriba (más claro) hacia abajo, y una sombra difusa sobre el fondo hecha
+#   con copias desplazadas y semitransparentes (sin filtros, para que lo dibuje cualquier visor).
+#
 # Uso: python3 marca/generar-svg.py
 
 import math
 from pathlib import Path
 
-FONDO = "#232031"
-DORADO = "#d9b45a"
-# Antena izquierda, de la base a la punta, en un lienzo de 64×64.
+# Antena izquierda, de la base a la punta, en un lienzo de 64×64 (la derecha es su espejo).
 PUNTOS = [(27.5, 52), (22, 31), (12.5, 19)]
-# Grosor en la base y en la punta.
+# Cuánto se adelanta la curva del codo, a cada lado del vértice (en unidades del lienzo).
+REDONDEO = 4.5
+# Grosor en la base y en la punta, y forma del afinado (1 = lineal; mayor = se afina más tarde).
 GRUESO = 6.6
 FINO = 4.4
-# Forma del afinado: 1 sería lineal; con valores mayores el grosor se mantiene más tiempo y
-# baja recién cerca de la punta.
 CURVA = 2.2
-# Pasos por unidad de largo: más pasos, borde más liso.
-PASOS_POR_UNIDAD = 3
+# Pasos por unidad de largo al recorrer la antena: más pasos, borde más liso.
+PASOS_POR_UNIDAD = 4
+
+# Colores.
+FONDO_CENTRO = "#2c2840"
+FONDO_BORDE = "#1d1a2a"
+DORADO_ARRIBA = "#e8c876"
+DORADO_ABAJO = "#c39a41"
+BRILLO = "#fbe7a8"
+SOMBRA_LATERAL = "#8f6d27"
 
 
 def n(x: float) -> str:
@@ -28,59 +41,105 @@ def n(x: float) -> str:
     return f"{x:.2f}".rstrip("0").rstrip(".")
 
 
-def circulo(x: float, y: float, r: float) -> str:
-    return f"M{n(x - r)} {n(y)}a{n(r)} {n(r)} 0 1 0 {n(2 * r)} 0a{n(r)} {n(r)} 0 1 0 {n(-2 * r)} 0Z"
-
-
 def grosor(t: float) -> float:
     """Grosor a la fracción `t` del largo de la antena (0 = base, 1 = punta)."""
     return GRUESO - (GRUESO - FINO) * t**CURVA
 
 
-def muestrear(puntos):
-    """Divide la antena en pasos cortos; devuelve (x, y, grosor) para cada paso, de la base a la punta."""
-    tramos = list(zip(puntos, puntos[1:]))
-    largos = [math.hypot(x2 - x1, y2 - y1) for (x1, y1), (x2, y2) in tramos]
-    total = sum(largos)
-    muestras, recorrido = [], 0.0
-    for ((x1, y1), (x2, y2)), largo in zip(tramos, largos):
-        pasos = max(1, round(largo * PASOS_POR_UNIDAD))
-        for i in range(pasos):
-            f = i / pasos
-            muestras.append((x1 + (x2 - x1) * f, y1 + (y2 - y1) * f, grosor((recorrido + largo * f) / total)))
-        recorrido += largo
-    x, y = puntos[-1]
-    muestras.append((x, y, grosor(1)))
-    return muestras
+def linea_central(puntos):
+    """
+    Recorre la polilínea en pasos cortos, reemplazando cada codo por una curva cuadrática que
+    empieza REDONDEO antes del vértice y termina REDONDEO después. Devuelve los puntos (x, y).
+    """
+    def hacia(a, b, d):
+        """Punto a distancia `d` de `a` en dirección a `b`."""
+        largo = math.hypot(b[0] - a[0], b[1] - a[1])
+        return (a[0] + (b[0] - a[0]) * d / largo, a[1] + (b[1] - a[1]) * d / largo)
+
+    def recta(a, b):
+        pasos = max(1, round(math.hypot(b[0] - a[0], b[1] - a[1]) * PASOS_POR_UNIDAD))
+        return [(a[0] + (b[0] - a[0]) * i / pasos, a[1] + (b[1] - a[1]) * i / pasos) for i in range(pasos)]
+
+    def curva(a, c, b):
+        pasos = max(4, round(2 * REDONDEO * PASOS_POR_UNIDAD))
+        return [
+            ((1 - t) ** 2 * a[0] + 2 * (1 - t) * t * c[0] + t**2 * b[0], (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * c[1] + t**2 * b[1])
+            for t in (i / pasos for i in range(pasos))
+        ]
+
+    resultado, inicio = [], puntos[0]
+    for previo, vertice, siguiente in zip(puntos, puntos[1:], puntos[2:]):
+        entrada, salida = hacia(vertice, previo, REDONDEO), hacia(vertice, siguiente, REDONDEO)
+        resultado += recta(inicio, entrada) + curva(entrada, vertice, salida)
+        inicio = salida
+    return resultado + recta(inicio, puntos[-1]) + [puntos[-1]]
 
 
-def antena(puntos) -> str:
-    """Figura rellena de una antena: trapecios entre muestras consecutivas y círculos en cada muestra."""
-    muestras = muestrear(puntos)
-    partes = []
-    for (x1, y1, g1), (x2, y2, g2) in zip(muestras, muestras[1:]):
-        largo = math.hypot(x2 - x1, y2 - y1)
-        # Vector perpendicular unitario al paso, para abrir el trapecio a cada lado.
-        px, py = -(y2 - y1) / largo, (x2 - x1) / largo
-        r1, r2 = g1 / 2, g2 / 2
-        partes.append(
-            f"M{n(x1 + px * r1)} {n(y1 + py * r1)}L{n(x2 + px * r2)} {n(y2 + py * r2)}"
-            f"L{n(x2 - px * r2)} {n(y2 - py * r2)}L{n(x1 - px * r1)} {n(y1 - py * r1)}Z"
-        )
-    # Círculos solo en la base, el codo y la punta: en los tramos rectos los trapecios ya calzan.
-    for x, y in puntos:
-        g = next(g for mx, my, g in muestras if abs(mx - x) < 1e-9 and abs(my - y) < 1e-9)
-        partes.append(circulo(x, y, g / 2))
-    return "".join(partes)
+def banda(centro, desde: float, hasta: float, redondear: bool = True) -> str:
+    """
+    Figura entre dos desplazamientos laterales de la línea central, expresados como fracción del
+    medio grosor (-1 = borde izquierdo, 1 = borde derecho). `banda(c, -1, 1)` es la antena entera,
+    con extremos redondeados si `redondear` es verdadero.
+    """
+    largos = [0.0]
+    for (x1, y1), (x2, y2) in zip(centro, centro[1:]):
+        largos.append(largos[-1] + math.hypot(x2 - x1, y2 - y1))
+    total = largos[-1]
+    lado_a, lado_b = [], []
+    for i, (x, y) in enumerate(centro):
+        # Tangente promediando los vecinos, y su perpendicular unitaria.
+        ax, ay = centro[max(i - 1, 0)]
+        bx, by = centro[min(i + 1, len(centro) - 1)]
+        largo = math.hypot(bx - ax, by - ay)
+        px, py = -(by - ay) / largo, (bx - ax) / largo
+        r = grosor(largos[i] / total) / 2
+        lado_a.append((x + px * r * desde, y + py * r * desde))
+        lado_b.append((x + px * r * hasta, y + py * r * hasta))
+    contorno = lado_a + lado_b[::-1]
+    d = "M" + "L".join(f"{n(x)} {n(y)}" for x, y in contorno) + "Z"
+    if redondear:
+        # Círculo en la base y en la punta. Debe girar en el mismo sentido que el contorno: con la
+        # regla de relleno por defecto (nonzero), un círculo en sentido contrario se restaría y
+        # dejaría un agujero. El signo del área (fórmula del cordón) dice el sentido del contorno.
+        area = sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(contorno, contorno[1:] + contorno[:1]))
+        giro = 1 if area > 0 else 0
+        for (x, y), t in ((centro[0], 0.0), (centro[-1], 1.0)):
+            r = grosor(t) / 2
+            d += f"M{n(x - r)} {n(y)}a{n(r)} {n(r)} 0 1 {giro} {n(2 * r)} 0a{n(r)} {n(r)} 0 1 {giro} {n(-2 * r)} 0Z"
+    return d
 
 
-izquierda = antena(PUNTOS)
-derecha = antena([(64 - x, y) for x, y in PUNTOS])
+antenas = [linea_central(PUNTOS), linea_central([(64 - x, y) for x, y in PUNTOS])]
+entera = "".join(banda(c, -1, 1) for c in antenas)
+# Con luz desde arriba a la izquierda, el lado izquierdo de ambas antenas queda iluminado.
+brillo = "".join(banda(c, -0.7, -0.2, redondear=False) for c in antenas)
+sombra_lateral = "".join(banda(c, 0.3, 1, redondear=False) for c in antenas)
+# Sombra sobre el fondo: copias desplazadas hacia abajo a la derecha, cada vez más tenues.
+sombras = "\n".join(
+    f'    <path transform="translate({n(0.5 * k)} {n(0.9 * k)})" fill="#0b0912" fill-opacity="{n(0.16 - 0.03 * k)}" d="{entera}"/>'
+    for k in range(1, 5)
+)
+
 svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Ant · antenas</title>
-  <desc id="desc">Dos antenas de hormiga acodadas que se afinan hacia la punta, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
-  <rect width="64" height="64" rx="14" fill="{FONDO}"/>
-  <path fill="{DORADO}" d="{izquierda}{derecha}"/>
+  <desc id="desc">Dos antenas de hormiga acodadas y sombreadas, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
+  <defs>
+    <radialGradient id="fondo" cx="32" cy="22" r="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="{FONDO_CENTRO}"/>
+      <stop offset="1" stop-color="{FONDO_BORDE}"/>
+    </radialGradient>
+    <linearGradient id="dorado" x1="0" y1="14" x2="0" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="{DORADO_ARRIBA}"/>
+      <stop offset="1" stop-color="{DORADO_ABAJO}"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#fondo)"/>
+  <g>
+{sombras}
+  </g>
+  <path fill="url(#dorado)" d="{entera}"/>
+  <path fill="{SOMBRA_LATERAL}" fill-opacity="0.45" d="{sombra_lateral}"/>
+  <path fill="{BRILLO}" fill-opacity="0.55" d="{brillo}"/>
 </svg>
 """
 Path(__file__).with_name("ant-icono.svg").write_text(svg)
