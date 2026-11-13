@@ -78,10 +78,9 @@ BANDA_PASOS = 5
 # Grosor relativo de cada sutura (una por segmento, la primera es el frente): la del centro es
 # más gruesa, como se ve en las fotos.
 GROSOR_SUTURA = [1, 1, 1.9, 1]
-# La franja central (la sutura más gruesa) se refuerza encima del brillo con una banda café
-# oscura de este ancho (en unidades del lienzo), difuminada desde el centro hacia sus bordes.
-# No es negra ni sólida: así se lee como pigmento más oscuro de la superficie y no como un hueco.
-ANCHO_FRANJA_CENTRAL = 4.6
+# La franja central (la sutura más gruesa) se refuerza con una banda café de este ancho (en
+# unidades del lienzo), de tono parejo y bordes apenas suavizados.
+ANCHO_FRANJA_CENTRAL = 3.6
 
 
 
@@ -192,15 +191,18 @@ for k in range(SOMBRA_INTERIOR_PASOS):
 sombra_interior = "\n".join(sombra_interior)
 
 # Cintura: un círculo oscuro separado del gáster, un poco más arriba.
-# Refuerzo de la franja central: trazos superpuestos sobre su sutura, del más ancho al más
-# angosto y cada uno semitransparente, así queda oscura al centro y con los bordes suaves. Va
-# encima del brillo (para que la luz no la aclare) y debajo de las sombras de los costados (para
-# que se funda con ellas como las demás franjas).
+# Refuerzo de la franja central: una banda café de tono parejo en todo su ancho, con los bordes
+# apenas suavizados (unos pocos trazos un poco más anchos y tenues). Si se oscureciera desde el
+# centro hacia los bordes se leería como hendidura. Va debajo del brillo y de las sombras, para
+# que reciba la misma luz que el resto de la superficie y se lea como pigmento, no como hueco.
 central = SEGMENTOS[GROSOR_SUTURA.index(max(GROSOR_SUTURA))]
 franja_central = "\n".join(
-    f'    <path fill="none" stroke="{BANDA}" stroke-opacity="0.11" '
-    f'stroke-width="{n(ANCHO_FRANJA_CENTRAL * (1 - k / 12) + 0.2)}" d="{borde(central)}"/>'
-    for k in range(12)
+    [f'    <path fill="none" stroke="{BANDA}" stroke-opacity="0.7" stroke-width="{n(ANCHO_FRANJA_CENTRAL)}" d="{borde(central)}"/>']
+    + [
+        f'    <path fill="none" stroke="{BANDA}" stroke-opacity="0.12" '
+        f'stroke-width="{n(ANCHO_FRANJA_CENTRAL + 0.35 * (k + 1))}" d="{borde(central)}"/>'
+        for k in range(3)
+    ]
 )
 
 cintura = (
@@ -267,10 +269,10 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
   <g clip-path="url(#gaster-base)">
 {chr(10).join(franjas)}
 {chr(10).join(suturas)}
+{franja_central}
   </g>
   <g clip-path="url(#gaster)">
     <path fill="url(#brillo)" d="{contorno}"/>
-{franja_central}
     <path fill="url(#sombra)" d="{contorno}"/>
 {sombra_interior}
     <path fill="url(#hacia-punta)" d="{contorno}"/>

@@ -165,21 +165,13 @@
     <path fill="none" stroke="#47240a" stroke-width="0.34" stroke-opacity="0.05" d="M8 35.1Q32 44.1 56 35.1"/>
     <path fill="none" stroke="#47240a" stroke-width="0.34" stroke-opacity="0.05" d="M8 36.9Q32 45.9 56 36.9"/>
     <path fill="none" stroke="#4a260c" stroke-width="0.6" stroke-opacity="0.9" d="M8 36Q32 45 56 36"/>
+    <path fill="none" stroke="#47240a" stroke-opacity="0.7" stroke-width="3.6" d="M8 27.5Q32 36.5 56 27.5"/>
+    <path fill="none" stroke="#47240a" stroke-opacity="0.12" stroke-width="3.95" d="M8 27.5Q32 36.5 56 27.5"/>
+    <path fill="none" stroke="#47240a" stroke-opacity="0.12" stroke-width="4.3" d="M8 27.5Q32 36.5 56 27.5"/>
+    <path fill="none" stroke="#47240a" stroke-opacity="0.12" stroke-width="4.65" d="M8 27.5Q32 36.5 56 27.5"/>
   </g>
   <g clip-path="url(#gaster)">
     <path fill="url(#brillo)" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="4.8" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="4.42" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="4.03" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="3.65" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="3.27" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="2.88" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="2.5" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="2.12" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="1.73" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="1.35" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="0.97" d="M8 27.5Q32 36.5 56 27.5"/>
-    <path fill="none" stroke="#47240a" stroke-opacity="0.11" stroke-width="0.58" d="M8 27.5Q32 36.5 56 27.5"/>
     <path fill="url(#sombra)" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
     <path fill="none" stroke="#0b0806" stroke-opacity="0.1927" stroke-width="0.85" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
     <path fill="none" stroke="#0b0806" stroke-opacity="0.1592" stroke-width="1.7" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>

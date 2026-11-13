@@ -9,9 +9,10 @@ segmentos; cuerpo negro).
 
 - Segmentos de color parejo (ámbar dorado) y halo naranja en cada sutura. Sin degradado propio
   por segmento: si cada uno se aclara al centro, parecen tubos inflados (neumáticos).
-- Franjas oscuras en las suturas, difuminadas hacia ambos lados. La del centro es más ancha: se
-  refuerza encima del brillo con una banda café difuminada (`ANCHO_FRANJA_CENTRAL`). No negra
-  ni sólida, porque así parecía un hueco o una ranura.
+- Franjas oscuras en las suturas, difuminadas hacia ambos lados. La del centro es más ancha
+  (`ANCHO_FRANJA_CENTRAL`): una banda café de tono parejo, bordes apenas suavizados y debajo de
+  la luz, para que se lea como pigmento de la superficie. Descartado: negra sólida encima del
+  brillo (parecía un hueco o ranura) y oscura al centro aclarándose a los bordes (hendidura).
 - El frente se oscurece hasta el negro al llegar a la cintura, sin borde claro.
 - Volumen: la zona central recibe bastante más luz (brillo dorado) que los costados, que se
   oscurecen con una sombra interior que sigue el contorno y se desvanece suave hacia el centro;
