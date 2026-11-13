@@ -1,6 +1,6 @@
-# Note Taking App
+# Ant
 
-App de escritorio para tomar notas: simple, rápida y centrada en el texto.
+Ant: app de escritorio para tomar notas, simple, rápida y centrada en el texto.
 
 ## Referencia
 

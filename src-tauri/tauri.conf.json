@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Note Taking App",
+  "productName": "Ant",
   "version": "0.1.0",
-  "identifier": "cl.agus.notetakingapp",
+  "identifier": "cl.agus.ant",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Note Taking App",
+        "title": "Ant",
         "width": 900,
         "height": 650,
         "minWidth": 400,

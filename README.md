@@ -1,4 +1,4 @@
-# Note Taking App
+# Ant
 
 App de escritorio para tomar notas en Markdown, simple y rápida. Inspirada en
 [Left](https://github.com/hundredrabbits/Left).

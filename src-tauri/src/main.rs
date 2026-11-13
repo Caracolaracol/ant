@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    note_taking_app_lib::run()
+    ant_lib::run()
 }
