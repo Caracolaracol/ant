@@ -10,6 +10,9 @@
 #   iluminado y una oscura en el contrario (mismas figuras, pero entre dos desplazamientos), un
 #   degradado dorado de arriba (más claro) hacia abajo. Sin sombra sobre el fondo, que es de un
 #   solo color (el mismo de Mantis).
+# - Abajo asoma la parte superior de la cabeza (una cúpula cortada por el borde del icono), que
+#   se dibuja encima de las bases de las antenas para que se vea que salen de ella. Un borde fino
+#   del color del fondo separa la cabeza de las antenas.
 #
 # Uso: python3 marca/generar-svg.py
 
@@ -17,7 +20,10 @@ import math
 from pathlib import Path
 
 # Antena izquierda, de la base a la punta, en un lienzo de 64×64 (la derecha es su espejo).
-PUNTOS = [(27.5, 52), (22, 31), (12.5, 19)]
+PUNTOS = [(27.5, 55), (22, 31), (12.5, 19)]
+# Cabeza: elipse (centro x, centro y, radio horizontal, radio vertical); solo se ve su parte de
+# arriba, porque el resto queda fuera del icono.
+CABEZA = (32, 67, 17, 15.5)
 # Cuánto se adelanta la curva del codo, a cada lado del vértice (en unidades del lienzo).
 REDONDEO = 4.5
 # Grosor en la base y en la punta, y forma del afinado (1 = lineal; mayor = se afina más tarde).
@@ -33,6 +39,8 @@ DORADO_ARRIBA = "#e8c876"
 DORADO_ABAJO = "#c39a41"
 BRILLO = "#fbe7a8"
 SOMBRA_LATERAL = "#8f6d27"
+CABEZA_LUZ = "#d6b261"
+CABEZA_SOMBRA = "#8a6624"
 
 
 def n(x: float) -> str:
@@ -116,8 +124,17 @@ sombra_lateral = "".join(banda(c, 0.3, 1, redondear=False) for c in antenas)
 
 svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Ant · antenas</title>
-  <desc id="desc">Dos antenas de hormiga acodadas y sombreadas, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
+  <desc id="desc">Dos antenas de hormiga acodadas y sombreadas que salen de la parte superior de la cabeza, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
   <defs>
+    <!-- Volumen de la cabeza: más clara arriba a la izquierda, donde pega la luz. -->
+    <radialGradient id="cabeza" cx="{n(CABEZA[0] - 6)}" cy="{n(CABEZA[1] - CABEZA[3] + 2)}" r="{n(CABEZA[2] * 1.4)}" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="{CABEZA_LUZ}"/>
+      <stop offset="1" stop-color="{CABEZA_SOMBRA}"/>
+    </radialGradient>
+    <!-- La cabeza se recorta con la forma del icono. -->
+    <clipPath id="icono">
+      <rect width="64" height="64" rx="14"/>
+    </clipPath>
     <linearGradient id="dorado" x1="0" y1="14" x2="0" y2="56" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="{DORADO_ARRIBA}"/>
       <stop offset="1" stop-color="{DORADO_ABAJO}"/>
@@ -127,6 +144,7 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
   <path fill="url(#dorado)" d="{entera}"/>
   <path fill="{SOMBRA_LATERAL}" fill-opacity="0.45" d="{sombra_lateral}"/>
   <path fill="{BRILLO}" fill-opacity="0.55" d="{brillo}"/>
+  <ellipse clip-path="url(#icono)" cx="{n(CABEZA[0])}" cy="{n(CABEZA[1])}" rx="{n(CABEZA[2])}" ry="{n(CABEZA[3])}" fill="url(#cabeza)" stroke="{FONDO}" stroke-width="1.2"/>
 </svg>
 """
 Path(__file__).with_name("ant-icono.svg").write_text(svg)

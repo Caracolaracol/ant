@@ -2,14 +2,15 @@
 
 ## Icono
 
-Dos antenas de hormiga acodadas (escapo largo y flagelo doblado hacia afuera) que salen en
-diagonal desde abajo y se afinan suavemente hacia la punta. El codo es curvo, sin esquina en el
+Dos antenas de hormiga acodadas (escapo largo y flagelo doblado hacia afuera) que salen de la
+parte superior de la cabeza (una cúpula dorada que asoma desde el borde inferior, separada de las
+antenas por un borde fino del color del fondo) en diagonal y se afinan suavemente hacia la punta. El codo es curvo, sin esquina en el
 lado interior. Sombreado como cilindro con luz desde arriba a la izquierda (brillo, lado oscuro y
 degradado dorado). Sin sombra sobre el fondo; el fondo es siempre de un solo color, `#232031`.
 Versiones descartadas: recta (demasiado simple) y con maza redonda en la punta.
 
 - `generar-svg.py`: genera `ant-icono.svg`. Las antenas son figuras rellenas (no trazos) para
-  poder afinarlas; la forma se ajusta con `PUNTOS`, `REDONDEO` (curva del codo), `GRUESO`, `FINO` y `CURVA`
+  poder afinarlas; la forma se ajusta con `PUNTOS`, `REDONDEO` (curva del codo), `CABEZA`, `GRUESO`, `FINO` y `CURVA`
   (afinado suave, no lineal), y los colores con las constantes de arriba del script.
 - `ant-icono.svg`: fuente vectorial. Sigue el mismo sistema que Mantis (`~/Code/meeting-recorder/Resources/Brand`):
   lienzo de 64×64, radio 14 y el mismo fondo liso `#232031`. A diferencia de Mantis (plano), las
