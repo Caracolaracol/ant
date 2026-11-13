@@ -85,7 +85,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src-tauri/capabilities/default.json` — permisos de las ventanas `main` y `ajustes`. Al
   agregar un plugin o una ventana, sumarlos aquí.
 
-- `marca/` — icono de la app (SVG fuente, PNG de 1024 y script); ver `marca/README.md` para
+- `marca/` — icono de la app (cara de hormiga plana en SVG, PNG de 1024 y script); ver `marca/README.md` para
   regenerar `src-tauri/icons/`. Sigue el sistema visual de Mantis (`~/Code/meeting-recorder`).
 
 Mantener esta sección al día cuando se agreguen carpetas o módulos.
