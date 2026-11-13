@@ -68,7 +68,7 @@ CINTURA_RADIO = 3.2
 CINTURA_SEPARACION = 1.8
 # Desenfoque de todo el abdomen (desviación del desenfoque gaussiano, en unidades del lienzo).
 # Lo aplica generar-icono.swift con Core Image (el desenfoque de SVG de macOS sale pixelado).
-DIFUMINADO = 0.6
+DIFUMINADO = 0.2
 # Sombra interior que da profundidad: hasta qué distancia del borde llega (en unidades del
 # lienzo), en cuántos pasos, qué tan oscura es junto al borde y qué tan suave se desvanece hacia
 # el centro (mayor CURVA = se aclara antes y termina más suave, sin corte visible).
