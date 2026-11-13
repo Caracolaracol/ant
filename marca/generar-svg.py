@@ -6,13 +6,16 @@
 # - Un trazo SVG tiene grosor fijo, así que la antena es una figura rellena: se recorre la línea
 #   central en pasos cortos y a cada lado se desplaza medio grosor. El grosor sigue una curva:
 #   casi igual en casi toda la antena y afinándose suavemente hacia la punta (GRUESO, FINO, CURVA).
-# - Sombreado como un cilindro con luz desde arriba a la izquierda: una banda clara en el lado
-#   iluminado y una oscura en el contrario (mismas figuras, pero entre dos desplazamientos), un
-#   degradado dorado de arriba (más claro) hacia abajo. Sin sombra sobre el fondo, que es de un
-#   solo color (el mismo de Mantis).
-# - Abajo asoma la parte superior de la cabeza (una cúpula cortada por el borde del icono), que
-#   se dibuja encima de las bases de las antenas para que se vea que salen de ella. Un borde fino
-#   del color del fondo separa la cabeza de las antenas.
+# - Sombreado difuminado como un cilindro con luz desde arriba a la izquierda: la antena se cubre
+#   con muchas franjas finas a lo largo, cada una con un brillo o una sombra semitransparente
+#   cuya intensidad cambia de a poco a lo ancho (funciones `brillo_en` y `sombra_en`). Las franjas
+#   se recortan con la forma de la antena, así el sombreado llega también a las puntas
+#   redondeadas. Encima va un degradado dorado de arriba (más claro) hacia abajo. Sin filtros,
+#   para que cualquier visor lo dibuje igual, y sin sombra sobre el fondo, que es de un solo
+#   color (el mismo de Mantis).
+# - La cabeza de la hormiga está completa en la parte de abajo, dibujada encima de las bases de
+#   las antenas para que se vea que salen de ella. Un borde fino del color del fondo la separa
+#   de las antenas.
 #
 # Uso: python3 marca/generar-svg.py
 
@@ -20,10 +23,14 @@ import math
 from pathlib import Path
 
 # Antena izquierda, de la base a la punta, en un lienzo de 64×64 (la derecha es su espejo).
-PUNTOS = [(27.5, 55), (22, 31), (12.5, 19)]
-# Cabeza: elipse (centro x, centro y, radio horizontal, radio vertical); solo se ve su parte de
-# arriba, porque el resto queda fuera del icono.
-CABEZA = (32, 67, 17, 15.5)
+PUNTOS = [(28, 42), (22, 25), (12.5, 13)]
+# Cabeza de hormiga vista de frente, completa en la parte de abajo del icono: ancha arriba y más
+# angosta hacia abajo (donde irían las mandíbulas). Las bases de las antenas quedan escondidas
+# bajo su borde superior. CABEZA_LUZ_EN es el punto más iluminado de su degradado.
+CABEZA = "M32 35C41.5 35 46 39.5 46 45.5C46 51.5 39.5 57 32 57C24.5 57 18 51.5 18 45.5C18 39.5 22.5 35 32 35Z"
+CABEZA_LUZ_EN = (27, 40)
+# Franjas para el sombreado difuminado: más franjas, transición más suave.
+FRANJAS = 28
 # Cuánto se adelanta la curva del codo, a cada lado del vértice (en unidades del lienzo).
 REDONDEO = 4.5
 # Grosor en la base y en la punta, y forma del afinado (1 = lineal; mayor = se afina más tarde).
@@ -82,6 +89,24 @@ def linea_central(puntos):
     return resultado + recta(inicio, puntos[-1]) + [puntos[-1]]
 
 
+def extender(centro, d: float = 4.0):
+    """Prolonga la línea central `d` unidades por cada extremo, siguiendo su dirección."""
+    def punta(a, b):
+        largo = math.hypot(a[0] - b[0], a[1] - b[1])
+        return (a[0] + (a[0] - b[0]) * d / largo, a[1] + (a[1] - b[1]) * d / largo)
+    return [punta(centro[0], centro[1])] + centro + [punta(centro[-1], centro[-2])]
+
+
+def brillo_en(u: float) -> float:
+    """Opacidad del brillo a la posición `u` del ancho (-1 = lado iluminado, 1 = lado contrario)."""
+    return 0.6 * math.exp(-(((u + 0.38) / 0.36) ** 2))
+
+
+def sombra_en(u: float) -> float:
+    """Opacidad de la sombra a la posición `u` del ancho: nula en el centro, crece hacia el lado contrario."""
+    return 0.6 * max(0.0, (u + 0.05) / 1.05) ** 1.6
+
+
 def banda(centro, desde: float, hasta: float, redondear: bool = True) -> str:
     """
     Figura entre dos desplazamientos laterales de la línea central, expresados como fracción del
@@ -118,33 +143,45 @@ def banda(centro, desde: float, hasta: float, redondear: bool = True) -> str:
 
 antenas = [linea_central(PUNTOS), linea_central([(64 - x, y) for x, y in PUNTOS])]
 entera = "".join(banda(c, -1, 1) for c in antenas)
-# Con luz desde arriba a la izquierda, el lado izquierdo de ambas antenas queda iluminado.
-brillo = "".join(banda(c, -0.7, -0.2, redondear=False) for c in antenas)
-sombra_lateral = "".join(banda(c, 0.3, 1, redondear=False) for c in antenas)
+# Franjas a lo largo de las antenas, de un borde al otro, con su brillo y su sombra. Las líneas
+# centrales se prolongan para que, al recortarlas con la forma de la antena, cubran las puntas.
+# El grosor de las franjas sigue al de la antena porque `banda` usa fracciones del medio grosor.
+extendidas = [extender(c) for c in antenas]
+franjas = []
+for i in range(FRANJAS):
+    desde, hasta = -1.15 + 2.3 * i / FRANJAS, -1.15 + 2.3 * (i + 1) / FRANJAS
+    u = max(-1.0, min(1.0, (desde + hasta) / 2))
+    d = "".join(banda(c, desde, hasta, redondear=False) for c in extendidas)
+    if brillo_en(u) > 0.01:
+        franjas.append(f'    <path fill="{BRILLO}" fill-opacity="{n(brillo_en(u))}" d="{d}"/>')
+    if sombra_en(u) > 0.01:
+        franjas.append(f'    <path fill="{SOMBRA_LATERAL}" fill-opacity="{n(sombra_en(u))}" d="{d}"/>')
+franjas = "\n".join(franjas)
 
 svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Ant · antenas</title>
-  <desc id="desc">Dos antenas de hormiga acodadas y sombreadas que salen de la parte superior de la cabeza, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
+  <desc id="desc">Dos antenas de hormiga acodadas y sombreadas que salen de la cabeza, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
   <defs>
     <!-- Volumen de la cabeza: más clara arriba a la izquierda, donde pega la luz. -->
-    <radialGradient id="cabeza" cx="{n(CABEZA[0] - 6)}" cy="{n(CABEZA[1] - CABEZA[3] + 2)}" r="{n(CABEZA[2] * 1.4)}" gradientUnits="userSpaceOnUse">
+    <radialGradient id="cabeza" cx="{n(CABEZA_LUZ_EN[0])}" cy="{n(CABEZA_LUZ_EN[1])}" r="20" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="{CABEZA_LUZ}"/>
       <stop offset="1" stop-color="{CABEZA_SOMBRA}"/>
     </radialGradient>
-    <!-- La cabeza se recorta con la forma del icono. -->
-    <clipPath id="icono">
-      <rect width="64" height="64" rx="14"/>
+    <!-- Las franjas del sombreado se recortan con la forma de las antenas. -->
+    <clipPath id="antenas">
+      <path d="{entera}"/>
     </clipPath>
-    <linearGradient id="dorado" x1="0" y1="14" x2="0" y2="56" gradientUnits="userSpaceOnUse">
+    <linearGradient id="dorado" x1="0" y1="8" x2="0" y2="44" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="{DORADO_ARRIBA}"/>
       <stop offset="1" stop-color="{DORADO_ABAJO}"/>
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="14" fill="{FONDO}"/>
   <path fill="url(#dorado)" d="{entera}"/>
-  <path fill="{SOMBRA_LATERAL}" fill-opacity="0.45" d="{sombra_lateral}"/>
-  <path fill="{BRILLO}" fill-opacity="0.55" d="{brillo}"/>
-  <ellipse clip-path="url(#icono)" cx="{n(CABEZA[0])}" cy="{n(CABEZA[1])}" rx="{n(CABEZA[2])}" ry="{n(CABEZA[3])}" fill="url(#cabeza)" stroke="{FONDO}" stroke-width="1.2"/>
+  <g clip-path="url(#antenas)">
+{franjas}
+  </g>
+  <path d="{CABEZA}" fill="url(#cabeza)" stroke="{FONDO}" stroke-width="1.2"/>
 </svg>
 """
 Path(__file__).with_name("ant-icono.svg").write_text(svg)
