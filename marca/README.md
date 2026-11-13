@@ -2,27 +2,27 @@
 
 ## Icono
 
-Dos antenas de hormiga acodadas, protagonistas del icono, que salen en diagonal hacia arriba
-desde la parte superior de la cabeza. De la cabeza solo se ve una franja: es más oscura (café
-dorado) y se corta con un borde recto dentro del icono, sin desvanecerse ni tocar el borde del
-icono. Las antenas nacen en el borde de la cabeza, sin separación. Mantienen su grosor casi todo
-el largo y se angostan hacia la punta; su codo es curvo (sin esquina en el lado interior) y
-tienen sombreado difuminado de cilindro con luz desde arriba a la izquierda y degradado dorado.
-Sin sombra sobre el fondo; el fondo es siempre de un solo color, `#232031`.
-Versiones descartadas: recta (demasiado simple), con maza redonda en la punta, con bandas de luz
-marcadas, con la cabeza cortada por el borde inferior del icono, con la cabeza completa, con un
-borde oscuro entre cabeza y antenas y con la cabeza desvanecida.
+El abdomen (gáster) de la hormiga *Camponotus chilensis* visto desde arriba, vertical, con la
+cintura como un círculo oscuro separado, un poco más arriba. Referencia: fotos de la especie en
+iNaturalist (gáster ovalado de pelo dorado con tonos anaranjados y anillos marcados entre
+segmentos; cuerpo negro).
 
-Nota técnica: el renderizador de SVG de macOS (con el que se genera el PNG) no respeta
-`clip-rule="evenodd"`; para restar figuras se usan máscaras.
+- Dorado claro al centro de cada segmento, ámbar hacia sus bordes y halo naranja en cada sutura.
+- Franjas oscuras en las suturas, difuminadas hacia ambos lados; la del centro es más gruesa.
+- El frente se oscurece hasta el negro al llegar a la cintura, sin borde claro.
+- Profundidad: sombra interior que sigue el contorno y se desvanece suave hacia el centro, y más
+  sombra hacia la punta de atrás. Brillo suave arriba a la izquierda.
+- Fondo siempre liso `#232031` (el de Mantis) y sin sombra detrás.
 
-- `generar-svg.py`: genera `ant-icono.svg`. Las antenas son figuras rellenas (no trazos) para
-  poder afinarlas; la forma se ajusta con `PUNTOS`, `REDONDEO` (curva del codo), `CABEZA` (forma de la cabeza), `CORTE` (altura del corte recto de la cabeza), `GRUESO`, `FINO` y `CURVA`
-  (afinado suave, no lineal), `FRANJAS` (suavidad del sombreado), y los colores con las constantes de arriba del script.
-- `ant-icono.svg`: fuente vectorial. Sigue el mismo sistema que Mantis (`~/Code/meeting-recorder/Resources/Brand`):
-  lienzo de 64×64, radio 14 y el mismo fondo liso `#232031`. A diferencia de Mantis (plano), las
-  antenas de Ant llevan sombreado; no usa filtros, para que cualquier visor lo dibuje igual.
-  Antenas en dorado (color provisional).
+Historia: antes el icono eran dos antenas de hormiga (ver el historial de git); se cambió al
+abdomen. Del abdomen se descartaron la versión en diagonal y la vertical sin cintura.
+
+- `generar-svg.py`: genera `ant-icono.svg`. Forma con `ADELANTE`, `ATRAS`, `ANCHO` y
+  `SEGMENTOS`; cintura con `CINTURA_RADIO` y `CINTURA_SEPARACION`; suturas con `GROSOR_SUTURA`,
+  `HALO_PASOS` y `BANDA_PASOS`; profundidad con `SOMBRA_INTERIOR_*`; colores con las constantes
+  del principio. `GIRO` y `TORAX` quedan para probar variantes.
+- `ant-icono.svg`: fuente vectorial (lienzo 64×64, radio 14, como Mantis). Sin filtros ni
+  `clip-rule="evenodd"`, que el renderizador de SVG de macOS no respeta.
 - `ant-icono-1024.png`: rasterización para generar los iconos. Igual que Mantis, el diseño se
   reduce a 824×824 px, centrado con 100 px de margen transparente, para que en el Dock se vea
   del mismo tamaño que los iconos de macOS.
