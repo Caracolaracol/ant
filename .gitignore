@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capas intermedias del icono (las genera marca/generar-svg.py)
+marca/capas/

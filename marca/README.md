@@ -21,6 +21,7 @@ segmentos; cuerpo negro).
 - Sin borde en el contorno: el renderizador dejaba un hilo dorado en la orilla, así que el dorado
   de base se recorta una fracción de píxel más adentro (`ORILLA`) que las sombras. Máscaras no:
   macOS las dibuja pixeladas.
+- Todo el abdomen va difuminado por dentro (`DIFUMINADO`), con la silueta nítida.
 - Fondo siempre liso `#232031` (el de Mantis) y sin sombra detrás.
 
 Historia: antes el icono eran dos antenas de hormiga (ver el historial de git); se cambió al
@@ -36,13 +37,19 @@ como círculo separado).
 - `ant-icono-1024.png`: rasterización para generar los iconos. Igual que Mantis, el diseño se
   reduce a 824×824 px, centrado con 100 px de margen transparente, para que en el Dock se vea
   del mismo tamaño que los iconos de macOS.
-- `generar-icono.swift`: crea el PNG anterior desde el SVG.
+- `generar-icono.swift`: crea el PNG anterior desde las capas de `marca/capas/` (fondo,
+  interior del abdomen y silueta, que escribe `generar-svg.py`). Difumina todo el interior con
+  Core Image (`DIFUMINADO`) y lo recorta con la silueta nítida. El desenfoque de SVG de macOS
+  no sirve: lo ignora en grupos y lo pixela en elementos. Por eso `ant-icono.svg` es la versión
+  sin difuminar y el PNG es el icono final.
 
 ## Regenerar los iconos de la app
 
 ```sh
-python3 marca/generar-svg.py
-swift marca/generar-icono.swift marca/ant-icono.svg marca/ant-icono-1024.png
+python3 marca/generar-svg.py                                   # SVG y capas en marca/capas/
+swift marca/generar-icono.swift marca/capas marca/ant-icono-1024.png
 pnpm tauri icon marca/ant-icono-1024.png
-rm -rf src-tauri/icons/android src-tauri/icons/ios   # la app es solo de escritorio
+rm -rf src-tauri/icons/android src-tauri/icons/ios              # la app es solo de escritorio
 ```
+
+Para una vista previa más chica: `swift marca/generar-icono.swift marca/capas vista.png 512`.

@@ -22,8 +22,12 @@
 # - Hacia la punta de atrás el gáster también se oscurece de a poco.
 # - Adelante, separada del gáster, la cintura: un círculo casi negro.
 # - Todo el conjunto se gira en diagonal (GIRO) para que se lea como parte de un insecto.
-# Sin filtros ni clip-rule evenodd (el renderizador de SVG de macOS no los respeta) y sin sombra
-# sobre el fondo, que es de un solo color (el mismo de Mantis).
+# - Todo el abdomen se difumina. El renderizador de SVG de macOS ignora los filtros en grupos y
+#   los pixela en elementos, así que el desenfoque lo hace generar-icono.swift con Core Image.
+#   Para eso este script escribe también, en marca/capas/, el fondo, el interior del abdomen (sin
+#   recortar) y su silueta, y el valor de DIFUMINADO.
+# Sin clip-rule evenodd ni máscaras (el renderizador de SVG de macOS no respeta el primero y
+# pixela las segundas) y sin sombra sobre el fondo, que es de un solo color (el de Mantis).
 #
 # Uso: python3 marca/generar-svg.py
 
@@ -62,8 +66,9 @@ TORAX = False
 # Cintura: radio del círculo y espacio entre él y el frente del gáster.
 CINTURA_RADIO = 3.2
 CINTURA_SEPARACION = 1.8
-# Cuánto más adentro se recorta el dorado de base respecto de las sombras (evita el borde claro).
-ORILLA = 0.1
+# Desenfoque de todo el abdomen (desviación del desenfoque gaussiano, en unidades del lienzo).
+# Lo aplica generar-icono.swift con Core Image (el desenfoque de SVG de macOS sale pixelado).
+DIFUMINADO = 0.6
 # Sombra interior que da profundidad: hasta qué distancia del borde llega (en unidades del
 # lienzo), en cuántos pasos, qué tan oscura es junto al borde y qué tan suave se desvanece hacia
 # el centro (mayor CURVA = se aclara antes y termina más suave, sin corte visible).
@@ -123,9 +128,8 @@ def borde(y: float) -> str:
 
 
 contorno = gaster()
-# El dorado de base se recorta un poco más adentro que las sombras: así la orilla queda solo con
-# el tono oscuro de las sombras y no aparece un hilo dorado (borde) en el contorno.
-contorno_base = gaster(ORILLA)
+# Rectángulo más grande que el gáster, para pintar los degradados antes del recorte.
+GRANDE = "M-8 -8H72V72H-8Z"
 limites = SEGMENTOS + [ATRAS + 8]
 
 def halo(y: float, color: str, pasos: int, paso: float, opacidad_max: float) -> list[str]:
@@ -210,6 +214,15 @@ cintura = (
     f'r="{n(CINTURA_RADIO)}"/>'
 )
 
+# Contenido de base del abdomen (dorado, suturas y franja central) y sus capas de luz y sombra.
+interior_base = "\n".join([*franjas, *suturas, franja_central])
+interior_luz = f"""    <path fill="url(#brillo)" d="{GRANDE}"/>
+    <path fill="url(#sombra)" d="{GRANDE}"/>
+{sombra_interior}
+    <path fill="url(#hacia-punta)" d="{GRANDE}"/>
+    <path fill="url(#frente)" d="{GRANDE}"/>
+    <path fill="url(#hacia-cintura)" d="{GRANDE}"/>"""
+
 svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Ant · abdomen</title>
   <desc id="desc">Abdomen dorado y segmentado de la hormiga Camponotus chilensis visto desde arriba, sobre fondo oscuro. Generado por generar-svg.py.</desc>
@@ -219,9 +232,6 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
          orilla, pero el renderizador de macOS dibuja las máscaras en baja resolución.) -->
     <clipPath id="gaster">
       <path d="{contorno}"/>
-    </clipPath>
-    <clipPath id="gaster-base">
-      <path d="{contorno_base}"/>
     </clipPath>
     <!-- Brillo: la zona que recibe más luz, en el centro un poco hacia arriba a la izquierda, bien
          más clara que los costados para que se lea el volumen. -->
@@ -266,22 +276,28 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
   {f'<path fill="url(#cintura)" d="M{n(CENTRO_X - 6)} {n(ADELANTE - 6)}C{n(CENTRO_X - 7)} {n(ADELANTE - 11)} {n(CENTRO_X - 4)} {n(ADELANTE - 14)} {n(CENTRO_X)} {n(ADELANTE - 14)}C{n(CENTRO_X + 4)} {n(ADELANTE - 14)} {n(CENTRO_X + 7)} {n(ADELANTE - 11)} {n(CENTRO_X + 6)} {n(ADELANTE - 6)}Z"/>' if TORAX else ""}
   <!-- Cintura: un nudo corto y oscuro que asoma por delante del gáster (solo si CINTURA). -->
   {cintura if CINTURA else ""}
-  <g clip-path="url(#gaster-base)">
-{chr(10).join(franjas)}
-{chr(10).join(suturas)}
-{franja_central}
-  </g>
+  <!-- Cada capa del abdomen se difumina (DIFUMINADO) y después todo se recorta una sola vez con
+       su contorno, así el interior queda suave y la silueta nítida. Las capas no se recortan
+       antes del desenfoque (el dorado y las franjas son más anchos que el gáster y los degradados
+       van en un rectángulo grande), para que el desenfoque no aclare ni transparente la orilla. -->
   <g clip-path="url(#gaster)">
-    <path fill="url(#brillo)" d="{contorno}"/>
-    <path fill="url(#sombra)" d="{contorno}"/>
-{sombra_interior}
-    <path fill="url(#hacia-punta)" d="{contorno}"/>
-    <path fill="url(#frente)" d="{contorno}"/>
-    <path fill="url(#hacia-cintura)" d="{contorno}"/>
-
+{interior_base}
+{interior_luz}
   </g>
   </g>
 </svg>
 """
 Path(__file__).with_name("ant-icono.svg").write_text(svg)
 print("SVG creado: marca/ant-icono.svg")
+
+# Capas para generar-icono.swift: fondo, interior del abdomen sin recortar (para difuminarlo sin
+# que la orilla se aclare) y silueta (blanca, para recortar el interior ya difuminado).
+defs = svg[svg.index("<defs>"):svg.index("</defs>") + len("</defs>")]
+abrir = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+capas = Path(__file__).with_name("capas")
+capas.mkdir(exist_ok=True)
+(capas / "fondo.svg").write_text(f'{abrir}<rect width="64" height="64" rx="14" fill="{FONDO}"/></svg>\n')
+(capas / "interior.svg").write_text(f"{abrir}\n  {defs}\n  <g transform=\"rotate({n(GIRO)} 32 32)\">\n{interior_base}\n{interior_luz}\n  </g>\n</svg>\n")
+(capas / "silueta.svg").write_text(f'{abrir}<g transform="rotate({n(GIRO)} 32 32)"><path fill="#fff" d="{contorno}"/></g></svg>\n')
+(capas / "difuminado.txt").write_text(f"{DIFUMINADO}\n")
+print("Capas creadas: marca/capas/")

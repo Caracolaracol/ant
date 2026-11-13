@@ -23,9 +23,6 @@
     <clipPath id="gaster">
       <path d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
     </clipPath>
-    <clipPath id="gaster-base">
-      <path d="M21.21 14.1Q32 11.1 42.79 14.1C48.01 15.6 49.4 22.57 49.4 26.57C49.4 39.57 42.79 51.4 32 51.4C21.21 51.4 14.6 39.57 14.6 26.57C14.6 22.57 15.99 15.6 21.21 14.1Z"/>
-    </clipPath>
     <!-- Brillo: la zona que recibe más luz, en el centro un poco hacia arriba a la izquierda, bien
          más clara que los costados para que se lea el volumen. -->
     <radialGradient id="brillo" cx="29" cy="28.5" r="15" gradientUnits="userSpaceOnUse">
@@ -69,7 +66,11 @@
   
   <!-- Cintura: un nudo corto y oscuro que asoma por delante del gáster (solo si CINTURA). -->
   
-  <g clip-path="url(#gaster-base)">
+  <!-- Cada capa del abdomen se difumina (DIFUMINADO) y después todo se recorta una sola vez con
+       su contorno, así el interior queda suave y la silueta nítida. Las capas no se recortan
+       antes del desenfoque (el dorado y las franjas son más anchos que el gáster y los degradados
+       van en un rectángulo grande), para que el desenfoque no aclare ni transparente la orilla. -->
+  <g clip-path="url(#gaster)">
     <path fill="url(#segmento0)" d="M8 8Q32 17 56 8L56 18Q32 27 8 18Z"/>
     <path fill="url(#segmento1)" d="M8 18Q32 27 56 18L56 27.5Q32 36.5 8 27.5Z"/>
     <path fill="url(#segmento2)" d="M8 27.5Q32 36.5 56 27.5L56 36Q32 45 8 36Z"/>
@@ -169,10 +170,8 @@
     <path fill="none" stroke="#47240a" stroke-opacity="0.12" stroke-width="3.95" d="M8 27.5Q32 36.5 56 27.5"/>
     <path fill="none" stroke="#47240a" stroke-opacity="0.12" stroke-width="4.3" d="M8 27.5Q32 36.5 56 27.5"/>
     <path fill="none" stroke="#47240a" stroke-opacity="0.12" stroke-width="4.65" d="M8 27.5Q32 36.5 56 27.5"/>
-  </g>
-  <g clip-path="url(#gaster)">
-    <path fill="url(#brillo)" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
-    <path fill="url(#sombra)" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
+    <path fill="url(#brillo)" d="M-8 -8H72V72H-8Z"/>
+    <path fill="url(#sombra)" d="M-8 -8H72V72H-8Z"/>
     <path fill="none" stroke="#0b0806" stroke-opacity="0.1927" stroke-width="0.85" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
     <path fill="none" stroke="#0b0806" stroke-opacity="0.1592" stroke-width="1.7" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
     <path fill="none" stroke="#0b0806" stroke-opacity="0.1351" stroke-width="2.55" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
@@ -213,10 +212,9 @@
     <path fill="none" stroke="#0b0806" stroke-opacity="0.0052" stroke-width="32.3" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
     <path fill="none" stroke="#0b0806" stroke-opacity="0.0036" stroke-width="33.15" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
     <path fill="none" stroke="#0b0806" stroke-opacity="0.0016" stroke-width="34" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
-    <path fill="url(#hacia-punta)" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
-    <path fill="url(#frente)" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
-    <path fill="url(#hacia-cintura)" d="M21.15 14Q32 11 42.85 14C48.1 15.5 49.5 22.54 49.5 26.54C49.5 39.54 42.85 51.5 32 51.5C21.15 51.5 14.5 39.54 14.5 26.54C14.5 22.54 15.9 15.5 21.15 14Z"/>
-
+    <path fill="url(#hacia-punta)" d="M-8 -8H72V72H-8Z"/>
+    <path fill="url(#frente)" d="M-8 -8H72V72H-8Z"/>
+    <path fill="url(#hacia-cintura)" d="M-8 -8H72V72H-8Z"/>
   </g>
   </g>
 </svg>
