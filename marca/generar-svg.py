@@ -8,8 +8,8 @@
 #   casi igual en casi toda la antena y afinándose suavemente hacia la punta (GRUESO, FINO, CURVA).
 # - Sombreado como un cilindro con luz desde arriba a la izquierda: una banda clara en el lado
 #   iluminado y una oscura en el contrario (mismas figuras, pero entre dos desplazamientos), un
-#   degradado dorado de arriba (más claro) hacia abajo, y una sombra difusa sobre el fondo hecha
-#   con copias desplazadas y semitransparentes (sin filtros, para que lo dibuje cualquier visor).
+#   degradado dorado de arriba (más claro) hacia abajo. Sin sombra sobre el fondo, que es de un
+#   solo color (el mismo de Mantis).
 #
 # Uso: python3 marca/generar-svg.py
 
@@ -28,8 +28,7 @@ CURVA = 2.2
 PASOS_POR_UNIDAD = 4
 
 # Colores.
-FONDO_CENTRO = "#2c2840"
-FONDO_BORDE = "#1d1a2a"
+FONDO = "#232031"
 DORADO_ARRIBA = "#e8c876"
 DORADO_ABAJO = "#c39a41"
 BRILLO = "#fbe7a8"
@@ -114,29 +113,17 @@ entera = "".join(banda(c, -1, 1) for c in antenas)
 # Con luz desde arriba a la izquierda, el lado izquierdo de ambas antenas queda iluminado.
 brillo = "".join(banda(c, -0.7, -0.2, redondear=False) for c in antenas)
 sombra_lateral = "".join(banda(c, 0.3, 1, redondear=False) for c in antenas)
-# Sombra sobre el fondo: copias desplazadas hacia abajo a la derecha, cada vez más tenues.
-sombras = "\n".join(
-    f'    <path transform="translate({n(0.5 * k)} {n(0.9 * k)})" fill="#0b0912" fill-opacity="{n(0.16 - 0.03 * k)}" d="{entera}"/>'
-    for k in range(1, 5)
-)
 
 svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Ant · antenas</title>
   <desc id="desc">Dos antenas de hormiga acodadas y sombreadas, en dorado sobre fondo oscuro. Generado por generar-svg.py.</desc>
   <defs>
-    <radialGradient id="fondo" cx="32" cy="22" r="46" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="{FONDO_CENTRO}"/>
-      <stop offset="1" stop-color="{FONDO_BORDE}"/>
-    </radialGradient>
     <linearGradient id="dorado" x1="0" y1="14" x2="0" y2="56" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="{DORADO_ARRIBA}"/>
       <stop offset="1" stop-color="{DORADO_ABAJO}"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#fondo)"/>
-  <g>
-{sombras}
-  </g>
+  <rect width="64" height="64" rx="14" fill="{FONDO}"/>
   <path fill="url(#dorado)" d="{entera}"/>
   <path fill="{SOMBRA_LATERAL}" fill-opacity="0.45" d="{sombra_lateral}"/>
   <path fill="{BRILLO}" fill-opacity="0.55" d="{brillo}"/>

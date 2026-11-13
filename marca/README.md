@@ -5,15 +5,15 @@
 Dos antenas de hormiga acodadas (escapo largo y flagelo doblado hacia afuera) que salen en
 diagonal desde abajo y se afinan suavemente hacia la punta. El codo es curvo, sin esquina en el
 lado interior. Sombreado como cilindro con luz desde arriba a la izquierda (brillo, lado oscuro y
-degradado dorado), sombra difusa sobre el fondo y fondo con un leve degradado radial.
+degradado dorado). Sin sombra sobre el fondo; el fondo es siempre de un solo color, `#232031`.
 Versiones descartadas: recta (demasiado simple) y con maza redonda en la punta.
 
 - `generar-svg.py`: genera `ant-icono.svg`. Las antenas son figuras rellenas (no trazos) para
   poder afinarlas; la forma se ajusta con `PUNTOS`, `REDONDEO` (curva del codo), `GRUESO`, `FINO` y `CURVA`
   (afinado suave, no lineal), y los colores con las constantes de arriba del script.
 - `ant-icono.svg`: fuente vectorial. Sigue el mismo sistema que Mantis (`~/Code/meeting-recorder/Resources/Brand`):
-  lienzo de 64×64, radio 14 y fondo oscuro azulado. A diferencia de Mantis (plano), Ant lleva
-  sombreado con degradados; no usa filtros, para que cualquier visor lo dibuje igual.
+  lienzo de 64×64, radio 14 y el mismo fondo liso `#232031`. A diferencia de Mantis (plano), las
+  antenas de Ant llevan sombreado; no usa filtros, para que cualquier visor lo dibuje igual.
   Antenas en dorado (color provisional).
 - `ant-icono-1024.png`: rasterización para generar los iconos. Igual que Mantis, el diseño se
   reduce a 824×824 px, centrado con 100 px de margen transparente, para que en el Dock se vea
