@@ -13,7 +13,7 @@ export const tema = EditorView.theme(
     "&.cm-focused": { outline: "none" },
     ".cm-scroller": { fontFamily: "var(--fuente)", lineHeight: "1.7", overflow: "auto" },
     // Columna de texto centrada y de ancho limitado, cómoda para leer y escribir.
-    ".cm-content": { maxWidth: "72ch", margin: "0 auto", padding: "48px 24px", caretColor: "var(--acento)" },
+    ".cm-content": { maxWidth: "72ch", margin: "0 auto", padding: "24px 24px 48px", caretColor: "var(--acento)" },
     ".cm-cursor": { borderLeftColor: "var(--acento)", borderLeftWidth: "2px" },
     ".cm-activeLine": { backgroundColor: "transparent" },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {

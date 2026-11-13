@@ -42,18 +42,25 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 ## Estructura del proyecto
 
 - `src/main.tsx` — punto de entrada; monta React.
-- `src/App.tsx` — ventana principal: editor, barra de estado (nombre, cambios sin guardar,
-  conteo de palabras/líneas/caracteres), título de la ventana y atajos de archivo
-  (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S).
+- `src/App.tsx` — ventana principal: lista de notas abiertas (`NotaResumen`: ruta, texto,
+  cambios sin guardar), nota activa, barra de estado, título de la ventana y atajos
+  (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [, Cmd+\\).
+- `src/BarraLateral.tsx` — barra lateral estilo Left: notas abiertas (con botón para cerrar) y
+  los títulos de la nota activa, marcando el título donde está el cursor.
+- `src/marcadores.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de código).
 - `src/App.css` — variables de color del tema (`--fondo`, `--texto`, `--acento`, …) y la
   distribución. Para cambiar colores, tocar las variables, no los componentes.
 - `src/editor/Editor.tsx` — monta CodeMirror 6 con historial, búsqueda (Cmd+F), Markdown y
-  resaltado de bloques de código; expone `setText`, `getText` y `focus`.
+  resaltado de bloques de código. Una sola vista para todas las notas: cada nota guarda su
+  `EditorState` (texto, cursor, historial) y se intercambia al cambiar de nota. Expone
+  `mostrar`, `olvidar`, `getText`, `irA` y `focus`.
 - `src/editor/tema.ts` — tema de CodeMirror y colores del Markdown, leyendo las variables CSS.
 - `src/notas.ts` — diálogos de abrir/guardar y llamadas a los comandos Rust.
 - `src-tauri/src/lib.rs` — comandos `read_note` y `write_note` (guardado atómico con archivo
   temporal + renombrar) y registro del plugin de diálogos.
-- `src-tauri/tauri.conf.json` — nombre, identificador y ventana de la app.
+- `src-tauri/tauri.conf.json` — nombre, identificador y ventana de la app. La barra de título
+  nativa está oculta (`titleBarStyle: "Overlay"`, `hiddenTitle`): los botones de la ventana
+  flotan sobre la franja `.arrastre` de `App.tsx`, que sirve para arrastrar la ventana.
 - `src-tauri/capabilities/default.json` — permisos de la interfaz (`core`, `dialog`). Al
   agregar un plugin, sumar aquí su permiso.
 

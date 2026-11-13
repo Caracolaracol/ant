@@ -21,5 +21,7 @@ pnpm tauri build   # genera el .app y el .dmg en src-tauri/target/release/bundle
 | Cmd+O | Abrir nota |
 | Cmd+S | Guardar |
 | Cmd+Shift+S | Guardar como |
+| Cmd+Shift+] / Cmd+Shift+[ | Nota siguiente / anterior |
+| Cmd+\\ | Mostrar u ocultar la barra lateral |
 | Cmd+F | Buscar y reemplazar |
 | Cmd+Z / Cmd+Shift+Z | Deshacer / rehacer |
