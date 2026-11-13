@@ -67,7 +67,7 @@ CINTURA_SEPARACION = 1.8
 # el centro (mayor CURVA = se aclara antes y termina más suave, sin corte visible).
 SOMBRA_INTERIOR_ANCHO = 13
 SOMBRA_INTERIOR_PASOS = 40
-SOMBRA_INTERIOR_MAX = 0.72
+SOMBRA_INTERIOR_MAX = 0.9
 SOMBRA_INTERIOR_CURVA = 2.4
 # Pasos de las bandas difuminadas de cada sutura (más pasos, banda más ancha): el halo naranja
 # y la banda oscura, encima.
@@ -189,7 +189,8 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
   <desc id="desc">Abdomen dorado y segmentado de la hormiga Camponotus chilensis visto desde arriba, sobre fondo oscuro. Generado por generar-svg.py.</desc>
   <defs>
 {chr(10).join(degradados)}
-    <!-- Todo lo del gáster se recorta con su contorno. -->
+    <!-- Todo lo del gáster se recorta con su contorno. (Una máscara evitaría el borde claro de la
+         orilla, pero el renderizador de macOS dibuja las máscaras en baja resolución.) -->
     <clipPath id="gaster">
       <path d="{contorno}"/>
     </clipPath>
@@ -219,8 +220,8 @@ svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
     <!-- Sombra hacia la punta de atrás: transparente a media altura, oscura en la punta. -->
     <linearGradient id="hacia-punta" x1="0" y1="{n(ATRAS - 18)}" x2="0" y2="{n(ATRAS)}" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="{NEGRO}" stop-opacity="0"/>
-      <stop offset="0.6" stop-color="{NEGRO}" stop-opacity="0.3"/>
-      <stop offset="1" stop-color="{NEGRO}" stop-opacity="0.7"/>
+      <stop offset="0.6" stop-color="{NEGRO}" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="{NEGRO}" stop-opacity="0.85"/>
     </linearGradient>
     <!-- Cintura (pecíolo): oscura, algo más clara a la izquierda por la luz. -->
     <linearGradient id="cintura" x1="{n(CENTRO_X - 5)}" y1="0" x2="{n(CENTRO_X + 5)}" y2="0" gradientUnits="userSpaceOnUse">

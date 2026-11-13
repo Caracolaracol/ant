@@ -12,6 +12,8 @@ segmentos; cuerpo negro).
 - El frente se oscurece hasta el negro al llegar a la cintura, sin borde claro.
 - Profundidad: sombra interior que sigue el contorno y se desvanece suave hacia el centro, y más
   sombra hacia la punta de atrás. Brillo suave arriba a la izquierda.
+- Sin borde en el contorno (el renderizador dejaba un hilo dorado en la orilla; se tapa con un
+  trazo finísimo del mismo tono oscuro de la sombra). Máscaras no: macOS las dibuja pixeladas.
 - Fondo siempre liso `#232031` (el de Mantis) y sin sombra detrás.
 
 Historia: antes el icono eran dos antenas de hormiga (ver el historial de git); se cambió al
