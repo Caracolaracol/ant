@@ -7,7 +7,7 @@ diagonal desde abajo y se afinan hacia la punta, como las antenas reales. Sin ma
 Se probó una versión recta, pero se descartó por ser demasiado simple.
 
 - `generar-svg.py`: genera `ant-icono.svg`. Las antenas son figuras rellenas (no trazos) para
-  poder afinarlas; la forma se ajusta con `PUNTOS` y `GROSORES`.
+  poder afinarlas; la forma se ajusta con `PUNTOS`, `GRUESO`, `FINO` y `CURVA` (afinado suave, no lineal).
 - `ant-icono.svg`: fuente vectorial. Sigue el mismo sistema que Mantis (`~/Code/meeting-recorder/Resources/Brand`):
   lienzo de 64×64, radio 14, fondo `#232031`, figura plana sin filtros ni degradados.
   Antenas en dorado `#d9b45a` (color provisional).
