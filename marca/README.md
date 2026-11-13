@@ -2,15 +2,16 @@
 
 ## Icono
 
-El abdomen (gáster) de la hormiga *Camponotus chilensis* visto desde arriba, vertical, con la
-cintura como un círculo oscuro separado, un poco más arriba. Referencia: fotos de la especie en
+El abdomen (gáster) de la hormiga *Camponotus chilensis* visto desde arriba, vertical y
+centrado en el icono, sin cintura. Referencia: fotos de la especie en
 iNaturalist (gáster ovalado de pelo dorado con tonos anaranjados y anillos marcados entre
 segmentos; cuerpo negro).
 
 - Segmentos de color parejo (ámbar dorado) y halo naranja en cada sutura. Sin degradado propio
   por segmento: si cada uno se aclara al centro, parecen tubos inflados (neumáticos).
-- Franjas oscuras en las suturas, difuminadas hacia ambos lados. La del centro es mucho más
-  ancha y negra: se refuerza encima del brillo con `ANCHO_FRANJA_CENTRAL`.
+- Franjas oscuras en las suturas, difuminadas hacia ambos lados. La del centro es más ancha: se
+  refuerza encima del brillo con una banda café difuminada (`ANCHO_FRANJA_CENTRAL`). No negra
+  ni sólida, porque así parecía un hueco o una ranura.
 - El frente se oscurece hasta el negro al llegar a la cintura, sin borde claro.
 - Volumen: la zona central recibe bastante más luz (brillo dorado) que los costados, que se
   oscurecen con una sombra interior que sigue el contorno y se desvanece suave hacia el centro;
@@ -22,10 +23,11 @@ segmentos; cuerpo negro).
 - Fondo siempre liso `#232031` (el de Mantis) y sin sombra detrás.
 
 Historia: antes el icono eran dos antenas de hormiga (ver el historial de git); se cambió al
-abdomen. Del abdomen se descartaron la versión en diagonal y la vertical sin cintura.
+abdomen. Del abdomen se descartaron la versión en diagonal y las que tenían cintura (pegada o
+como círculo separado).
 
 - `generar-svg.py`: genera `ant-icono.svg`. Forma con `ADELANTE`, `ATRAS`, `ANCHO` y
-  `SEGMENTOS`; cintura con `CINTURA_RADIO` y `CINTURA_SEPARACION`; suturas con `GROSOR_SUTURA`,
+  `SEGMENTOS`; cintura (desactivada) con `CINTURA`, `CINTURA_RADIO` y `CINTURA_SEPARACION`; suturas con `GROSOR_SUTURA`,
   `HALO_PASOS` y `BANDA_PASOS`; profundidad con `SOMBRA_INTERIOR_*`; colores con las constantes
   del principio. `GIRO` y `TORAX` quedan para probar variantes.
 - `ant-icono.svg`: fuente vectorial (lienzo 64×64, radio 14, como Mantis). Sin filtros ni

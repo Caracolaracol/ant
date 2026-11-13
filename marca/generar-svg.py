@@ -45,19 +45,19 @@ BANDA = "#47240a"
 
 # Gáster: centro horizontal, borde de adelante (arriba) y de atrás (abajo), y ancho máximo.
 CENTRO_X = 32
-ADELANTE = 16
-ATRAS = 55
+ADELANTE = 12.5
+ATRAS = 51.5
 ANCHO = 35
 # Alturas (en el centro) donde empieza cada segmento, de adelante hacia atrás, y cuánto se
 # arquean hacia atrás los bordes de los segmentos.
-SEGMENTOS = [16, 26, 35.5, 44]
+SEGMENTOS = [12.5, 22.5, 32, 40.5]
 ARCO = 4.5
 # Giro del conjunto en grados (negativo = la cintura apunta arriba a la izquierda), alrededor del
 # centro del lienzo.
 GIRO = 0
 # Qué se dibuja delante del gáster: la cintura (nudo oscuro) y, opcionalmente, el final del
 # tórax (oscuro, casi negro como el cuerpo de C. chilensis).
-CINTURA = True
+CINTURA = False
 TORAX = False
 # Cintura: radio del círculo y espacio entre él y el frente del gáster.
 CINTURA_RADIO = 3.2
@@ -78,9 +78,10 @@ BANDA_PASOS = 5
 # Grosor relativo de cada sutura (una por segmento, la primera es el frente): la del centro es
 # más gruesa, como se ve en las fotos.
 GROSOR_SUTURA = [1, 1, 1.9, 1]
-# La franja central (la sutura más gruesa) se refuerza encima del brillo con una banda oscura de
-# este ancho (en unidades del lienzo), sólida al centro y difuminada en sus bordes.
-ANCHO_FRANJA_CENTRAL = 3.4
+# La franja central (la sutura más gruesa) se refuerza encima del brillo con una banda café
+# oscura de este ancho (en unidades del lienzo), difuminada desde el centro hacia sus bordes.
+# No es negra ni sólida: así se lee como pigmento más oscuro de la superficie y no como un hueco.
+ANCHO_FRANJA_CENTRAL = 4.6
 
 
 
@@ -197,9 +198,9 @@ sombra_interior = "\n".join(sombra_interior)
 # que se funda con ellas como las demás franjas).
 central = SEGMENTOS[GROSOR_SUTURA.index(max(GROSOR_SUTURA))]
 franja_central = "\n".join(
-    f'    <path fill="none" stroke="{NEGRO}" stroke-opacity="0.38" '
-    f'stroke-width="{n(ANCHO_FRANJA_CENTRAL * (1 - k / 7) + 0.3)}" d="{borde(central)}"/>'
-    for k in range(7)
+    f'    <path fill="none" stroke="{BANDA}" stroke-opacity="0.11" '
+    f'stroke-width="{n(ANCHO_FRANJA_CENTRAL * (1 - k / 12) + 0.2)}" d="{borde(central)}"/>'
+    for k in range(12)
 )
 
 cintura = (
