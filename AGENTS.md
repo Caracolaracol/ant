@@ -41,13 +41,23 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 
 ## Estructura del proyecto
 
-- `src/main.tsx` — punto de entrada; monta React.
+- `src/main.tsx` — punto de entrada; todas las ventanas cargan el mismo `index.html` y aquí se
+  elige qué montar: `#ajustes` → `VentanaAjustes`, si no → `App`.
 - `src/App.tsx` — ventana principal: lista de notas abiertas (`NotaResumen`: ruta, texto,
-  cambios sin guardar), nota activa, barra de estado, título de la ventana y atajos
-  (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [, `Cmd+\`).
-- `src/BarraLateral.tsx` — barra lateral estilo Left: notas abiertas (con botón para cerrar) y
-  los títulos de la nota activa, marcando el título donde está el cursor.
+  cambios sin guardar), nota activa, carpeta de trabajo (de los ajustes), árbol de la carpeta
+  (se relee al cambiar la carpeta, al guardar y al volver el foco a la ventana), barra de estado,
+  título de la ventana y atajos (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [, `Cmd+\`).
+- `src/BarraLateral.tsx` — barra lateral: árbol de la carpeta de trabajo (carpetas plegables,
+  notas abiertas con botón para cerrar), los títulos de la nota activa bajo su archivo, y la
+  sección «Abiertas» para notas fuera de la carpeta o sin guardar.
 - `src/marcadores.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de código).
+- `src/carpeta.ts` — tipo `Entrada` y llamadas a `listar_carpeta` y `abrir_ajustes`; utilidades
+  de rutas (`estaDentro`, `carpetasPadre`).
+- `src/ajustes.ts` — tipo `Ajustes` (igual al de Rust), leer, guardar y escuchar cambios.
+- `src/ajustes/VentanaAjustes.tsx` y `.css` — ventana de Ajustes en dos columnas: áreas a la
+  izquierda (`AREAS`) y el panel del área elegida a la derecha. Los cambios se guardan al instante.
+  Para agregar un ajuste: campo en `Ajustes` (TS y Rust, con `#[serde(default)]`) y su control
+  en el panel.
 - `src/App.css` — variables de color del tema (`--fondo`, `--texto`, `--acento`, …) y la
   distribución. Para cambiar colores, tocar las variables, no los componentes.
 - `src/editor/Editor.tsx` — monta CodeMirror 6 con historial, búsqueda (Cmd+F), Markdown y
@@ -55,14 +65,21 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   `EditorState` (texto, cursor, historial) y se intercambia al cambiar de nota. Expone
   `mostrar`, `olvidar`, `getText`, `irA` y `focus`.
 - `src/editor/tema.ts` — tema de CodeMirror y colores del Markdown, leyendo las variables CSS.
-- `src/notas.ts` — diálogos de abrir/guardar y llamadas a los comandos Rust.
-- `src-tauri/src/lib.rs` — comandos `read_note` y `write_note` (guardado atómico con archivo
-  temporal + renombrar) y registro del plugin de diálogos.
-- `src-tauri/tauri.conf.json` — nombre, identificador y ventana de la app. La barra de título
+- `src/notas.ts` — diálogos de abrir/guardar y llamadas a `read_note` / `write_note`.
+- `src-tauri/src/lib.rs` — arma la app: plugin de diálogos, menú, comandos `read_note`,
+  `write_note` (guardado atómico con archivo temporal + renombrar) y `abrir_ajustes`.
+- `src-tauri/src/menu.rs` — menú propio en español (Ant con «Ajustes…» Cmd+, · Edición ·
+  Ventana) y creación de la ventana de Ajustes (etiqueta `ajustes`). No incluye «Cerrar
+  ventana»: Cmd+W no cierra la ventana principal.
+- `src-tauri/src/ajustes.rs` — ajustes en `ajustes.json` de la carpeta de configuración de la
+  app; al guardar emite `ajustes-cambiados` a todas las ventanas.
+- `src-tauri/src/carpeta.rs` — `listar_carpeta`: árbol de notas (.md, .markdown, .txt),
+  sin ocultas, `node_modules` ni `target`, omitiendo carpetas sin notas.
+- `src-tauri/tauri.conf.json` — nombre, identificador y ventana principal. La barra de título
   nativa está oculta (`titleBarStyle: "Overlay"`, `hiddenTitle`): los botones de la ventana
-  flotan sobre la franja `.arrastre` de `App.tsx`, que sirve para arrastrar la ventana.
-- `src-tauri/capabilities/default.json` — permisos de la interfaz (`core`, `dialog`). Al
-  agregar un plugin, sumar aquí su permiso.
+  flotan sobre la franja `.arrastre`, que sirve para arrastrarla.
+- `src-tauri/capabilities/default.json` — permisos de las ventanas `main` y `ajustes`. Al
+  agregar un plugin o una ventana, sumarlos aquí.
 
 Mantener esta sección al día cuando se agreguen carpetas o módulos.
 

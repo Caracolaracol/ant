@@ -1,15 +1,19 @@
-// Ventana principal: barra lateral con las notas abiertas y sus títulos, el editor y una barra
-// de estado abajo, como en Left. Lleva la lista de notas abiertas (ruta, texto y si tienen
-// cambios sin guardar), cuál está visible, y los atajos de teclado:
+// Ventana principal: barra lateral con la carpeta de trabajo y los títulos de la nota visible,
+// el editor y una barra de estado abajo, como en Left. Lleva la lista de notas abiertas (ruta,
+// texto y si tienen cambios sin guardar), cuál está visible, la carpeta de trabajo (de Ajustes)
+// y los atajos de teclado:
 //   Cmd+N nueva · Cmd+O abrir · Cmd+S guardar · Cmd+Shift+S guardar como
 //   Cmd+Shift+] / Cmd+Shift+[ nota siguiente / anterior · Cmd+\ mostrar u ocultar la barra lateral
+// Cmd+, (Ajustes) lo maneja el menú de la app, en Rust.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { Editor, EditorHandle } from "./editor/Editor";
 import { BarraLateral, NotaResumen } from "./BarraLateral";
-import { abrirNota, elegirRutaGuardado, guardarNota, nombreArchivo } from "./notas";
+import { escucharAjustes, leerAjustes } from "./ajustes";
+import { Entrada, abrirAjustes, listarCarpeta } from "./carpeta";
+import { elegirNota, elegirRutaGuardado, guardarNota, leerNota, nombreArchivo } from "./notas";
 import "./App.css";
 
 /** Cuenta palabras, líneas y caracteres del texto, para la barra de estado. */
@@ -25,12 +29,18 @@ const nuevoId = () => `nota-${++contador}`;
 /** Nota vacía y sin ruta, la que se crea con Cmd+N o al cerrar la última. */
 const notaVacia = (): NotaResumen => ({ id: nuevoId(), ruta: null, texto: "", sucio: false });
 
+/** Une una carpeta y un nombre de archivo con el separador que use la carpeta. */
+const unir = (carpeta: string, nombre: string) =>
+  `${carpeta.replace(/[\\/]+$/, "")}${carpeta.includes("\\") ? "\\" : "/"}${nombre}`;
+
 function App() {
   const editor = useRef<EditorHandle>(null);
   const [notas, setNotas] = useState<NotaResumen[]>(() => [notaVacia()]);
   const [activa, setActiva] = useState(() => notas[0].id);
   const [cursor, setCursor] = useState(0);
   const [barraVisible, setBarraVisible] = useState(true);
+  const [carpeta, setCarpeta] = useState<string | null>(null);
+  const [arbol, setArbol] = useState<Entrada[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Copias en refs para que los atajos y callbacks lean siempre el valor más reciente.
@@ -38,6 +48,36 @@ function App() {
   notasRef.current = notas;
   const activaRef = useRef(activa);
   activaRef.current = activa;
+  const carpetaRef = useRef(carpeta);
+  carpetaRef.current = carpeta;
+
+  /** Muestra un error en la barra de estado. */
+  const fallo = useCallback((e: unknown) => setError(String(e)), []);
+
+  // Carga la carpeta de trabajo al iniciar y la actualiza cuando se cambia en Ajustes.
+  useEffect(() => {
+    leerAjustes().then((a) => setCarpeta(a.carpeta), fallo);
+    const dejar = escucharAjustes((a) => setCarpeta(a.carpeta));
+    return () => void dejar.then((f) => f());
+  }, [fallo]);
+
+  /** Vuelve a leer el árbol de la carpeta de trabajo (tras guardar, o al volver a la ventana). */
+  const refrescarArbol = useCallback(() => {
+    const dir = carpetaRef.current;
+    if (!dir) return setArbol([]);
+    listarCarpeta(dir).then(setArbol, (e) => {
+      setArbol([]);
+      fallo(e);
+    });
+  }, [fallo]);
+
+  // Lee el árbol cuando cambia la carpeta y cada vez que la ventana recupera el foco, por si se
+  // crearon, borraron o movieron notas desde fuera de la app (Finder, Obsidian, etc.).
+  useEffect(refrescarArbol, [carpeta, refrescarArbol]);
+  useEffect(() => {
+    const dejar = getCurrentWindow().onFocusChanged(({ payload: enfocada }) => enfocada && refrescarArbol());
+    return () => void dejar.then((f) => f());
+  }, [refrescarArbol]);
 
   // Al cambiar la nota activa, el editor muestra su estado (o la crea con su texto la primera vez).
   useEffect(() => {
@@ -59,13 +99,14 @@ function App() {
     setActiva(nota.id);
   }, []);
 
-  /** Abre un archivo; si ya estaba abierto, solo lo muestra. Si la única nota es una vacía, la reemplaza. */
-  const abrir = useCallback(async () => {
-    const archivo = await abrirNota();
-    if (!archivo) return;
-    const ya = notasRef.current.find((n) => n.ruta === archivo.ruta);
+  /**
+   * Abre la nota de `ruta`; si ya estaba abierta, solo la muestra.
+   * Si la única nota abierta es una vacía sin guardar, la reemplaza en vez de acumularla.
+   */
+  const abrirRuta = useCallback(async (ruta: string) => {
+    const ya = notasRef.current.find((n) => n.ruta === ruta);
     if (ya) return setActiva(ya.id);
-    const nota = { id: nuevoId(), ruta: archivo.ruta, texto: archivo.texto, sucio: false };
+    const nota = { id: nuevoId(), ruta, texto: await leerNota(ruta), sucio: false };
     const [unica] = notasRef.current;
     if (notasRef.current.length === 1 && !unica.ruta && !unica.texto) {
       editor.current?.olvidar(unica.id);
@@ -74,16 +115,29 @@ function App() {
     } else agregar(nota);
   }, [agregar]);
 
-  /** Guarda la nota activa; si todavía no tiene ruta, o se pide «guardar como», pregunta dónde. */
+  /** Muestra el diálogo «Abrir» (empezando en la carpeta de trabajo) y abre la nota elegida. */
+  const abrir = useCallback(async () => {
+    const ruta = await elegirNota(carpetaRef.current);
+    if (ruta) await abrirRuta(ruta);
+  }, [abrirRuta]);
+
+  /**
+   * Guarda la nota activa; si todavía no tiene ruta, o se pide «guardar como», pregunta dónde,
+   * proponiendo la carpeta de trabajo. Después refresca el árbol para que aparezca la nota nueva.
+   */
   const guardar = useCallback(async (como = false) => {
     const nota = notasRef.current.find((n) => n.id === activaRef.current);
     if (!nota) return;
     let destino = nota.ruta;
-    if (!destino || como) destino = await elegirRutaGuardado(nota.ruta ? nombreArchivo(nota.ruta) : undefined);
+    if (!destino || como) {
+      const nombre = nota.ruta ? nombreArchivo(nota.ruta) : "Nota.md";
+      destino = await elegirRutaGuardado(carpetaRef.current ? unir(carpetaRef.current, nombre) : nombre);
+    }
     if (!destino) return;
     await guardarNota(destino, editor.current?.getText(nota.id) ?? "");
     actualizar(nota.id, { ruta: destino, sucio: false });
-  }, [actualizar]);
+    refrescarArbol();
+  }, [actualizar, refrescarArbol]);
 
   /** Cierra una nota (preguntando si tiene cambios sin guardar) y muestra la vecina. */
   const cerrar = useCallback(async (id: string) => {
@@ -131,11 +185,11 @@ function App() {
       else if (e.shiftKey && e.code === "BracketLeft") accion = () => moverse(-1);
       if (!accion) return;
       e.preventDefault();
-      Promise.resolve(accion()).then(() => setError(null), (err) => setError(String(err)));
+      Promise.resolve(accion()).then(() => setError(null), fallo);
     };
     window.addEventListener("keydown", alTeclear);
     return () => window.removeEventListener("keydown", alTeclear);
-  }, [guardar, abrir, agregar, moverse]);
+  }, [guardar, abrir, agregar, moverse, fallo]);
 
   const nota = notas.find((n) => n.id === activa) ?? notas[0];
   const nombre = nota.ruta ? nombreArchivo(nota.ruta) : "Sin título";
@@ -155,12 +209,16 @@ function App() {
       <div className="cuerpo">
         {barraVisible && (
           <BarraLateral
+            carpeta={carpeta}
+            arbol={arbol}
             notas={notas}
             activa={activa}
             cursor={cursor}
             onElegir={setActiva}
-            onCerrar={(id) => cerrar(id).catch((err) => setError(String(err)))}
+            onAbrirRuta={(ruta) => abrirRuta(ruta).then(() => setError(null), fallo)}
+            onCerrar={(id) => cerrar(id).catch(fallo)}
             onSaltar={(pos) => editor.current?.irA(pos)}
+            onAbrirAjustes={() => abrirAjustes().catch(fallo)}
           />
         )}
         <Editor ref={editor} onChange={alCambiar} onCursor={setCursor} />

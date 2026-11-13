@@ -7,17 +7,18 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 /** Tipos de archivo que se ofrecen en los diálogos. */
 const filtros = [{ name: "Notas", extensions: ["md", "markdown", "txt"] }];
 
-/** Muestra el diálogo «Abrir» y devuelve la ruta elegida y su texto, o `null` si se canceló. */
-export async function abrirNota(): Promise<{ ruta: string; texto: string } | null> {
-  const ruta = await open({ multiple: false, directory: false, filters: filtros });
-  if (typeof ruta !== "string") return null;
-  const texto = await invoke<string>("read_note", { path: ruta });
-  return { ruta, texto };
+/** Muestra el diálogo «Abrir» (empezando en `carpeta`, si hay) y devuelve la ruta elegida, o `null`. */
+export async function elegirNota(carpeta?: string | null): Promise<string | null> {
+  const ruta = await open({ multiple: false, directory: false, filters: filtros, defaultPath: carpeta ?? undefined });
+  return typeof ruta === "string" ? ruta : null;
 }
 
-/** Muestra el diálogo «Guardar como» y devuelve la ruta elegida, o `null` si se canceló. */
-export async function elegirRutaGuardado(sugerida?: string): Promise<string | null> {
-  return save({ defaultPath: sugerida ?? "Nota.md", filters: filtros });
+/** Lee el texto de una nota. */
+export const leerNota = (ruta: string) => invoke<string>("read_note", { path: ruta });
+
+/** Muestra el diálogo «Guardar como» con `sugerida` como ruta inicial y devuelve la elegida, o `null`. */
+export async function elegirRutaGuardado(sugerida: string): Promise<string | null> {
+  return save({ defaultPath: sugerida, filters: filtros });
 }
 
 /** Escribe el texto en la ruta indicada. */
@@ -27,5 +28,5 @@ export async function guardarNota(ruta: string, texto: string): Promise<void> {
 
 /** Devuelve solo el nombre del archivo de una ruta (sirve en macOS, Linux y Windows). */
 export function nombreArchivo(ruta: string): string {
-  return ruta.split(/[\\/]/).pop() ?? ruta;
+  return ruta.split(/[\\/]/).filter(Boolean).pop() ?? ruta;
 }

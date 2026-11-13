@@ -69,12 +69,70 @@ body,
   user-select: none;
 }
 
+.barra-seccion + .barra-seccion {
+  margin-top: 16px;
+}
+
+/* Título de cada sección: «Abiertas» o el nombre de la carpeta de trabajo. */
+.barra-encabezado {
+  padding-left: 4px;
+  font-weight: 700;
+  color: var(--texto);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.barra-carpeta {
+  display: flex;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.barra-carpeta:hover {
+  color: var(--texto);
+}
+
+.barra-flecha {
+  width: 10px;
+  flex-shrink: 0;
+}
+
+/* Notas del árbol: las que no tienen flecha se corren para alinearse con el nombre de las carpetas. */
 .barra-nota {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding-right: 8px;
   cursor: pointer;
+}
+
+.barra-nota:hover {
+  color: var(--texto);
+}
+
+/* Las notas abiertas (aunque no estén visibles) se ven un poco más claras que las demás. */
+.barra-nota.abierta {
+  color: var(--texto);
+}
+
+.barra-vacia {
+  padding: 0 8px 8px 4px;
+}
+
+.barra-boton {
+  margin-left: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--seleccion);
+  border-radius: 6px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.barra-boton:hover {
+  border-color: var(--acento);
 }
 
 .barra-nota.activa {

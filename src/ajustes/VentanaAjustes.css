@@ -1,0 +1,95 @@
+/* Estilos de la ventana de Ajustes: columna de áreas a la izquierda y panel de opciones a la
+   derecha. Usa las mismas variables de color que la ventana principal (App.css). */
+
+.ajustes {
+  display: flex;
+  height: 100%;
+  font-family: var(--fuente);
+  font-size: 13px;
+}
+
+/* Columna de áreas; el margen superior deja espacio a los botones de la ventana. */
+.ajustes-areas {
+  width: 170px;
+  flex-shrink: 0;
+  padding: 44px 8px 16px;
+  background: var(--fondo-bajo);
+  user-select: none;
+}
+
+.ajustes-area {
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.ajustes-area:hover {
+  color: var(--texto);
+}
+
+.ajustes-area.activa {
+  color: var(--titulo);
+  background: var(--seleccion);
+}
+
+.ajustes-panel {
+  flex: 1;
+  min-width: 0;
+  padding: 0 28px 24px;
+  overflow-y: auto;
+}
+
+.ajustes-panel h1 {
+  margin: 0 0 20px;
+  font-size: 18px;
+  color: var(--titulo);
+}
+
+.ajuste-titulo {
+  font-weight: 700;
+  color: var(--titulo);
+}
+
+.ajuste-ayuda {
+  margin: 4px 0 12px;
+  color: var(--tenue);
+}
+
+/* Ruta de la carpeta (cortada con «…» si es larga) y sus botones. */
+.ajuste-carpeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ajuste-carpeta code {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--fondo-bajo);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  direction: rtl; /* si no cabe, se corta el principio de la ruta y se ve el nombre de la carpeta */
+  text-align: left;
+}
+
+.ajuste-carpeta button {
+  padding: 6px 12px;
+  border: 1px solid var(--seleccion);
+  border-radius: 6px;
+  background: var(--fondo-bajo);
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ajuste-carpeta button:hover {
+  border-color: var(--acento);
+}
+
+.ajustes-error {
+  color: var(--acento);
+}
