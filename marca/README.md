@@ -2,8 +2,8 @@
 
 ## Icono
 
-Dos antenas de hormiga acodadas (escapo largo y flagelo doblado hacia afuera, con la maza en la
-punta), saliendo en diagonal desde abajo hacia arriba.
+Dos antenas de hormiga rectas y gruesas, con la maza redonda en la punta, saliendo en diagonal
+desde abajo hacia arriba. Se probó una versión acodada, pero se prefirió la recta por simple.
 
 - `ant-icono.svg`: fuente vectorial. Sigue el mismo sistema que Mantis (`~/Code/meeting-recorder/Resources/Brand`):
   lienzo de 64×64, radio 14, fondo `#232031`, figura plana sin filtros ni degradados.

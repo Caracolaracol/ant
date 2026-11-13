@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">Ant · antenas</title>
-  <desc id="desc">Dos antenas de hormiga acodadas, saliendo en diagonal desde abajo, en dorado sobre fondo oscuro.</desc>
+  <desc id="desc">Dos antenas de hormiga rectas, saliendo en diagonal desde abajo, en dorado sobre fondo oscuro.</desc>
   <rect width="64" height="64" rx="14" fill="#232031"/>
-  <path d="M29 52L23 31L13 19M35 52L41 31L51 19" fill="none" stroke="#d9b45a" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path fill="#d9b45a" d="M13 19m-4.2 0a4.2 4.2 0 1 0 8.4 0a4.2 4.2 0 1 0-8.4 0M51 19m-4.2 0a4.2 4.2 0 1 0 8.4 0a4.2 4.2 0 1 0-8.4 0"/>
+  <path d="M28 51L17 19M36 51L47 19" fill="none" stroke="#d9b45a" stroke-width="7.5" stroke-linecap="round"/>
+  <path fill="#d9b45a" d="M17 19m-5.5 0a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0M47 19m-5.5 0a5.5 5.5 0 1 0 11 0a5.5 5.5 0 1 0-11 0"/>
 </svg>
