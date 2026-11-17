@@ -1,0 +1,241 @@
+---
+// Documentación de Ant en inglés o español. A diferencia de la portada, se lee de arriba hacia
+// abajo: es una sola cámara gigante (pegada a los bordes de la ventana) con un índice fijo a la
+// izquierda y un tema tras otro, separados por un rastro de hormigas. Cada tema tiene un `id`
+// para enlazarlo directo (por ejemplo /documentation/#shortcuts) y un `data-nombre` para el
+// recorrido de abajo.
+import Nido from '../layouts/Nido.astro';
+import { sitio, traductor, type Idioma } from '../lib/sitio';
+
+interface Props { idioma: Idioma; }
+const { idioma } = Astro.props;
+const t = traductor(idioma);
+
+// Temas en orden: id (en el idioma de la página) y nombre para el índice.
+const temas = [
+  { id: t('install', 'instalar'), nombre: t('Install', 'Instalar') },
+  { id: t('getting-started', 'primeros-pasos'), nombre: t('Getting started', 'Primeros pasos') },
+  { id: t('writing', 'escribir'), nombre: t('Writing and saving', 'Escribir y guardar') },
+  { id: t('sidebar', 'barra-lateral'), nombre: t('Sidebar', 'Barra lateral') },
+  { id: t('pins', 'fijados'), nombre: t('Pins', 'Fijados') },
+  { id: t('search', 'buscar'), nombre: t('Find and replace', 'Buscar y reemplazar') },
+  { id: t('shortcuts', 'atajos'), nombre: t('Shortcuts', 'Atajos') },
+  { id: t('settings', 'ajustes'), nombre: t('Settings', 'Ajustes') },
+  { id: t('development', 'desarrollo'), nombre: t('Development', 'Desarrollo') },
+  { id: t('icon', 'icono'), nombre: t('Icon', 'Icono') },
+];
+const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, desarrollo, icono] = temas;
+---
+<Nido
+  idioma={idioma}
+  seccion="docs"
+  modo="vertical"
+  titulo={t('Documentation · Ant', 'Documentación · Ant')}
+  descripcion={t(
+    'How to install and use Ant: working folder, pins, shortcuts, settings, and how to build it from source.',
+    'Cómo instalar y usar Ant: carpeta de trabajo, fijados, atajos, ajustes y cómo compilarla desde el código.',
+  )}
+>
+  <div class="hueco gigante">
+    <nav class="gigante-indice" aria-label={t('Contents', 'Contenido')}>
+      <p class="etiqueta">{t('Contents', 'Contenido')}</p>
+      <ol>
+        {temas.map((tema) => <li><a href={`#${tema.id}`}>{tema.nombre}</a></li>)}
+      </ol>
+    </nav>
+
+    <article>
+      <header class="gigante-titulo">
+        <p class="etiqueta">{t('Documentation', 'Documentación')}</p>
+        <h1>{t('Inside the nest', 'Dentro del nido')}</h1>
+        <p class="lema">{t('Everything Ant does, one chamber at a time.', 'Todo lo que hace Ant, cámara por cámara.')}</p>
+        {idioma === 'en' && <p class="tenue">Ant’s interface is in Spanish for now. Menu and button names appear here as they show up in the app, with their meaning in parentheses.</p>}
+      </header>
+
+      <section class="tema" id={instalar.id} data-nombre={instalar.nombre}>
+        <p class="etiqueta">01</p>
+        <h2>{t('Build Ant', 'Compilar Ant')}</h2>
+        <p>{t('For now, Ant is installed by building it from source. You need:', 'Por ahora Ant se instala compilándola desde el código. Necesitas:')}</p>
+        <ul>
+          <li>{t('macOS (Tauri can also build Ant for Windows and Linux, but it is tested on Mac)', 'macOS (Tauri también puede compilar Ant para Windows y Linux, pero se prueba en Mac)')}</li>
+          <li><a href="https://www.rust-lang.org/tools/install">Rust</a> {t('(stable)', 'estable')}</li>
+          <li>{t('Node.js 22 or newer and', 'Node.js 22 o superior y')} <a href="https://pnpm.io/installation">pnpm</a></li>
+        </ul>
+<pre><code><span class="pr">$ </span>git clone {sitio.repo}.git
+<span class="pr">$ </span>cd ant
+<span class="pr">$ </span>pnpm install
+<span class="pr">$ </span>pnpm tauri build</code></pre>
+        <p>{t('The app ends up in', 'La app queda en')} <code>src-tauri/target/release/bundle/macos/Ant.app</code> {t('(plus a', '(y un')} <code>.dmg</code> {t('in', 'en')} <code>bundle/dmg/</code>). {t('Drag it to Applications.', 'Arrástrala a Aplicaciones.')}</p>
+        <p class="tenue">{t(
+          'Ant is not signed by Apple. If you open it from a downloaded .dmg, macOS may say it cannot verify it: right-click the app → Open.',
+          'Ant no está firmada por Apple. Si la abres desde un .dmg descargado, macOS puede avisar que no la reconoce: clic derecho sobre la app → Abrir.',
+        )}</p>
+      </section>
+
+      <section class="tema" id={primeros.id} data-nombre={primeros.nombre}>
+        <p class="etiqueta">02</p>
+        <h2>{t('Choose your folder', 'Elige tu carpeta')}</h2>
+        <p>{t(
+          'Ant works on a working folder: the folder where you keep your texts. It can be one you already have, such as your Obsidian vault or a folder full of chapters.',
+          'Ant trabaja sobre una carpeta de trabajo: la carpeta donde guardas tus textos. Puede ser una que ya tengas, como tu bóveda de Obsidian o una carpeta llena de capítulos.',
+        )}</p>
+        <ol>
+          <li>{t('Open', 'Abre')} <b>Ant → Ajustes…</b> {t('(Settings,', '(')}<kbd>⌘</kbd> <kbd>,</kbd>).</li>
+          <li>{t('In', 'En')} <b>General</b>, {t('click', 'pulsa')} <b>Elegir…</b> {t('(Choose…) and pick the folder.', 'y selecciona la carpeta.')}</li>
+          <li>{t('The sidebar shows the folder right away.', 'La barra lateral muestra la carpeta al instante.')}</li>
+        </ol>
+        <h3>{t('What it shows', 'Qué muestra')}</h3>
+        <ul>
+          <li>{t('Notes ending in', 'Notas')} <code>.md</code>, <code>.markdown</code> {t('and', 'y')} <code>.txt</code>{t(', with their subfolders.', ', con sus subcarpetas.')}</li>
+          <li>{t('Hidden folders,', 'Se saltan las carpetas ocultas,')} <code>node_modules</code>, <code>target</code> {t('and folders without notes are skipped.', 'y las carpetas sin notas.')}</li>
+          <li>{t('It is read again when you save and every time you come back to the window, in case you moved something from Finder or another app.', 'Se vuelve a leer al guardar y cada vez que vuelves a la ventana, por si moviste algo desde Finder u otra app.')}</li>
+        </ul>
+        <p class="tenue">{t('Without a folder, Ant still works: open any note with', 'Sin carpeta elegida, Ant igual sirve: abre cualquier nota con')} <kbd>⌘</kbd> <kbd>O</kbd>.</p>
+      </section>
+
+      <section class="tema" id={escribir.id} data-nombre={escribir.nombre}>
+        <p class="etiqueta">03</p>
+        <h2>{t('Plain text, as you write it', 'Texto plano, tal cual')}</h2>
+        <p>{t(
+          'Notes are saved exactly as you type them, in Markdown. Ant colors headings, emphasis, links and code blocks, but never changes the file.',
+          'Las notas se guardan exactamente como las escribes, en Markdown. Ant colorea los títulos, el énfasis, los enlaces y los bloques de código, pero nunca cambia el archivo.',
+        )}</p>
+        <ul>
+          <li><kbd>⌘</kbd> <kbd>N</kbd> {t('creates a new note.', 'crea una nota nueva.')}</li>
+          <li><kbd>⌘</kbd> <kbd>S</kbd> {t('saves it; the first time, it suggests your working folder.', 'la guarda; la primera vez propone tu carpeta de trabajo.')}</li>
+          <li><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd> {t('saves it under another name.', 'la guarda con otro nombre.')}</li>
+        </ul>
+        <div class="columnas">
+          <div>
+            <h3>{t('Unsaved changes', 'Cambios sin guardar')}</h3>
+            <p>{t('They are marked with', 'Se marcan con')} <code>•</code> {t('in the window title and with', 'en el título de la ventana y con')} <code>*</code> {t('in the status bar. If you close a note with changes, Ant asks before discarding them.', 'en la barra de estado. Si cierras una nota con cambios, Ant pregunta antes de descartarlos.')}</p>
+          </div>
+          <div>
+            <h3>{t('Status bar', 'Barra de estado')}</h3>
+            <p>{t('At the bottom: the note’s name and its word, line and character count. Errors show up there too, for example when a folder cannot be written.', 'Abajo: el nombre de la nota y el conteo de palabras, líneas y caracteres. Ahí también aparecen los errores, por ejemplo si falta permiso para escribir.')}</p>
+          </div>
+          <div>
+            <h3>{t('Safe saves', 'Guardado seguro')}</h3>
+            <p>{t('Ant first writes a temporary file and then renames it over the note, so a file is never left half-written.', 'Ant escribe primero un archivo temporal y después lo renombra sobre la nota, así nunca queda un archivo a medio escribir.')}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tema" id={lateral.id} data-nombre={lateral.nombre}>
+        <p class="etiqueta">04</p>
+        <h2>{t('Three sections', 'Tres secciones')}</h2>
+        <p>{t('From top to bottom:', 'De arriba hacia abajo:')}</p>
+        <ol>
+          <li><b>{t('Fijados (Pinned)', 'Fijados')}</b>{t(': what you pinned to the top (see the next section).', ': lo que fijaste arriba (ver la siguiente sección).')}</li>
+          <li><b>{t('Abiertas (Open)', 'Abiertas')}</b>{t(': open notes that are not in your folder, such as a new unsaved one.', ': notas abiertas que no están en tu carpeta, como una nueva sin guardar.')}</li>
+          <li><b>{t('Your folder', 'Tu carpeta')}</b>{t(': the tree of subfolders and notes. Folders fold and unfold with a click.', ': el árbol de subcarpetas y notas. Las carpetas se pliegan con un clic.')}</li>
+        </ol>
+        <p><kbd>⌘</kbd> <kbd>\</kbd> {t('shows or hides it.', 'la muestra u oculta.')}</p>
+        <div class="columnas">
+          <div>
+            <h3>{t('The note’s headings', 'Títulos de la nota')}</h3>
+            <p>{t('Under the open note you see its headings (', 'Bajo la nota abierta aparecen sus títulos (')}<code>#</code> {t('to', 'a')} <code>######</code>{t('), indented by level. Click one to move the cursor there. The heading you are writing under is highlighted.', '), con sangría según el nivel. Un clic lleva el cursor a ese título. El título bajo el que estás escribiendo se resalta.')}</p>
+            <p class="tenue"><code>#</code> {t('inside code blocks does not count as a heading.', 'dentro de bloques de código no cuenta como título.')}</p>
+          </div>
+          <div>
+            <h3>{t('Several notes', 'Varias notas')}</h3>
+            <p>{t('Open notes look brighter in the tree and have an', 'Las notas abiertas se ven más claras en el árbol y tienen una')} <b>×</b> {t('to close them. Switch between them with', 'para cerrarlas. Cambia entre ellas con')} <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>]</kbd> {t('and', 'y')} <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tema" id={fijados.id} data-nombre={fijados.nombre}>
+        <p class="etiqueta">05</p>
+        <h2>{t('What you use most, on top', 'Lo que más usas, arriba')}</h2>
+        <p>{t('Like pinned tabs in a browser: right-click a note or folder in the tree →', 'Como las pestañas fijadas de un navegador: clic derecho sobre una nota o carpeta del árbol →')} <b>Fijar arriba</b>{t(' (Pin to top). It moves to the pinned section and is no longer repeated below.', '. Pasa a la sección de fijados y deja de repetirse más abajo.')}</p>
+        <ul>
+          <li>{t('To unpin it: right-click →', 'Para soltarla: clic derecho →')} <b>Quitar de fijados</b>{t(' (Unpin).', '.')}</li>
+          <li>{t('Each working folder has its own pins: when you switch folders, you see that folder’s pins.', 'Cada carpeta de trabajo tiene sus propios fijados: si cambias de carpeta, ves los de esa.')}</li>
+          <li>{t('If something pinned is deleted or moved outside Ant, it stays in the list, dimmed and in italics, until you remove it.', 'Si borras o mueves algo fijado fuera de Ant, queda en la lista en gris y cursiva hasta que lo quites.')}</li>
+        </ul>
+      </section>
+
+      <section class="tema" id={buscar.id} data-nombre={buscar.nombre}>
+        <p class="etiqueta">06</p>
+        <h2>{t('Inside the note', 'Dentro de la nota')}</h2>
+        <p><kbd>⌘</kbd> <kbd>F</kbd> {t('opens the search panel below the editor. From there you can:', 'abre el panel de búsqueda abajo del editor. Desde ahí puedes:')}</p>
+        <ul>
+          <li>{t('go to the next or previous match', 'ir a la coincidencia siguiente o anterior')} (<kbd>Enter</kbd> / <kbd>⇧</kbd> <kbd>Enter</kbd>);</li>
+          <li>{t('match case, search whole words or use regular expressions;', 'distinguir mayúsculas, buscar palabras completas o usar expresiones regulares;')}</li>
+          <li>{t('replace one match or all of them.', 'reemplazar una coincidencia o todas.')}</li>
+        </ul>
+        <p class="tenue">{t('When you select a word, its other appearances on screen are highlighted.', 'Al seleccionar una palabra, sus otras apariciones en pantalla se resaltan.')}</p>
+      </section>
+
+      <section class="tema" id={atajos.id} data-nombre={atajos.nombre}>
+        <p class="etiqueta">07</p>
+        <h2>{t('All shortcuts', 'Todos los atajos')}</h2>
+        <dl class="atajos dos">
+          <dt><kbd>⌘</kbd> <kbd>N</kbd></dt><dd>{t('New note', 'Nueva nota')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>O</kbd></dt><dd>{t('Open note', 'Abrir nota')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>S</kbd></dt><dd>{t('Save', 'Guardar')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd></dt><dd>{t('Save as', 'Guardar como')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>]</kbd></dt><dd>{t('Next note', 'Nota siguiente')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd></dt><dd>{t('Previous note', 'Nota anterior')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>\</kbd></dt><dd>{t('Show or hide the sidebar', 'Mostrar u ocultar la barra')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>,</kbd></dt><dd>{t('Settings', 'Ajustes')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>F</kbd></dt><dd>{t('Find and replace', 'Buscar y reemplazar')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>Z</kbd></dt><dd>{t('Undo', 'Deshacer')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>Z</kbd></dt><dd>{t('Redo', 'Rehacer')}</dd>
+          <dt><kbd>Tab</kbd></dt><dd>{t('Indent line', 'Sangrar línea')}</dd>
+        </dl>
+        <p class="tenue" style="margin-top: 18px">{t('On Windows and Linux,', 'En Windows y Linux,')} <kbd>⌘</kbd> {t('is', 'es')} <kbd>Ctrl</kbd>. <kbd>⌘</kbd> <kbd>W</kbd> {t('does not close the main window, so you cannot lose it by accident.', 'no cierra la ventana principal, para no perderla por accidente.')}</p>
+      </section>
+
+      <section class="tema" id={ajustes.id} data-nombre={ajustes.nombre}>
+        <p class="etiqueta">08</p>
+        <h2>{t('A window of its own', 'Una ventana aparte')}</h2>
+        <p><kbd>⌘</kbd> <kbd>,</kbd> {t('opens Settings in its own window: areas on the left and their options on the right. Changes apply right away, with no save button.', 'abre los Ajustes en su propia ventana: las áreas a la izquierda y sus opciones a la derecha. Los cambios se aplican al instante, sin botón de guardar.')} <kbd>⌘</kbd> <kbd>W</kbd> {t('closes it.', 'la cierra.')}</p>
+        <h3>{t('Where they are stored', 'Dónde se guardan')}</h3>
+        <p>{t('In a JSON file, in the app’s configuration folder:', 'En un archivo JSON, en la carpeta de configuración de la app:')}</p>
+<pre><code>~/Library/Application Support/cl.agus.ant/ajustes.json</code></pre>
+<pre><code>{"{"}
+  "carpeta": "{t('/Users/you/writing', '/Users/tu/escritos')}",
+  "fijados": ["{t('/Users/you/writing/novel', '/Users/tu/escritos/novela')}"]
+{"}"}</code></pre>
+        <p class="tenue">{t('On Windows it lives in', 'En Windows queda en')} <code>%APPDATA%\cl.agus.ant\</code> {t('and on Linux in', 'y en Linux en')} <code>~/.config/cl.agus.ant/</code>.</p>
+      </section>
+
+      <section class="tema" id={desarrollo.id} data-nombre={desarrollo.nombre}>
+        <p class="etiqueta">09</p>
+        <h2>{t('How it is built', 'Cómo está hecha')}</h2>
+        <ul>
+          <li><b>Tauri 2</b> {t('(Rust,', '(Rust,')} <code>src-tauri/</code>){t(': the window, the menus, reading and writing notes, listing the folder and the settings.', ': la ventana, los menús, leer y escribir notas, listar la carpeta y los ajustes.')}</li>
+          <li><b>React + TypeScript + Vite</b> (<code>src/</code>){t(': the sidebar, the status bar and the Settings window.', ': la barra lateral, la barra de estado y la ventana de Ajustes.')}</li>
+          <li><b>CodeMirror 6</b> (<code>src/editor/</code>){t(': the editor. A single view for every note; each note keeps its own state.', ': el editor. Una sola vista para todas las notas; cada una guarda su propio estado.')}</li>
+        </ul>
+        <h3>{t('Commands', 'Comandos')}</h3>
+<pre><code><span class="pr">$ </span>pnpm tauri dev    <span class="pr"># {t('app with hot reload', 'app con recarga en caliente')}</span>
+<span class="pr">$ </span>pnpm build        <span class="pr"># {t('type-check and build the interface', 'revisa tipos y compila la interfaz')}</span>
+<span class="pr">$ </span>cd src-tauri && cargo check
+<span class="pr">$ </span>pnpm tauri build  <span class="pr"># {t('final .app and .dmg', '.app y .dmg finales')}</span></code></pre>
+        <div class="columnas">
+          <div>
+            <h3>{t('CodeMirror patch', 'Parche de CodeMirror')}</h3>
+            <p>{t('When selecting by dragging to the edge, CodeMirror scrolled in jumps every 50 ms. The patch in', 'Al seleccionar arrastrando hasta el borde, CodeMirror desplazaba el texto a saltos cada 50 ms. El parche en')} <code>patches/</code> {t('makes it move on every frame, and faster. pnpm applies it on install.', 'hace que avance en cada cuadro de pantalla, y más rápido. pnpm lo aplica al instalar.')}</p>
+          </div>
+          <div>
+            <h3>{t('Conventions', 'Convenciones')}</h3>
+            <p><code>AGENTS.md</code> {t('describes every file and the project’s conventions. Code comments are written in Spanish, one on top of every file and function.', 'describe cada archivo y las convenciones del proyecto. Los comentarios del código van en español, uno al inicio de cada archivo y función.')}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="tema" id={icono.id} data-nombre={icono.nombre}>
+        <p class="etiqueta">10</p>
+        <h2>{t('The ant’s face', 'La cara de la hormiga')}</h2>
+        <p>{t('Flat and one color: bent antennae, eyes and mandibles, in yellow', 'Plano y de un color: antenas acodadas, ojos y mandíbulas, en amarillo')} <code>#e5ea15</code> {t('on', 'sobre')} <code>#1d1d20</code>. {t('The source is', 'La fuente es')} <code>marca/ant-icono.svg</code>{t('; this site copies it when it is built.', '; este sitio la copia al compilar.')}</p>
+<pre><code><span class="pr">$ </span>swift marca/generar-icono.swift \
+    marca/ant-icono.svg marca/ant-icono-1024.png
+<span class="pr">$ </span>pnpm tauri icon marca/ant-icono-1024.png
+<span class="pr">$ </span>rm -rf src-tauri/icons/android src-tauri/icons/ios</code></pre>
+        <p class="tenue">{t('Something unclear?', '¿Algo no está claro?')} <a href={`${sitio.repo}/issues`}>{t('Open an issue on GitHub ↗', 'Abre un issue en GitHub ↗')}</a></p>
+      </section>
+    </article>
+  </div>
+</Nido>

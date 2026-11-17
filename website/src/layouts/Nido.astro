@@ -7,16 +7,27 @@
 // El scroll es solo horizontal: la rueda del mouse (que mueve en vertical) se traduce a
 // horizontal, y las flechas, Re Pág/Av Pág, Inicio y Fin saltan entre cámaras. Sin JavaScript
 // el nido igual se recorre con el scroll horizontal del navegador.
+//
+// El sitio está en inglés y en español: `idioma` elige los textos y el selector EN / ES lleva a
+// la misma página en el otro idioma.
 import '../styles/global.css';
 import Hormiga from '../components/Hormiga.astro';
-import { ruta, sitio } from '../lib/sitio';
+import { ruta, rutaDe, sitio, traductor, type Idioma, type Seccion } from '../lib/sitio';
 
-interface Props { titulo: string; descripcion: string; seccion: 'inicio' | 'docs'; }
-const { titulo, descripcion, seccion } = Astro.props;
+interface Props {
+  titulo: string;
+  descripcion: string;
+  seccion: Seccion;
+  idioma: Idioma;
+  /** `horizontal` (la portada: cámaras en fila) o `vertical` (la documentación: una sola cámara gigante). */
+  modo?: 'horizontal' | 'vertical';
+}
+const { titulo, descripcion, seccion, idioma, modo = 'horizontal' } = Astro.props;
+const t = traductor(idioma);
 const canonica = new URL(Astro.url.pathname, Astro.site);
 ---
 <!doctype html>
-<html lang="es">
+<html lang={idioma}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -26,33 +37,39 @@ const canonica = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:title" content={titulo} />
     <meta property="og:description" content={descripcion} />
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="es_CL" />
+    <meta property="og:locale" content={idioma === 'es' ? 'es_CL' : 'en_US'} />
     <meta property="og:url" content={canonica} />
     <link rel="canonical" href={canonica} />
+    <link rel="alternate" hreflang="en" href={new URL(rutaDe('en', seccion), Astro.site)} />
+    <link rel="alternate" hreflang="es" href={new URL(rutaDe('es', seccion), Astro.site)} />
+    <link rel="alternate" hreflang="x-default" href={new URL(rutaDe('en', seccion), Astro.site)} />
     <link rel="icon" type="image/svg+xml" href={ruta('ant-icono.svg')} />
     <title>{titulo}</title>
   </head>
   <body>
-    <a class="saltar" href="#nido">Saltar al contenido</a>
+    <a class="saltar" href="#nido">{t('Skip to content', 'Saltar al contenido')}</a>
     <header class="superficie">
-      <a class="marca" href={ruta()} aria-label="Ant, inicio">
+      <a class="marca" href={rutaDe(idioma)} aria-label={t('Ant, home', 'Ant, inicio')}>
         <img src={ruta('ant-icono.svg')} width="40" height="40" alt="" />
         <span>Ant</span>
       </a>
-      <nav aria-label="Principal">
-        <a href={ruta()} aria-current={seccion === 'inicio' ? 'page' : undefined}>Inicio</a>
-        <a href={ruta('documentacion/')} aria-current={seccion === 'docs' ? 'page' : undefined}><span class="largo">Documentación</span><span class="corto">Docs</span></a>
-        <a href={sitio.repo}>GitHub <span aria-hidden="true">↗</span></a>
+      <nav aria-label={t('Main', 'Principal')}>
+        <a href={rutaDe(idioma)} aria-current={seccion === 'inicio' ? 'page' : undefined}>{t('Home', 'Inicio')}</a>
+        <a href={rutaDe(idioma, 'docs')} aria-current={seccion === 'docs' ? 'page' : undefined}><span class="largo">{t('Documentation', 'Documentación')}</span><span class="corto">Docs</span></a>
+        <a class="solo-ancho" href={sitio.repo}>GitHub <span aria-hidden="true">↗</span></a>
+        <span class="idiomas" aria-label={t('Language', 'Idioma')}>
+          <a href={rutaDe('en', seccion)} lang="en" hreflang="en" aria-current={idioma === 'en' ? 'true' : undefined}>EN</a><span aria-hidden="true">/</span><a href={rutaDe('es', seccion)} lang="es" hreflang="es" aria-current={idioma === 'es' ? 'true' : undefined}>ES</a>
+        </span>
       </nav>
     </header>
 
-    <main id="nido" class="nido" tabindex="-1" aria-label="Contenido; se recorre hacia la derecha">
+    <main id="nido" class:list={['nido', modo]} data-modo={modo} tabindex="-1" aria-label={modo === 'horizontal' ? t('Content; scroll to the right', 'Contenido; se recorre hacia la derecha') : t('Content', 'Contenido')}>
       <div class="fila">
         <slot />
       </div>
     </main>
 
-    <nav class="recorrido" aria-label="Cámaras de esta página">
+    <nav class="recorrido" aria-label={t('Sections of this page', 'Secciones de esta página')}>
       <div class="recorrido-pista">
         <Hormiga class="recorrido-hormiga" />
       </div>
@@ -60,112 +77,130 @@ const canonica = new URL(Astro.url.pathname, Astro.site);
     </nav>
 
     <script>
-      // Recorrido horizontal del nido: rueda → horizontal, teclas para saltar entre cámaras,
-      // la hormiga que avanza y los hoyos (uno por cámara) que marcan dónde estás.
+      // Recorrido del nido. En modo horizontal (portada): la rueda se traduce a horizontal y las
+      // teclas saltan entre cámaras. En modo vertical (documentación) el scroll es el normal del
+      // navegador. En los dos, la hormiga de abajo avanza según lo recorrido y hay un hoyo por
+      // sección (los elementos con `data-nombre`) para saltar a ella.
       import { cavar } from '../lib/cavar';
       const nido = document.querySelector<HTMLElement>('.nido')!;
-      // Bordes imperfectos de las cámaras y del túnel.
-      cavar(document.querySelector<HTMLElement>('.fila')!);
-      const camaras = [...document.querySelectorAll<HTMLElement>('.camara')];
+      const vertical = nido.dataset.modo === 'vertical';
+      // Bordes imperfectos de las cámaras (y del túnel, que solo existe en horizontal).
+      cavar(document.querySelector<HTMLElement>('.fila')!, { tunel: !vertical });
+      const paradas = [...document.querySelectorAll<HTMLElement>('[data-nombre]')];
       const hoyos = document.querySelector<HTMLOListElement>('.recorrido-hoyos')!;
       const hormiga = document.querySelector<SVGElement>('.recorrido-hormiga')!;
       const pista = document.querySelector<HTMLElement>('.recorrido-pista')!;
       const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)');
       const comportamiento = (): ScrollBehavior => (sinMovimiento.matches ? 'auto' : 'smooth');
 
-      /** Lleva el nido hasta una cámara (su borde izquierdo queda al inicio de la vista). */
-      const irA = (i: number) => {
-        const c = camaras[Math.max(0, Math.min(camaras.length - 1, i))];
-        nido.scrollTo({ left: c.offsetLeft, behavior: comportamiento() });
+      /** Desplazamiento actual del nido en su eje. */
+      const desplazado = () => (vertical ? nido.scrollTop : nido.scrollLeft);
+      /** Posición de una sección dentro del nido, en su eje (con un respiro antes del borde). */
+      const posicion = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect(), n = nido.getBoundingClientRect();
+        return vertical ? r.top - n.top + nido.scrollTop - 24 : r.left - n.left + nido.scrollLeft;
       };
 
-      /** Índice de la cámara que ocupa la mayor parte de la vista. */
+      /** Lleva el nido hasta una sección. */
+      const irA = (i: number) => {
+        const destino = posicion(paradas[Math.max(0, Math.min(paradas.length - 1, i))]);
+        nido.scrollTo({ [vertical ? 'top' : 'left']: destino, behavior: comportamiento() });
+      };
+
+      /** Índice de la sección en la que se está leyendo. */
       const actual = () => {
-        const centro = nido.scrollLeft + nido.clientWidth / 2;
+        // Al final de la página, la última sección cuenta como actual aunque sea corta.
+        if (vertical && nido.scrollTop >= nido.scrollHeight - nido.clientHeight - 2) return paradas.length - 1;
+        const linea = desplazado() + (vertical ? nido.clientHeight / 3 : nido.clientWidth / 2);
         let indice = 0;
-        camaras.forEach((c, i) => { if (c.offsetLeft <= centro) indice = i; });
+        paradas.forEach((c, i) => { if (posicion(c) <= linea) indice = i; });
         return indice;
       };
 
-      // Un hoyo por cámara, con su nombre (`data-nombre`) para lectores de pantalla y al pasar el mouse.
-      camaras.forEach((c, i) => {
+      // Un hoyo por sección, con su nombre (`data-nombre`) para lectores de pantalla y al pasar el mouse.
+      paradas.forEach((c, i) => {
         const li = document.createElement('li');
         const boton = document.createElement('button');
         boton.type = 'button';
-        boton.title = c.dataset.nombre ?? `Cámara ${i + 1}`;
+        boton.title = c.dataset.nombre ?? String(i + 1);
         boton.setAttribute('aria-label', boton.title);
         boton.addEventListener('click', () => irA(i));
         li.append(boton);
         hoyos.append(li);
       });
       const botones = [...hoyos.querySelectorAll('button')];
+      const indice = [...document.querySelectorAll<HTMLAnchorElement>('.gigante-indice a')];
 
-      // La rueda vertical mueve el nido en horizontal. Si el puntero está sobre un bloque con
-      // scroll propio (pantallas muy bajas) que todavía puede moverse, se deja ese scroll.
-      nido.addEventListener('wheel', (e) => {
-        if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-        const bloque = (e.target as Element).closest<HTMLElement>('.desborda');
-        if (bloque) {
-          const puede = e.deltaY > 0
-            ? bloque.scrollTop + bloque.clientHeight < bloque.scrollHeight - 1
-            : bloque.scrollTop > 0;
-          if (puede) return;
-        }
-        e.preventDefault();
-        nido.scrollLeft += e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY;
-      }, { passive: false });
+      if (!vertical) {
+        // La rueda vertical mueve el nido en horizontal. Si el puntero está sobre un bloque con
+        // scroll propio (pantallas muy bajas) que todavía puede moverse, se deja ese scroll.
+        nido.addEventListener('wheel', (e) => {
+          if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+          const bloque = (e.target as Element).closest<HTMLElement>('.desborda');
+          if (bloque) {
+            const puede = e.deltaY > 0
+              ? bloque.scrollTop + bloque.clientHeight < bloque.scrollHeight - 1
+              : bloque.scrollTop > 0;
+            if (puede) return;
+          }
+          e.preventDefault();
+          nido.scrollLeft += e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY;
+        }, { passive: false });
 
-      // Teclado: cualquier tecla de avance o retroceso salta de cámara en cámara.
-      document.addEventListener('keydown', (e) => {
-        if (e.metaKey || e.ctrlKey || e.altKey) return;
-        const avanzar = ['ArrowRight', 'ArrowDown', 'PageDown'].includes(e.key) || (e.key === ' ' && !e.shiftKey);
-        const retroceder = ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key) || (e.key === ' ' && e.shiftKey);
-        if (avanzar) irA(actual() + 1);
-        else if (retroceder) irA(actual() - 1);
-        else if (e.key === 'Home') irA(0);
-        else if (e.key === 'End') irA(camaras.length - 1);
-        else return;
-        e.preventDefault();
-      });
+        // Teclado: cualquier tecla de avance o retroceso salta de cámara en cámara.
+        document.addEventListener('keydown', (e) => {
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          const avanzar = ['ArrowRight', 'ArrowDown', 'PageDown'].includes(e.key) || (e.key === ' ' && !e.shiftKey);
+          const retroceder = ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key) || (e.key === ' ' && e.shiftKey);
+          if (avanzar) irA(actual() + 1);
+          else if (retroceder) irA(actual() - 1);
+          else if (e.key === 'Home') irA(0);
+          else if (e.key === 'End') irA(paradas.length - 1);
+          else return;
+          e.preventDefault();
+        });
+      }
 
       // La hormiga avanza por la pista según cuánto se ha recorrido, mira hacia donde va y
       // mueve las patas mientras hay scroll.
-      let anterior = nido.scrollLeft;
+      let anterior = desplazado();
       let quieta: ReturnType<typeof setTimeout> | undefined;
       const moverHormiga = () => {
-        const max = nido.scrollWidth - nido.clientWidth;
-        const avance = max > 0 ? nido.scrollLeft / max : 0;
+        const max = vertical ? nido.scrollHeight - nido.clientHeight : nido.scrollWidth - nido.clientWidth;
+        const ahora = desplazado();
+        const avance = max > 0 ? ahora / max : 0;
         const espacio = pista.clientWidth - hormiga.getBoundingClientRect().width;
-        const atras = nido.scrollLeft < anterior;
         hormiga.style.setProperty('--x', `${avance * espacio}px`);
-        if (nido.scrollLeft !== anterior) hormiga.classList.toggle('atras', atras);
-        anterior = nido.scrollLeft;
+        if (ahora !== anterior) hormiga.classList.toggle('atras', ahora < anterior);
+        anterior = ahora;
         hormiga.classList.add('caminando');
         clearTimeout(quieta);
         quieta = setTimeout(() => hormiga.classList.remove('caminando'), 160);
         const i = actual();
         botones.forEach((b, j) => b.toggleAttribute('aria-current', j === i));
+        // En la documentación, el índice lateral también marca la sección actual.
+        indice.forEach((a) => a.toggleAttribute('aria-current', a.hash === `#${paradas[i]?.id}`));
       };
       nido.addEventListener('scroll', moverHormiga, { passive: true });
       window.addEventListener('resize', moverHormiga);
       moverHormiga();
       hormiga.classList.remove('caminando');
 
-      // Los enlaces a otra cámara de la misma página (#instalar, etc.) también van en horizontal.
+      // Los enlaces a otra sección de la misma página (#install, etc.) se desplazan dentro del nido.
       document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((a) => {
         const destino = document.getElementById(a.hash.slice(1));
         if (!destino || a.classList.contains('saltar')) return;
         a.addEventListener('click', (e) => {
           e.preventDefault();
-          const i = camaras.findIndex((c) => c === destino || c.contains(destino));
+          const i = paradas.findIndex((c) => c === destino || c.contains(destino));
           if (i >= 0) irA(i);
           history.replaceState(null, '', a.hash);
         });
       });
-      // Al llegar con un #ancla en la dirección, se abre en esa cámara.
+      // Al llegar con un #ancla en la dirección, se abre en esa sección.
       if (location.hash) {
-        const i = camaras.findIndex((c) => c.id === location.hash.slice(1));
-        if (i >= 0) nido.scrollLeft = camaras[i].offsetLeft;
+        const i = paradas.findIndex((c) => c.id === decodeURIComponent(location.hash.slice(1)));
+        if (i >= 0) nido[vertical ? 'scrollTop' : 'scrollLeft'] = posicion(paradas[i]);
       }
       nido.focus({ preventScroll: true });
     </script>

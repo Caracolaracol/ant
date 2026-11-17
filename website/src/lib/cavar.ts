@@ -71,6 +71,56 @@ function contornoCamara(ancho: number, alto: number, semilla: number): string {
   return curva(puntos, true);
 }
 
+/**
+ * Contorno irregular que sigue un rectángulo de esquinas redondeadas, para la cámara gigante de
+ * la documentación: así queda pegada a los bordes de la ventana en vez de angostarse arriba y
+ * abajo como una elipse. Las ondas se miden en píxeles a lo largo del borde (no en ángulos), así
+ * tienen el mismo tamaño en un borde corto que en uno muy largo.
+ */
+function contornoRectangular(ancho: number, alto: number, semilla: number): string {
+  const r = azar(semilla);
+  const radio = Math.min(56, ancho / 4, alto / 4);
+  const x0 = MARGEN, y0 = MARGEN, x1 = MARGEN + ancho, y1 = MARGEN + alto;
+  // Tramos del borde en orden (sentido horario): rectas y cuartos de círculo en las esquinas.
+  const rectoH = ancho - 2 * radio, rectoV = alto - 2 * radio, arco = (Math.PI / 2) * radio;
+  const perimetro = 2 * rectoH + 2 * rectoV + 4 * arco;
+  /** Punto y normal hacia afuera a una distancia `s` del inicio del borde. */
+  const enBorde = (s: number): [number, number, number, number] => {
+    const tramos: Array<[number, (u: number) => [number, number, number, number]]> = [
+      [rectoH, (u) => [x0 + radio + u, y0, 0, -1]],
+      [arco, (u) => { const a = -Math.PI / 2 + u / radio; return [x1 - radio + Math.cos(a) * radio, y0 + radio + Math.sin(a) * radio, Math.cos(a), Math.sin(a)]; }],
+      [rectoV, (u) => [x1, y0 + radio + u, 1, 0]],
+      [arco, (u) => { const a = u / radio; return [x1 - radio + Math.cos(a) * radio, y1 - radio + Math.sin(a) * radio, Math.cos(a), Math.sin(a)]; }],
+      [rectoH, (u) => [x1 - radio - u, y1, 0, 1]],
+      [arco, (u) => { const a = Math.PI / 2 + u / radio; return [x0 + radio + Math.cos(a) * radio, y1 - radio + Math.sin(a) * radio, Math.cos(a), Math.sin(a)]; }],
+      [rectoV, (u) => [x0, y1 - radio - u, -1, 0]],
+      [arco, (u) => { const a = Math.PI + u / radio; return [x0 + radio + Math.cos(a) * radio, y0 + radio + Math.sin(a) * radio, Math.cos(a), Math.sin(a)]; }],
+    ];
+    for (const [largo, f] of tramos) {
+      if (s <= largo) return f(s);
+      s -= largo;
+    }
+    return tramos[0][1](0);
+  };
+  // Largos de onda en píxeles, ajustados para que entren un número entero de veces en el borde
+  // (si no, quedaría un salto donde el contorno se cierra).
+  const ondas = [[520, 9], [260, 6.5], [130, 4.5], [70, 2.8], [37, 1.6]].map(([largo, amp]) => ({
+    vueltas: Math.max(1, Math.round(perimetro / largo)),
+    amp: amp * (0.6 + r() * 0.8),
+    fase: r() * Math.PI * 2,
+  }));
+  const n = Math.max(48, Math.round(perimetro / 18));
+  const puntos: Punto[] = [];
+  for (let i = 0; i < n; i++) {
+    const s = (i / n) * perimetro;
+    const [x, y, nx, ny] = enBorde(s);
+    let d = (r() - 0.5) * 3.5;
+    for (const o of ondas) d += o.amp * Math.sin((o.vueltas * 2 * Math.PI * s) / perimetro + o.fase);
+    puntos.push([x + nx * d, y + ny * d]);
+  }
+  return curva(puntos, true);
+}
+
 /** Borde de arriba o de abajo del túnel: una línea ondulada a lo largo de todo el nido. */
 function bordeTunel(ancho: number, y: number, r: () => number): Punto[] {
   const fases = [r(), r(), r()].map((f) => f * Math.PI * 2);
@@ -117,8 +167,11 @@ function forma(contenedor: HTMLElement, clase: string): SVGPathElement {
   return svg.querySelector('path')!;
 }
 
-/** Dibuja los bordes imperfectos de todas las cámaras y del túnel, y los rehace al cambiar de tamaño. */
-export function cavar(fila: HTMLElement) {
+/**
+ * Dibuja los bordes imperfectos de todas las cámaras y del túnel (si `tunel`), y los rehace al
+ * cambiar de tamaño.
+ */
+export function cavar(fila: HTMLElement, { tunel = true } = {}) {
   crearFiltro();
   const huecos = [...fila.querySelectorAll<HTMLElement>('.hueco')];
 
@@ -129,7 +182,8 @@ export function cavar(fila: HTMLElement) {
     const svg = path.ownerSVGElement!;
     svg.setAttribute('width', String(w + MARGEN * 2));
     svg.setAttribute('height', String(h + MARGEN * 2));
-    path.setAttribute('d', contornoCamara(w, h, 7919 * (i + 1)));
+    const semilla = 7919 * (i + 1);
+    path.setAttribute('d', hueco.classList.contains('gigante') ? contornoRectangular(w, h, semilla) : contornoCamara(w, h, semilla));
     hueco.classList.add('cavado');
   };
 
@@ -153,7 +207,7 @@ export function cavar(fila: HTMLElement) {
     cancelAnimationFrame(pendiente);
     pendiente = requestAnimationFrame(() => {
       huecos.forEach(dibujarHueco);
-      dibujarTunel();
+      if (tunel) dibujarTunel();
     });
   };
   const observador = new ResizeObserver(redibujar);

@@ -1,37 +1,39 @@
 ---
 // Maqueta de la ventana de Ant hecha con HTML y CSS (no es una captura): barra lateral con
-// fijados, carpeta de trabajo y títulos de la nota, editor con Markdown y barra de estado.
-// Sirve para mostrar la app en la portada sin pesar como una imagen.
+// fijados, carpeta de trabajo y los capítulos de la nota, editor con el borrador de un cuento
+// en Markdown y barra de estado. Muestra la app pensada para escribir, en el idioma de la página.
+import { traductor, type Idioma } from '../lib/sitio';
+interface Props { idioma: Idioma; }
+const t = traductor(Astro.props.idioma);
 ---
-<figure class="ventana" aria-label="Así se ve Ant: barra lateral a la izquierda y la nota a la derecha">
+<figure class="ventana" aria-label={t('What Ant looks like: the sidebar on the left and the text on the right', 'Así se ve Ant: la barra lateral a la izquierda y el texto a la derecha')}>
   <div class="ventana-barra-titulo" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="ventana-cuerpo" aria-hidden="true">
     <div class="ventana-lateral">
-      <p class="lat-fijados">Fijados</p>
-      <p>ideas.md</p>
-      <p>▸ diario</p>
+      <p class="lat-fijados">{t('Pinned', 'Fijados')}</p>
+      <p>{t('ideas.md', 'ideas.md')}</p>
+      <p>▸ {t('journal', 'diario')}</p>
       <hr />
-      <p class="lat-carpeta">notas</p>
-      <p>▾ proyectos</p>
-      <p class="lat-activa">&nbsp;&nbsp;hormiguero.md</p>
-      <p class="lat-titulo actual">&nbsp;&nbsp;&nbsp;&nbsp;Hormiguero</p>
-      <p class="lat-titulo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cámaras</p>
-      <p class="lat-titulo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Túneles</p>
-      <p>&nbsp;&nbsp;lista.md</p>
-      <p>recetas.txt</p>
+      <p class="lat-carpeta">{t('writing', 'escritos')}</p>
+      <p>▾ {t('novel', 'novela')}</p>
+      <p class="lat-activa">&nbsp;&nbsp;{t('the-colony.md', 'la-colonia.md')}</p>
+      <p class="lat-titulo">&nbsp;&nbsp;&nbsp;&nbsp;{t('1. The rain', '1. La lluvia')}</p>
+      <p class="lat-titulo actual">&nbsp;&nbsp;&nbsp;&nbsp;{t('2. The tunnel', '2. El túnel')}</p>
+      <p class="lat-titulo">&nbsp;&nbsp;&nbsp;&nbsp;{t('3. The queen', '3. La reina')}</p>
+      <p>&nbsp;&nbsp;{t('characters.md', 'personajes.md')}</p>
+      <p>{t('short-stories', 'cuentos')}</p>
     </div>
     <div class="ventana-editor">
-      <p><span class="md">#</span> <b class="h1">Hormiguero</b></p>
+      <p><span class="md">#</span> <b class="h1">{t('2. The tunnel', '2. El túnel')}</b></p>
       <p>&nbsp;</p>
-      <p>Las obreras cavan <b>cámaras</b> unidas por túneles.</p>
-      <p>Cada una guarda algo: crías, comida, <i>basura</i>.</p>
+      <p>{t('Nobody in the colony remembered', 'Nadie en la colonia recordaba')}</p>
+      <p>{t('who had dug the old tunnel.', 'quién había cavado el túnel viejo.')}</p>
+      <p>{t('Mira went in anyway, with', 'Mira entró igual, con las')}</p>
+      <p>{t('her antennae low and', 'antenas bajas y el')}</p>
+      <p><i>{t('the smell of rain', 'olor a lluvia')}</i> {t('behind her.', 'a la espalda.')}</p>
       <p>&nbsp;</p>
-      <p><span class="md">##</span> <b class="h2">Cámaras</b></p>
-      <p>&nbsp;</p>
-      <p><span class="md">-</span> la reina, al fondo</p>
-      <p><span class="md">-</span> huevos y larvas cerca del calor</p>
-      <p><span class="md">-</span> semillas en la entrada<span class="cursor"></span></p>
+      <p>{t('— Is anyone there?', '—¿Hay alguien ahí?')}<span class="cursor"></span></p>
     </div>
   </div>
-  <div class="ventana-estado" aria-hidden="true"><span>hormiguero.md *</span><span>34 palabras · 11 líneas</span></div>
+  <div class="ventana-estado" aria-hidden="true"><span>{t('the-colony.md *', 'la-colonia.md *')}</span><span>{t('2,431 words', '2.431 palabras')} · 214 {t('lines', 'líneas')}</span></div>
 </figure>

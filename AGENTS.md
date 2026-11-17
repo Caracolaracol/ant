@@ -98,15 +98,24 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   fps y casillas para apagar extensiones. Sirve para comparar motores (Safari/Chrome/Firefox).
 
 - `website/` — sitio en GitHub Pages (https://caracolaracol.github.io/ant/), hecho con Astro y
-  npm (no pnpm; tiene su propio `package-lock.json`). Diseño horizontal con temática de
-  hormiguero: cada `<section class="camara">` es una cámara del nido y todo se recorre de
-  izquierda a derecha (la rueda vertical se traduce a horizontal en `layouts/Nido.astro`); no
-  agregar scroll vertical a las páginas. Los bordes de las cámaras y del túnel son imperfectos,
-  como cavados: los dibuja `lib/cavar.ts` en SVG (con semilla fija por cámara); sin JavaScript
-  quedan los bordes redondeados del CSS. Portada en `pages/index.astro` y documentación en
-  `pages/documentacion.astro`: al cambiar algo de la app (atajos, ajustes, comandos),
-  actualizar también la documentación. `npm run dev` / `npm run build` dentro de `website/`.
-  Se publica solo con `.github/workflows/website.yml` al subir cambios a `main`.
+  npm (no pnpm; tiene su propio `package-lock.json`). `npm run dev` / `npm run build` dentro de
+  `website/`. Se publica solo con `.github/workflows/website.yml` al subir cambios a `main`.
+  - **Idiomas**: inglés por defecto (`/ant/`, `/ant/documentation/`) y español bajo `/ant/es/`,
+    con selector EN / ES. Los textos de los dos idiomas van juntos en cada componente con
+    `t('english', 'español')` (`lib/sitio.ts`); las páginas de `pages/` solo eligen el idioma.
+  - **Mensaje**: Ant es un lugar simple, inteligente y sin distracciones para escribir: primero
+    para escritores (cuentos, novelas), luego para cualquiera que tome notas y para
+    desarrolladores. No compararla con Left ni con otras apps.
+  - **Portada** (`components/Portada.astro`): horizontal, temática de hormiguero. Cada
+    `<section class="camara">` es una cámara unida por un túnel y se recorre de izquierda a
+    derecha (la rueda vertical se traduce a horizontal en `layouts/Nido.astro`); no agregarle
+    scroll vertical.
+  - **Documentación** (`components/Documentacion.astro`): vertical, una sola cámara gigante
+    (`.hueco.gigante`) pegada a los bordes de la ventana, con índice fijo y un tema tras otro.
+    Al cambiar algo de la app (atajos, ajustes, comandos), actualizarla en los dos idiomas.
+  - Los bordes de las cámaras y del túnel son imperfectos, como cavados: los dibuja
+    `lib/cavar.ts` en SVG (con semilla fija por cámara); sin JavaScript quedan los bordes
+    redondeados del CSS.
 
 - `marca/` — icono de la app (cara de hormiga plana en SVG, PNG de 1024 y script); ver `marca/README.md` para
   regenerar `src-tauri/icons/`. Sigue el sistema visual de Mantis (`~/Code/meeting-recorder`).

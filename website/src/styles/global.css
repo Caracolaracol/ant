@@ -68,6 +68,9 @@ a:hover { text-decoration-thickness: 2px; }
 .superficie nav a { color: var(--tenue); text-decoration: none; }
 .superficie nav a:hover, .superficie nav a[aria-current='page'] { color: var(--amarillo); }
 .superficie .corto { display: none; }
+/* Selector de idioma: EN / ES, el actual en amarillo. */
+.idiomas { display: flex; gap: 6px; color: var(--linea); padding-left: 16px; border-left: 1px solid var(--linea); }
+.superficie .idiomas a[aria-current] { color: var(--amarillo); }
 
 /* ── Nido: la fila de cámaras que se recorre en horizontal ── */
 .nido {
@@ -146,7 +149,13 @@ p { margin: 0 0 12px; }
 .portada .hueco { display: flex; align-items: center; gap: clamp(24px, 4vw, 56px); }
 .portada-icono { width: clamp(120px, 18vw, 220px); height: auto; flex: none; }
 .portada h1 span { color: var(--amarillo); }
-.lema { font-size: clamp(18px, 2vw, 22px); max-width: 30ch; }
+.lema { font: 600 clamp(20px, 2.4vw, 28px)/1.3 var(--mono); max-width: 30ch; margin-bottom: 10px; }
+.sublema { font-size: clamp(16px, 1.6vw, 19px); color: var(--tenue); max-width: 44ch; }
+/* Cifras grandes (0 cuentas, 4.7 MB…). */
+.sellos { display: flex; flex-wrap: wrap; gap: 14px; margin: 18px 0; }
+.sellos div { display: grid; gap: 2px; padding: 14px 18px; min-width: 120px; border-radius: 16px 20px 14px 22px; background: var(--hueco-hondo); }
+.sellos b { font: 700 28px var(--mono); color: var(--amarillo); }
+.sellos span { font: 13px var(--mono); color: var(--tenue); }
 .acciones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
 .boton {
   display: inline-flex; align-items: center; gap: 8px;
@@ -280,6 +289,8 @@ li::marker { color: var(--amarillo); }
   .marca span { display: none; }
   .superficie .largo { display: none; }
   .superficie .corto { display: inline; }
+  .superficie .solo-ancho { display: none; }
+  .idiomas { padding-left: 12px; }
   .camara { padding: 2vh 26px; }
   .portada { width: 100vw; }
   .portada .hueco { width: 100%; }
@@ -305,4 +316,40 @@ li::marker { color: var(--amarillo); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ── Modo vertical (documentación): una sola cámara gigante, pegada a los bordes ── */
+.nido.vertical { overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--tierra-clara) transparent; }
+.nido.vertical::-webkit-scrollbar { display: initial; width: 8px; }
+.nido.vertical::-webkit-scrollbar-thumb { background: var(--tierra-clara); border-radius: 4px; }
+.nido.vertical .fila { display: block; width: auto; height: auto; padding: 22px 22px 30px; }
+.nido.vertical .fila::before { display: none; }
+.gigante {
+  max-height: none;
+  display: grid; grid-template-columns: 220px minmax(0, 760px); justify-content: center;
+  gap: clamp(32px, 5vw, 80px);
+  padding: clamp(40px, 6vw, 88px) clamp(28px, 5vw, 80px);
+  border-radius: 48px 56px 44px 60px;
+}
+/* Índice lateral: queda fijo mientras se baja por la documentación. */
+.gigante-indice { position: sticky; top: 32px; align-self: start; font: 14px/1.5 var(--mono); }
+.gigante-indice ol { list-style: none; padding: 0; margin: 12px 0 0; counter-reset: tema; }
+.gigante-indice li { counter-increment: tema; margin-bottom: 8px; }
+.gigante-indice li::before { content: counter(tema, decimal-leading-zero) ' '; color: var(--tenue); }
+.gigante-indice a { color: var(--texto); text-decoration: none; }
+.gigante-indice a:hover, .gigante-indice a[aria-current] { color: var(--amarillo); }
+.gigante-titulo h1 { font-size: clamp(40px, 6vw, 72px); }
+/* Cada tema, separado del anterior por un rastro de hormigas (una fila de puntos). */
+.tema { padding: 44px 0 8px; scroll-margin-top: 24px; }
+.tema + .tema {
+  background: radial-gradient(circle, rgba(229, 234, 21, 0.35) 1.6px, transparent 2px) top left / 14px 6px repeat-x;
+}
+.tema h2 { margin-top: 4px; }
+.tema h3 { margin-top: 22px; }
+.tema .columnas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 36px; }
+
+@media (max-width: 860px) {
+  .nido.vertical .fila { padding: 14px 14px 22px; }
+  .gigante { grid-template-columns: minmax(0, 1fr); padding: 36px 24px; }
+  .gigante-indice { position: static; }
 }

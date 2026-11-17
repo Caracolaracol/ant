@@ -1,0 +1,183 @@
+---
+// Portada del sitio en inglés o español: una cámara por idea, de izquierda a derecha. Presenta
+// Ant como un lugar simple, inteligente y sin distracciones para escribir: primero para
+// escritores (cuentos, novelas), luego para cualquiera que tome notas y para desarrolladores;
+// después lo que la hace inteligente, lo liviana que es, sus atajos y el cierre.
+import Nido from '../layouts/Nido.astro';
+import VentanaAnt from './VentanaAnt.astro';
+import { ruta, rutaDe, sitio, traductor, type Idioma } from '../lib/sitio';
+
+interface Props { idioma: Idioma; }
+const { idioma } = Astro.props;
+const t = traductor(idioma);
+const docs = rutaDe(idioma, 'docs');
+const instalar = `${docs}#${t('install', 'instalar')}`;
+---
+<Nido
+  idioma={idioma}
+  seccion="inicio"
+  titulo={t('Ant · write without distractions', 'Ant · escribe sin distracciones')}
+  descripcion={t(
+    'Ant is a simple, smart, distraction-free desktop app for writing: stories, novels, notes and code, saved as plain Markdown files on your disk.',
+    'Ant es una app de escritorio simple, inteligente y sin distracciones para escribir: cuentos, novelas, notas y código, guardados como archivos Markdown en tu disco.',
+  )}
+>
+
+  <section class="camara portada" id={t('home', 'inicio')} data-nombre={t('Home', 'Inicio')}>
+    <div class="hueco">
+      <img class="portada-icono" src={ruta('ant-icono.svg')} width="220" height="220" alt={t('Ant icon: the face of a yellow ant', 'Icono de Ant: la cara de una hormiga amarilla')} />
+      <div>
+        <h1>Ant<span>.</span></h1>
+        <p class="lema">{t('Write without distractions.', 'Escribe sin distracciones.')}</p>
+        <p class="sublema">{t(
+          'Simple, smart and quiet. For stories, novels, notes and code, saved as plain Markdown files on your disk.',
+          'Simple, inteligente y silenciosa. Para cuentos, novelas, notas y código, guardados como archivos Markdown en tu disco.',
+        )}</p>
+        <div class="acciones">
+          <a class="boton lleno" href={instalar}>{t('Install', 'Instalar')}</a>
+          <a class="boton" href={docs}>{t('Documentation', 'Documentación')}</a>
+          <a class="boton" href={sitio.repo}>GitHub ↗</a>
+        </div>
+        <p class="pista-scroll">{t('Follow the tunnel', 'Sigue el túnel')} <span class="flecha" aria-hidden="true">→</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id={t('writers', 'escritores')} data-nombre={t('For writers', 'Para escritores')}>
+    <div class="hueco bloques">
+      <div class="bloque">
+        <p class="etiqueta">{t('For writers', 'Para escritores')}</p>
+        <h2>{t('Your manuscript, nothing else', 'Tu manuscrito, nada más')}</h2>
+        <p>{t(
+          'Write stories, novels, essays or scripts in a clean column of text. No toolbars and no panels fighting for your attention: just the page and the cursor.',
+          'Escribe cuentos, novelas, ensayos o guiones en una columna limpia de texto. Sin barras de herramientas ni paneles que peleen por tu atención: solo la página y el cursor.',
+        )}</p>
+        <p class="tenue">{t(
+          'Every chapter heading appears in the sidebar, so you can move through a long manuscript in one click. The word count is always there, at the bottom.',
+          'Cada título de capítulo aparece en la barra lateral, así recorres un manuscrito largo con un clic. El conteo de palabras está siempre ahí, abajo.',
+        )}</p>
+      </div>
+      <VentanaAnt idioma={idioma} />
+    </div>
+  </section>
+
+  <section class="camara" id={t('notes', 'notas')} data-nombre={t('For notes', 'Para notas')}>
+    <div class="hueco bloques">
+      <div class="bloque">
+        <p class="etiqueta">{t('For everyday notes', 'Para tus notas')}</p>
+        <h2>{t('Ideas, lists, journals', 'Ideas, listas, diarios')}</h2>
+        <p>{t(
+          'Point Ant at a folder and it becomes your notebook: subfolders and notes in the sidebar, and the ones you use most pinned at the top.',
+          'Elige una carpeta y Ant la convierte en tu cuaderno: subcarpetas y notas en la barra lateral, y las que más usas fijadas arriba.',
+        )}</p>
+        <p>{t(
+          'Open several notes at once. Each one remembers where your cursor was and its own undo history.',
+          'Abre varias notas a la vez. Cada una recuerda dónde estaba tu cursor y su propio historial para deshacer.',
+        )}</p>
+      </div>
+      <div class="bloque">
+        <div class="sellos">
+          <div><b>0</b><span>{t('accounts', 'cuentas')}</span></div>
+          <div><b>0</b><span>{t('clouds', 'nubes')}</span></div>
+          <div><b>.md</b><span>{t('plain files', 'archivos simples')}</span></div>
+        </div>
+        <p class="tenue">{t(
+          'No sign-up, no sync service, no database. Your notes are files you own, and any other app can open them.',
+          'Sin registro, sin servicio de sincronización, sin base de datos. Tus notas son archivos tuyos y cualquier otra app puede abrirlos.',
+        )}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id={t('developers', 'desarrolladores')} data-nombre={t('For developers', 'Para desarrolladores')}>
+    <div class="hueco bloques">
+      <div class="bloque">
+        <p class="etiqueta">{t('For developers', 'Para desarrolladores')}</p>
+        <h2>{t('Plain text, keyboard first', 'Texto plano, primero el teclado')}</h2>
+        <ul>
+          <li>{t('Markdown with highlighted code blocks for dozens of languages.', 'Markdown con bloques de código resaltados en decenas de lenguajes.')}</li>
+          <li>{t('Plain files that live happily in a git repository.', 'Archivos simples que viven tranquilos en un repositorio git.')}</li>
+          <li>{t('Every action has a shortcut; search and replace understands regular expressions.', 'Cada acción tiene su atajo; buscar y reemplazar entiende expresiones regulares.')}</li>
+          <li>{t('The code is on GitHub: Tauri, React and CodeMirror.', 'El código está en GitHub: Tauri, React y CodeMirror.')}</li>
+        </ul>
+      </div>
+<pre class="bloque ancho" aria-label={t('Example of a note with a code block', 'Ejemplo de una nota con un bloque de código')}><code><span class="pr">##</span> {t('Deploy notes', 'Notas del deploy')}
+
+{t('Remember to bump the version first:', 'Recordar subir la versión antes:')}
+
+<span class="pr">```sh</span>
+<span class="pr">$</span> pnpm version patch
+<span class="pr">$</span> git push --follow-tags
+<span class="pr">```</span>
+
+<span class="pr">-</span> [ ] {t('update the changelog', 'actualizar el changelog')}</code></pre>
+    </div>
+  </section>
+
+  <section class="camara" id={t('smart', 'inteligente')} data-nombre={t('Simple, but smart', 'Simple, pero inteligente')}>
+    <div class="hueco">
+      <p class="etiqueta">{t('Simple, but smart', 'Simple, pero inteligente')}</p>
+      <h2>{t('Small details that stay out of the way', 'Detalles que no estorban')}</h2>
+      <div class="tarjetas">
+        <div class="tarjeta"><h3>{t('An outline that follows you', 'Un índice que te sigue')}</h3><p>{t('The heading you are writing under lights up in the sidebar.', 'El título bajo el que estás escribiendo se ilumina en la barra lateral.')}</p></div>
+        <div class="tarjeta"><h3>{t('Pins', 'Fijados')}</h3><p>{t('Keep your current project at the top, like pinned tabs. Each folder has its own.', 'Deja tu proyecto actual arriba, como pestañas fijadas. Cada carpeta tiene los suyos.')}</p></div>
+        <div class="tarjeta"><h3>{t('Always in sync', 'Siempre al día')}</h3><p>{t('Rename or move files elsewhere and Ant notices as soon as you come back.', 'Renombra o mueve archivos desde otra app y Ant lo nota apenas vuelves.')}</p></div>
+        <div class="tarjeta"><h3>{t('Safe saves', 'Guardado seguro')}</h3><p>{t('Notes are written to a temporary file and then swapped in, so a crash never leaves half a file.', 'Las notas se escriben en un archivo temporal y luego lo reemplazan: un corte nunca deja un archivo a medias.')}</p></div>
+        <div class="tarjeta"><h3>{t('Nothing gets lost', 'Nada se pierde')}</h3><p>{t('A dot in the title marks unsaved changes, and Ant asks before discarding anything.', 'Un punto en el título marca los cambios sin guardar, y Ant pregunta antes de descartar algo.')}</p></div>
+        <div class="tarjeta"><h3>{t('Find and replace', 'Buscar y reemplazar')}</h3><p>{t('Match case, whole words or regular expressions, without leaving the note.', 'Mayúsculas, palabras completas o expresiones regulares, sin salir de la nota.')}</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id={t('light', 'liviana')} data-nombre={t('Light', 'Liviana')}>
+    <div class="hueco">
+      <p class="etiqueta">{t('Light as an ant', 'Liviana como una hormiga')}</p>
+      <h2>{t('Under 5 MB', 'Menos de 5 MB')}</h2>
+      <p style="max-width: 50ch">{t(
+        'Ant uses the web view your system already has instead of bringing its own browser. It downloads in seconds, opens instantly and barely touches your memory.',
+        'Ant usa el visor web que ya trae tu sistema en vez de traer su propio navegador. Se descarga en segundos, abre al instante y casi no ocupa memoria.',
+      )}</p>
+      <div class="sellos">
+        <div><b>4.7 MB</b><span>{t('the whole app', 'la app completa')}</span></div>
+        <div><b>2.5 MB</b><span>{t('the installer', 'el instalador')}</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id={t('shortcuts', 'atajos')} data-nombre={t('Shortcuts', 'Atajos')}>
+    <div class="hueco">
+      <p class="etiqueta">{t('Hands on the keyboard', 'Con el teclado')}</p>
+      <h2>{t('Shortcuts', 'Atajos')}</h2>
+      <dl class="atajos dos">
+        <dt><kbd>⌘</kbd> <kbd>N</kbd></dt><dd>{t('New note', 'Nueva nota')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>O</kbd></dt><dd>{t('Open', 'Abrir')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>S</kbd></dt><dd>{t('Save', 'Guardar')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd></dt><dd>{t('Save as', 'Guardar como')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>]</kbd></dt><dd>{t('Next note', 'Nota siguiente')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd></dt><dd>{t('Previous note', 'Nota anterior')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>\</kbd></dt><dd>{t('Sidebar', 'Barra lateral')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>,</kbd></dt><dd>{t('Settings', 'Ajustes')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>F</kbd></dt><dd>{t('Find', 'Buscar')}</dd>
+        <dt><kbd>⌘</kbd> <kbd>Z</kbd></dt><dd>{t('Undo', 'Deshacer')}</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="camara pie" id={t('start', 'empezar')} data-nombre={t('Start writing', 'Empieza a escribir')}>
+    <div class="hueco">
+      <p class="etiqueta">{t('The end of the tunnel', 'El final del túnel')}</p>
+      <h2>{t('Start writing', 'Empieza a escribir')}</h2>
+      <p style="max-width: 46ch">{t(
+        'Install Ant, choose the folder where you keep your texts and start typing. That is all there is to learn.',
+        'Instala Ant, elige la carpeta donde guardas tus textos y empieza a escribir. No hay nada más que aprender.',
+      )}</p>
+      <div class="acciones">
+        <a class="boton lleno" href={instalar}>{t('Install', 'Instalar')}</a>
+        <a class="boton" href={docs}>{t('Read the documentation', 'Leer la documentación')}</a>
+        <a class="boton" href={sitio.repo}>{t('Code on GitHub', 'Código en GitHub')} ↗</a>
+      </div>
+      <p class="tenue" style="margin-top: 24px">{t('A project by', 'Un proyecto de')} <a href={sitio.portafolio}>{sitio.autor}</a>. {t('Built with Tauri, React and CodeMirror.', 'Hecha con Tauri, React y CodeMirror.')}</p>
+    </div>
+  </section>
+
+</Nido>
