@@ -4,6 +4,9 @@
 export const sitio = {
   nombre: 'Ant',
   repo: 'https://github.com/Caracolaracol/ant',
+  licencia: 'https://github.com/Caracolaracol/ant/blob/main/LICENSE',
+  left: 'https://github.com/hundredrabbits/Left',
+  hundredRabbits: 'https://100r.co',
   autor: 'Agustín Rojas',
   portafolio: 'https://agustinrojasm.vercel.app',
 };

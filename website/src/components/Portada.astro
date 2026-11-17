@@ -98,7 +98,7 @@ const instalar = `${docs}#${t('install', 'instalar')}`;
           <li>{t('Markdown with highlighted code blocks for dozens of languages.', 'Markdown con bloques de código resaltados en decenas de lenguajes.')}</li>
           <li>{t('Plain files that live happily in a git repository.', 'Archivos simples que viven tranquilos en un repositorio git.')}</li>
           <li>{t('Every action has a shortcut; search and replace understands regular expressions.', 'Cada acción tiene su atajo; buscar y reemplazar entiende expresiones regulares.')}</li>
-          <li>{t('The code is on GitHub: Tauri, React and CodeMirror.', 'El código está en GitHub: Tauri, React y CodeMirror.')}</li>
+          <li>{t('Open source under the MIT license, built with Tauri, React and CodeMirror.', 'Código abierto con licencia MIT, hecha con Tauri, React y CodeMirror.')}</li>
         </ul>
       </div>
 <pre class="bloque ancho" aria-label={t('Example of a note with a code block', 'Ejemplo de una nota con un bloque de código')}><code><span class="pr">##</span> {t('Deploy notes', 'Notas del deploy')}
@@ -168,15 +168,15 @@ const instalar = `${docs}#${t('install', 'instalar')}`;
       <p class="etiqueta">{t('The end of the tunnel', 'El final del túnel')}</p>
       <h2>{t('Start writing', 'Empieza a escribir')}</h2>
       <p style="max-width: 46ch">{t(
-        'Install Ant, choose the folder where you keep your texts and start typing. That is all there is to learn.',
-        'Instala Ant, elige la carpeta donde guardas tus textos y empieza a escribir. No hay nada más que aprender.',
+        'Ant is free. Install it, choose the folder where you keep your texts and start typing. That is all there is to learn.',
+        'Ant es gratis. Instálala, elige la carpeta donde guardas tus textos y empieza a escribir. No hay nada más que aprender.',
       )}</p>
       <div class="acciones">
         <a class="boton lleno" href={instalar}>{t('Install', 'Instalar')}</a>
         <a class="boton" href={docs}>{t('Read the documentation', 'Leer la documentación')}</a>
         <a class="boton" href={sitio.repo}>{t('Code on GitHub', 'Código en GitHub')} ↗</a>
       </div>
-      <p class="tenue" style="margin-top: 24px">{t('A project by', 'Un proyecto de')} <a href={sitio.portafolio}>{sitio.autor}</a>. {t('Built with Tauri, React and CodeMirror.', 'Hecha con Tauri, React y CodeMirror.')}</p>
+      <p class="tenue" style="margin-top: 24px">{t('A project by', 'Un proyecto de')} <a href={sitio.portafolio}>{sitio.autor}</a>. {t('Free and open source,', 'Gratis y de código abierto,')} <a href={sitio.licencia}>{t('MIT license', 'licencia MIT')}</a>.<br />{t('Inspired by', 'Inspirada en')} <a href={sitio.left}>Left</a>{t(', the plain-text editor by', ', el editor de texto plano de')} <a href={sitio.hundredRabbits}>Hundred Rabbits</a>{t('. Thank you!', '. ¡Gracias!')}</p>
     </div>
   </section>
 

@@ -105,7 +105,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     `t('english', 'español')` (`lib/sitio.ts`); las páginas de `pages/` solo eligen el idioma.
   - **Mensaje**: Ant es un lugar simple, inteligente y sin distracciones para escribir: primero
     para escritores (cuentos, novelas), luego para cualquiera que tome notas y para
-    desarrolladores. No compararla con Left ni con otras apps.
+    desarrolladores. Left se puede mencionar como inspiración (con crédito a Hundred Rabbits), pero
+    nunca como competencia ni en comparaciones.
   - **Portada** (`components/Portada.astro`): horizontal, temática de hormiguero. Cada
     `<section class="camara">` es una cámara unida por un túnel y se recorre de izquierda a
     derecha (la rueda vertical se traduce a horizontal en `layouts/Nido.astro`); no agregarle
@@ -130,6 +131,11 @@ Mantener esta sección al día cuando se agreguen carpetas o módulos.
 - Escribe los comentarios en español.
 - Cuando modifiques código, actualiza sus comentarios para que sigan describiendo lo que el
   código hace realmente.
+
+## Licencia
+
+- MIT (`LICENSE`), © 2026 Agustin Rojas. También declarada en `package.json`,
+  `website/package.json` y `src-tauri/Cargo.toml`.
 
 ## Git
 

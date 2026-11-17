@@ -28,3 +28,7 @@ pnpm tauri build   # genera el .app y el .dmg en src-tauri/target/release/bundle
 | Cmd+, | Ajustes (carpeta de trabajo) |
 | Cmd+F | Buscar y reemplazar |
 | Cmd+Z / Cmd+Shift+Z | Deshacer / rehacer |
+
+## Licencia
+
+[MIT](LICENSE) © 2026 Agustín Rojas

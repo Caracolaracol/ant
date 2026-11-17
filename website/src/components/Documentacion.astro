@@ -209,6 +209,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
           <li><b>React + TypeScript + Vite</b> (<code>src/</code>){t(': the sidebar, the status bar and the Settings window.', ': la barra lateral, la barra de estado y la ventana de Ajustes.')}</li>
           <li><b>CodeMirror 6</b> (<code>src/editor/</code>){t(': the editor. A single view for every note; each note keeps its own state.', ': el editor. Una sola vista para todas las notas; cada una guarda su propio estado.')}</li>
         </ul>
+        <p class="tenue">{t('The idea comes from', 'La idea viene de')} <a href={sitio.left}>Left</a>{t(', by', ', de')} <a href={sitio.hundredRabbits}>Hundred Rabbits</a>{t(': one window, the text and a sidebar with the document’s headings. Ant is written from scratch and shares no code with it.', ': una ventana, el texto y una barra lateral con los títulos del documento. Ant está escrita desde cero y no comparte código con Left.')}</p>
         <h3>{t('Commands', 'Comandos')}</h3>
 <pre><code><span class="pr">$ </span>pnpm tauri dev    <span class="pr"># {t('app with hot reload', 'app con recarga en caliente')}</span>
 <span class="pr">$ </span>pnpm build        <span class="pr"># {t('type-check and build the interface', 'revisa tipos y compila la interfaz')}</span>
@@ -234,6 +235,8 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
     marca/ant-icono.svg marca/ant-icono-1024.png
 <span class="pr">$ </span>pnpm tauri icon marca/ant-icono-1024.png
 <span class="pr">$ </span>rm -rf src-tauri/icons/android src-tauri/icons/ios</code></pre>
+        <h3>{t('License', 'Licencia')}</h3>
+        <p>{t('Ant is open source under the', 'Ant es de código abierto, con')} <a href={sitio.licencia}>{t('MIT license', 'licencia MIT')}</a>{t(': you can use, copy, modify and share it freely, keeping the copyright notice.', ': puedes usarla, copiarla, modificarla y compartirla libremente, manteniendo el aviso de copyright.')}</p>
         <p class="tenue">{t('Something unclear?', '¿Algo no está claro?')} <a href={`${sitio.repo}/issues`}>{t('Open an issue on GitHub ↗', 'Abre un issue en GitHub ↗')}</a></p>
       </section>
     </article>
