@@ -1,0 +1,170 @@
+---
+// Plantilla de todas las páginas: el sitio es un hormiguero visto en corte. Arriba, la
+// superficie (marca y navegación); al centro, el nido: una fila de cámaras (`<section
+// class="camara">`) unidas por un túnel, que se recorre en horizontal; abajo, el recorrido: una
+// hormiga que avanza según el scroll y un hoyo por cámara para saltar a ella.
+//
+// El scroll es solo horizontal: la rueda del mouse (que mueve en vertical) se traduce a
+// horizontal, y las flechas, Re Pág/Av Pág, Inicio y Fin saltan entre cámaras. Sin JavaScript
+// el nido igual se recorre con el scroll horizontal del navegador.
+import '../styles/global.css';
+import Hormiga from '../components/Hormiga.astro';
+import { ruta, sitio } from '../lib/sitio';
+
+interface Props { titulo: string; descripcion: string; seccion: 'inicio' | 'docs'; }
+const { titulo, descripcion, seccion } = Astro.props;
+const canonica = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={descripcion} />
+    <meta name="theme-color" content="#1d1d20" />
+    <meta name="color-scheme" content="dark" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_CL" />
+    <meta property="og:url" content={canonica} />
+    <link rel="canonical" href={canonica} />
+    <link rel="icon" type="image/svg+xml" href={ruta('ant-icono.svg')} />
+    <title>{titulo}</title>
+  </head>
+  <body>
+    <a class="saltar" href="#nido">Saltar al contenido</a>
+    <header class="superficie">
+      <a class="marca" href={ruta()} aria-label="Ant, inicio">
+        <img src={ruta('ant-icono.svg')} width="40" height="40" alt="" />
+        <span>Ant</span>
+      </a>
+      <nav aria-label="Principal">
+        <a href={ruta()} aria-current={seccion === 'inicio' ? 'page' : undefined}>Inicio</a>
+        <a href={ruta('documentacion/')} aria-current={seccion === 'docs' ? 'page' : undefined}><span class="largo">Documentación</span><span class="corto">Docs</span></a>
+        <a href={sitio.repo}>GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <main id="nido" class="nido" tabindex="-1" aria-label="Contenido; se recorre hacia la derecha">
+      <div class="fila">
+        <slot />
+      </div>
+    </main>
+
+    <nav class="recorrido" aria-label="Cámaras de esta página">
+      <div class="recorrido-pista">
+        <Hormiga class="recorrido-hormiga" />
+      </div>
+      <ol class="recorrido-hoyos"></ol>
+    </nav>
+
+    <script>
+      // Recorrido horizontal del nido: rueda → horizontal, teclas para saltar entre cámaras,
+      // la hormiga que avanza y los hoyos (uno por cámara) que marcan dónde estás.
+      const nido = document.querySelector<HTMLElement>('.nido')!;
+      const camaras = [...document.querySelectorAll<HTMLElement>('.camara')];
+      const hoyos = document.querySelector<HTMLOListElement>('.recorrido-hoyos')!;
+      const hormiga = document.querySelector<SVGElement>('.recorrido-hormiga')!;
+      const pista = document.querySelector<HTMLElement>('.recorrido-pista')!;
+      const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const comportamiento = (): ScrollBehavior => (sinMovimiento.matches ? 'auto' : 'smooth');
+
+      /** Lleva el nido hasta una cámara (su borde izquierdo queda al inicio de la vista). */
+      const irA = (i: number) => {
+        const c = camaras[Math.max(0, Math.min(camaras.length - 1, i))];
+        nido.scrollTo({ left: c.offsetLeft, behavior: comportamiento() });
+      };
+
+      /** Índice de la cámara que ocupa la mayor parte de la vista. */
+      const actual = () => {
+        const centro = nido.scrollLeft + nido.clientWidth / 2;
+        let indice = 0;
+        camaras.forEach((c, i) => { if (c.offsetLeft <= centro) indice = i; });
+        return indice;
+      };
+
+      // Un hoyo por cámara, con su nombre (`data-nombre`) para lectores de pantalla y al pasar el mouse.
+      camaras.forEach((c, i) => {
+        const li = document.createElement('li');
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.title = c.dataset.nombre ?? `Cámara ${i + 1}`;
+        boton.setAttribute('aria-label', boton.title);
+        boton.addEventListener('click', () => irA(i));
+        li.append(boton);
+        hoyos.append(li);
+      });
+      const botones = [...hoyos.querySelectorAll('button')];
+
+      // La rueda vertical mueve el nido en horizontal. Si el puntero está sobre un bloque con
+      // scroll propio (pantallas muy bajas) que todavía puede moverse, se deja ese scroll.
+      nido.addEventListener('wheel', (e) => {
+        if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        const bloque = (e.target as Element).closest<HTMLElement>('.desborda');
+        if (bloque) {
+          const puede = e.deltaY > 0
+            ? bloque.scrollTop + bloque.clientHeight < bloque.scrollHeight - 1
+            : bloque.scrollTop > 0;
+          if (puede) return;
+        }
+        e.preventDefault();
+        nido.scrollLeft += e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY;
+      }, { passive: false });
+
+      // Teclado: cualquier tecla de avance o retroceso salta de cámara en cámara.
+      document.addEventListener('keydown', (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        const avanzar = ['ArrowRight', 'ArrowDown', 'PageDown'].includes(e.key) || (e.key === ' ' && !e.shiftKey);
+        const retroceder = ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key) || (e.key === ' ' && e.shiftKey);
+        if (avanzar) irA(actual() + 1);
+        else if (retroceder) irA(actual() - 1);
+        else if (e.key === 'Home') irA(0);
+        else if (e.key === 'End') irA(camaras.length - 1);
+        else return;
+        e.preventDefault();
+      });
+
+      // La hormiga avanza por la pista según cuánto se ha recorrido, mira hacia donde va y
+      // mueve las patas mientras hay scroll.
+      let anterior = nido.scrollLeft;
+      let quieta: ReturnType<typeof setTimeout> | undefined;
+      const moverHormiga = () => {
+        const max = nido.scrollWidth - nido.clientWidth;
+        const avance = max > 0 ? nido.scrollLeft / max : 0;
+        const espacio = pista.clientWidth - hormiga.getBoundingClientRect().width;
+        const atras = nido.scrollLeft < anterior;
+        hormiga.style.setProperty('--x', `${avance * espacio}px`);
+        if (nido.scrollLeft !== anterior) hormiga.classList.toggle('atras', atras);
+        anterior = nido.scrollLeft;
+        hormiga.classList.add('caminando');
+        clearTimeout(quieta);
+        quieta = setTimeout(() => hormiga.classList.remove('caminando'), 160);
+        const i = actual();
+        botones.forEach((b, j) => b.toggleAttribute('aria-current', j === i));
+      };
+      nido.addEventListener('scroll', moverHormiga, { passive: true });
+      window.addEventListener('resize', moverHormiga);
+      moverHormiga();
+      hormiga.classList.remove('caminando');
+
+      // Los enlaces a otra cámara de la misma página (#instalar, etc.) también van en horizontal.
+      document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((a) => {
+        const destino = document.getElementById(a.hash.slice(1));
+        if (!destino || a.classList.contains('saltar')) return;
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          const i = camaras.findIndex((c) => c === destino || c.contains(destino));
+          if (i >= 0) irA(i);
+          history.replaceState(null, '', a.hash);
+        });
+      });
+      // Al llegar con un #ancla en la dirección, se abre en esa cámara.
+      if (location.hash) {
+        const i = camaras.findIndex((c) => c.id === location.hash.slice(1));
+        if (i >= 0) nido.scrollLeft = camaras[i].offsetLeft;
+      }
+      nido.focus({ preventScroll: true });
+    </script>
+  </body>
+</html>

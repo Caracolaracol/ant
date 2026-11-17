@@ -1,0 +1,37 @@
+---
+// Maqueta de la ventana de Ant hecha con HTML y CSS (no es una captura): barra lateral con
+// fijados, carpeta de trabajo y títulos de la nota, editor con Markdown y barra de estado.
+// Sirve para mostrar la app en la portada sin pesar como una imagen.
+---
+<figure class="ventana" aria-label="Así se ve Ant: barra lateral a la izquierda y la nota a la derecha">
+  <div class="ventana-barra-titulo" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="ventana-cuerpo" aria-hidden="true">
+    <div class="ventana-lateral">
+      <p class="lat-fijados">Fijados</p>
+      <p>ideas.md</p>
+      <p>▸ diario</p>
+      <hr />
+      <p class="lat-carpeta">notas</p>
+      <p>▾ proyectos</p>
+      <p class="lat-activa">&nbsp;&nbsp;hormiguero.md</p>
+      <p class="lat-titulo actual">&nbsp;&nbsp;&nbsp;&nbsp;Hormiguero</p>
+      <p class="lat-titulo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cámaras</p>
+      <p class="lat-titulo">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Túneles</p>
+      <p>&nbsp;&nbsp;lista.md</p>
+      <p>recetas.txt</p>
+    </div>
+    <div class="ventana-editor">
+      <p><span class="md">#</span> <b class="h1">Hormiguero</b></p>
+      <p>&nbsp;</p>
+      <p>Las obreras cavan <b>cámaras</b> unidas por túneles.</p>
+      <p>Cada una guarda algo: crías, comida, <i>basura</i>.</p>
+      <p>&nbsp;</p>
+      <p><span class="md">##</span> <b class="h2">Cámaras</b></p>
+      <p>&nbsp;</p>
+      <p><span class="md">-</span> la reina, al fondo</p>
+      <p><span class="md">-</span> huevos y larvas cerca del calor</p>
+      <p><span class="md">-</span> semillas en la entrada<span class="cursor"></span></p>
+    </div>
+  </div>
+  <div class="ventana-estado" aria-hidden="true"><span>hormiguero.md *</span><span>34 palabras · 11 líneas</span></div>
+</figure>

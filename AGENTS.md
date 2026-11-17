@@ -97,6 +97,15 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   `http://localhost:1420/prueba/editor.html`): el mismo editor con una nota larga, medidor de
   fps y casillas para apagar extensiones. Sirve para comparar motores (Safari/Chrome/Firefox).
 
+- `website/` — sitio en GitHub Pages (https://caracolaracol.github.io/ant/), hecho con Astro y
+  npm (no pnpm; tiene su propio `package-lock.json`). Diseño horizontal con temática de
+  hormiguero: cada `<section class="camara">` es una cámara del nido y todo se recorre de
+  izquierda a derecha (la rueda vertical se traduce a horizontal en `layouts/Nido.astro`); no
+  agregar scroll vertical a las páginas. Portada en `pages/index.astro` y documentación en
+  `pages/documentacion.astro`: al cambiar algo de la app (atajos, ajustes, comandos),
+  actualizar también la documentación. `npm run dev` / `npm run build` dentro de `website/`.
+  Se publica solo con `.github/workflows/website.yml` al subir cambios a `main`.
+
 - `marca/` — icono de la app (cara de hormiga plana en SVG, PNG de 1024 y script); ver `marca/README.md` para
   regenerar `src-tauri/icons/`. Sigue el sistema visual de Mantis (`~/Code/meeting-recorder`).
 

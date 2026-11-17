@@ -1,0 +1,241 @@
+---
+// Documentación de Ant, también en horizontal: una cámara por tema (instalar, primeros pasos,
+// escribir, barra lateral, buscar, atajos, ajustes, desarrollo e icono). Cada cámara tiene un
+// `id` para enlazarla directo, por ejemplo /documentacion/#instalar.
+import Nido from '../layouts/Nido.astro';
+import { sitio } from '../lib/sitio';
+---
+<Nido titulo="Documentación · Ant" descripcion="Cómo instalar y usar Ant: carpeta de trabajo, fijados, atajos, ajustes y cómo compilarla desde el código." seccion="docs">
+
+  <section class="camara" id="indice" data-nombre="Índice">
+    <div class="hueco">
+      <p class="etiqueta">Documentación</p>
+      <h2>Cámaras de este nido</h2>
+      <p class="tenue">Avanza hacia la derecha o salta directo a un tema.</p>
+      <ol class="indice">
+        <li><a href="#instalar">Instalar</a></li>
+        <li><a href="#primeros-pasos">Primeros pasos</a></li>
+        <li><a href="#escribir">Escribir y guardar</a></li>
+        <li><a href="#barra-lateral">Barra lateral</a></li>
+        <li><a href="#fijados">Fijados</a></li>
+        <li><a href="#buscar">Buscar y reemplazar</a></li>
+        <li><a href="#atajos">Atajos</a></li>
+        <li><a href="#ajustes">Ajustes</a></li>
+        <li><a href="#desarrollo">Desarrollo</a></li>
+        <li><a href="#icono">Icono</a></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="camara" id="instalar" data-nombre="Instalar">
+    <div class="hueco bloques">
+      <div class="bloque desborda">
+        <p class="etiqueta">01 · Instalar</p>
+        <h2>Compilar Ant</h2>
+        <p>Por ahora Ant se instala compilándola desde el código. Necesitas:</p>
+        <ul>
+          <li>macOS (Ant también puede compilarse en Windows y Linux con Tauri, pero se prueba en Mac)</li>
+          <li><a href="https://www.rust-lang.org/tools/install">Rust</a> estable</li>
+          <li>Node.js 22 o superior y <a href="https://pnpm.io/installation">pnpm</a></li>
+        </ul>
+      </div>
+      <div class="bloque ancho desborda">
+        <h3>Pasos</h3>
+<pre><code><span class="pr">$ </span>git clone {sitio.repo}.git
+<span class="pr">$ </span>cd ant
+<span class="pr">$ </span>pnpm install
+<span class="pr">$ </span>pnpm tauri build</code></pre>
+        <p>La app queda en <code>src-tauri/target/release/bundle/macos/Ant.app</code> (y un <code>.dmg</code> en <code>bundle/dmg/</code>). Arrástrala a Aplicaciones.</p>
+        <p class="tenue">Ant no está firmada por Apple. Si la abres desde un <code>.dmg</code> descargado, macOS puede avisar que no la reconoce: clic derecho sobre la app → <b>Abrir</b>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id="primeros-pasos" data-nombre="Primeros pasos">
+    <div class="hueco bloques">
+      <div class="bloque desborda">
+        <p class="etiqueta">02 · Primeros pasos</p>
+        <h2>Elige tu carpeta</h2>
+        <p>Ant trabaja sobre una <b>carpeta de trabajo</b>: la carpeta donde guardas tus notas. Puede ser una que ya tengas, como la bóveda de Obsidian.</p>
+        <ol>
+          <li>Abre <b>Ant → Ajustes…</b> (<kbd>⌘</kbd> <kbd>,</kbd>).</li>
+          <li>En <b>General</b>, pulsa <b>Elegir…</b> y selecciona la carpeta.</li>
+          <li>La barra lateral muestra la carpeta al instante.</li>
+        </ol>
+      </div>
+      <div class="bloque desborda">
+        <h3>Qué muestra</h3>
+        <ul>
+          <li>Notas <code>.md</code>, <code>.markdown</code> y <code>.txt</code>, con sus subcarpetas.</li>
+          <li>Se saltan las carpetas ocultas, <code>node_modules</code>, <code>target</code> y las carpetas sin notas.</li>
+          <li>Se vuelve a leer al guardar y cada vez que vuelves a la ventana, por si moviste algo desde Finder u otra app.</li>
+        </ul>
+        <p class="tenue">Sin carpeta elegida, Ant igual sirve: abre notas sueltas con <kbd>⌘</kbd> <kbd>O</kbd>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id="escribir" data-nombre="Escribir y guardar">
+    <div class="hueco bloques">
+      <div class="bloque desborda">
+        <p class="etiqueta">03 · Escribir y guardar</p>
+        <h2>Texto plano, tal cual</h2>
+        <p>Las notas se guardan exactamente como las escribes, en Markdown. Ant colorea los títulos, el énfasis, los enlaces y los bloques de código, pero no cambia el archivo.</p>
+        <ul>
+          <li><kbd>⌘</kbd> <kbd>N</kbd> crea una nota nueva.</li>
+          <li><kbd>⌘</kbd> <kbd>S</kbd> la guarda; la primera vez propone tu carpeta de trabajo.</li>
+          <li><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd> la guarda con otro nombre.</li>
+        </ul>
+      </div>
+      <div class="bloque desborda">
+        <h3>Cambios sin guardar</h3>
+        <p>Se marcan con <code>•</code> en el título de la ventana y con <code>*</code> en la barra de estado. Si cierras una nota con cambios, Ant pregunta antes de descartarlos.</p>
+        <h3>Barra de estado</h3>
+        <p>Abajo: el nombre de la nota y el conteo de palabras, líneas y caracteres. Ahí también aparecen los errores, por ejemplo si falta permiso para escribir.</p>
+        <h3>Guardado seguro</h3>
+        <p>Ant escribe primero un archivo temporal y después lo renombra sobre la nota, así nunca queda un archivo a medio escribir.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id="barra-lateral" data-nombre="Barra lateral">
+    <div class="hueco bloques">
+      <div class="bloque desborda">
+        <p class="etiqueta">04 · Barra lateral</p>
+        <h2>Tres secciones</h2>
+        <p>De arriba hacia abajo:</p>
+        <ol>
+          <li><b>Fijados</b>: lo que fijaste arriba (ver la siguiente cámara).</li>
+          <li><b>Abiertas</b>: notas abiertas que no están en tu carpeta, como una nueva sin guardar.</li>
+          <li><b>Tu carpeta</b>: el árbol de subcarpetas y notas. Las carpetas se pliegan con un clic.</li>
+        </ol>
+        <p><kbd>⌘</kbd> <kbd>\</kbd> la muestra u oculta.</p>
+      </div>
+      <div class="bloque desborda">
+        <h3>Títulos de la nota</h3>
+        <p>Bajo la nota abierta aparecen sus títulos (<code>#</code> a <code>######</code>), con sangría según el nivel. Un clic lleva el cursor a ese título. El título en el que estás escribiendo se resalta.</p>
+        <p class="tenue">Los <code>#</code> dentro de bloques de código no cuentan como títulos.</p>
+        <h3>Varias notas</h3>
+        <p>Las notas abiertas se ven más claras en el árbol y tienen una <b>×</b> para cerrarlas. Cambia entre ellas con <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>]</kbd> y <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id="fijados" data-nombre="Fijados">
+    <div class="hueco">
+      <div class="bloque ancho desborda">
+        <p class="etiqueta">05 · Fijados</p>
+        <h2>Lo que más usas, arriba</h2>
+        <p>Como las pestañas fijadas de Arc o Zen: clic derecho sobre una nota o carpeta del árbol → <b>Fijar arriba</b>. Pasa a la sección <b>Fijados</b> y deja de repetirse más abajo.</p>
+        <ul>
+          <li>Para soltarla: clic derecho → <b>Quitar de fijados</b>.</li>
+          <li>Cada carpeta de trabajo tiene sus propios fijados: si cambias de carpeta, ves los de esa.</li>
+          <li>Si borras o mueves algo fijado fuera de Ant, queda en la lista en gris y cursiva hasta que lo quites.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id="buscar" data-nombre="Buscar">
+    <div class="hueco">
+      <div class="bloque ancho desborda">
+        <p class="etiqueta">06 · Buscar y reemplazar</p>
+        <h2>Dentro de la nota</h2>
+        <p><kbd>⌘</kbd> <kbd>F</kbd> abre el panel de búsqueda abajo del editor. Desde ahí puedes:</p>
+        <ul>
+          <li>ir a la coincidencia siguiente o anterior (<kbd>Enter</kbd> / <kbd>⇧</kbd> <kbd>Enter</kbd>);</li>
+          <li>distinguir mayúsculas, buscar palabras completas o usar expresiones regulares;</li>
+          <li>reemplazar una coincidencia o todas.</li>
+        </ul>
+        <p class="tenue">Al seleccionar una palabra, sus otras apariciones en pantalla se resaltan.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id="atajos" data-nombre="Atajos">
+    <div class="hueco">
+      <p class="etiqueta">07 · Atajos</p>
+      <h2>Todos los atajos</h2>
+      <dl class="atajos dos">
+        <dt><kbd>⌘</kbd> <kbd>N</kbd></dt><dd>Nueva nota</dd>
+        <dt><kbd>⌘</kbd> <kbd>O</kbd></dt><dd>Abrir nota</dd>
+        <dt><kbd>⌘</kbd> <kbd>S</kbd></dt><dd>Guardar</dd>
+        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd></dt><dd>Guardar como</dd>
+        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>]</kbd></dt><dd>Nota siguiente</dd>
+        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd></dt><dd>Nota anterior</dd>
+        <dt><kbd>⌘</kbd> <kbd>\</kbd></dt><dd>Mostrar u ocultar la barra</dd>
+        <dt><kbd>⌘</kbd> <kbd>,</kbd></dt><dd>Ajustes</dd>
+        <dt><kbd>⌘</kbd> <kbd>F</kbd></dt><dd>Buscar y reemplazar</dd>
+        <dt><kbd>⌘</kbd> <kbd>Z</kbd></dt><dd>Deshacer</dd>
+        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>Z</kbd></dt><dd>Rehacer</dd>
+        <dt><kbd>Tab</kbd></dt><dd>Sangrar línea</dd>
+      </dl>
+      <p class="tenue" style="margin-top: 18px">En Windows y Linux, <kbd>⌘</kbd> es <kbd>Ctrl</kbd>. <kbd>⌘</kbd> <kbd>W</kbd> no cierra la ventana principal, para no perderla por accidente.</p>
+    </div>
+  </section>
+
+  <section class="camara" id="ajustes" data-nombre="Ajustes">
+    <div class="hueco bloques">
+      <div class="bloque desborda">
+        <p class="etiqueta">08 · Ajustes</p>
+        <h2>Una ventana aparte</h2>
+        <p><kbd>⌘</kbd> <kbd>,</kbd> abre los Ajustes en su propia ventana: las áreas a la izquierda y sus opciones a la derecha. Los cambios se aplican al instante, sin botón de guardar. <kbd>⌘</kbd> <kbd>W</kbd> la cierra.</p>
+      </div>
+      <div class="bloque ancho desborda">
+        <h3>Dónde se guardan</h3>
+        <p>En un archivo JSON, en la carpeta de configuración de la app:</p>
+<pre><code>~/Library/Application Support/cl.agus.ant/ajustes.json</code></pre>
+<pre><code>{"{"}
+  "carpeta": "/Users/tu/notas",
+  "fijados": ["/Users/tu/notas/ideas.md"]
+{"}"}</code></pre>
+        <p class="tenue">En Windows queda en <code>%APPDATA%\cl.agus.ant\</code> y en Linux en <code>~/.config/cl.agus.ant/</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id="desarrollo" data-nombre="Desarrollo">
+    <div class="hueco bloques">
+      <div class="bloque desborda">
+        <p class="etiqueta">09 · Desarrollo</p>
+        <h2>Cómo está hecha</h2>
+        <ul>
+          <li><b>Tauri 2</b> (Rust, <code>src-tauri/</code>): la ventana, los menús, leer y escribir notas, listar la carpeta y los ajustes.</li>
+          <li><b>React + TypeScript + Vite</b> (<code>src/</code>): la barra lateral, la barra de estado y la ventana de Ajustes.</li>
+          <li><b>CodeMirror 6</b> (<code>src/editor/</code>): el editor. Una sola vista para todas las notas; cada una guarda su propio estado.</li>
+        </ul>
+        <p class="tenue"><code>AGENTS.md</code> describe cada archivo y las convenciones del proyecto (comentarios en español en cada archivo y función).</p>
+      </div>
+      <div class="bloque ancho desborda">
+        <h3>Comandos</h3>
+<pre><code><span class="pr">$ </span>pnpm tauri dev    <span class="pr"># app con recarga en caliente</span>
+<span class="pr">$ </span>pnpm build        <span class="pr"># revisa tipos y compila la interfaz</span>
+<span class="pr">$ </span>cd src-tauri && cargo check
+<span class="pr">$ </span>pnpm tauri build  <span class="pr"># .app y .dmg finales</span></code></pre>
+        <h3>Parche de CodeMirror</h3>
+        <p>Al seleccionar arrastrando hasta el borde, CodeMirror desplazaba el texto a saltos cada 50 ms. <code>patches/</code> lo cambia para que avance en cada cuadro de pantalla, y más rápido. pnpm lo aplica solo al instalar.</p>
+        <p class="tenue"><code>prueba/editor.html</code> (con <code>pnpm dev</code>) abre el editor con una nota larga y un medidor de fps, para comparar navegadores.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="camara" id="icono" data-nombre="Icono">
+    <div class="hueco bloques">
+      <div class="bloque desborda">
+        <p class="etiqueta">10 · Icono</p>
+        <h2>La cara de la hormiga</h2>
+        <p>Plano y de un color, con la misma simpleza que el de Mantis: antenas acodadas, ojos y mandíbulas, en amarillo <code>#e5ea15</code> sobre <code>#1d1d20</code>.</p>
+        <p>La fuente es <code>marca/ant-icono.svg</code>; este sitio la copia al compilar.</p>
+      </div>
+      <div class="bloque ancho desborda">
+        <h3>Regenerar los iconos de la app</h3>
+<pre><code><span class="pr">$ </span>swift marca/generar-icono.swift \
+    marca/ant-icono.svg marca/ant-icono-1024.png
+<span class="pr">$ </span>pnpm tauri icon marca/ant-icono-1024.png
+<span class="pr">$ </span>rm -rf src-tauri/icons/android src-tauri/icons/ios</code></pre>
+        <p class="tenue">¿Algo no está claro? <a href={`${sitio.repo}/issues`}>Abre un issue en GitHub ↗</a></p>
+      </div>
+    </div>
+  </section>
+
+</Nido>
