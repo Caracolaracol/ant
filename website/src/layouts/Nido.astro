@@ -62,7 +62,10 @@ const canonica = new URL(Astro.url.pathname, Astro.site);
     <script>
       // Recorrido horizontal del nido: rueda → horizontal, teclas para saltar entre cámaras,
       // la hormiga que avanza y los hoyos (uno por cámara) que marcan dónde estás.
+      import { cavar } from '../lib/cavar';
       const nido = document.querySelector<HTMLElement>('.nido')!;
+      // Bordes imperfectos de las cámaras y del túnel.
+      cavar(document.querySelector<HTMLElement>('.fila')!);
       const camaras = [...document.querySelectorAll<HTMLElement>('.camara')];
       const hoyos = document.querySelector<HTMLOListElement>('.recorrido-hoyos')!;
       const hormiga = document.querySelector<SVGElement>('.recorrido-hormiga')!;

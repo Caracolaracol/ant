@@ -115,6 +115,20 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .camara:nth-child(even) .hueco { border-radius: 52% 48% 57% 43% / 16% 12% 18% 13%; }
 
+/* Con JavaScript, el borde lo dibuja un SVG irregular (lib/cavar.ts) detrás del contenido, que
+   sobresale 14 px por lado; el fondo y la sombra del CSS se quitan para que no se vean dos bordes. */
+.hueco.cavado { background: none; box-shadow: none; border-radius: 0; isolation: isolate; }
+.hueco-forma {
+  position: absolute; left: -14px; top: -14px; z-index: -1;
+  overflow: visible; pointer-events: none;
+}
+.hueco-forma path, .tunel path { fill: var(--hueco); }
+.fila.con-tunel::before { display: none; }
+.tunel {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  overflow: visible; pointer-events: none;
+}
+
 .etiqueta {
   margin: 0 0 8px;
   font: 12px var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
@@ -266,13 +280,13 @@ li::marker { color: var(--amarillo); }
   .marca span { display: none; }
   .superficie .largo { display: none; }
   .superficie .corto { display: inline; }
-  .camara { padding: 2vh 16px; }
+  .camara { padding: 2vh 26px; }
   .portada { width: 100vw; }
   .portada .hueco { width: 100%; }
   .lema { max-width: none; }
   /* Cada bloque cabe en una pantalla; las cámaras con varios bloques ocupan varias pantallas. */
-  .bloque, .bloque.ancho { width: calc(100vw - 32px - 56px); }
-  .ventana { width: calc(100vw - 32px - 56px); }
+  .bloque, .bloque.ancho { width: calc(100vw - 52px - 56px); }
+  .ventana { width: calc(100vw - 52px - 56px); }
   .portada .hueco { flex-direction: column; align-items: flex-start; gap: 12px; }
   .portada-icono { width: 88px; }
   .hueco { border-radius: 28px 34px 26px 36px; }

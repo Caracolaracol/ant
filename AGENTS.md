@@ -101,7 +101,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   npm (no pnpm; tiene su propio `package-lock.json`). Diseño horizontal con temática de
   hormiguero: cada `<section class="camara">` es una cámara del nido y todo se recorre de
   izquierda a derecha (la rueda vertical se traduce a horizontal en `layouts/Nido.astro`); no
-  agregar scroll vertical a las páginas. Portada en `pages/index.astro` y documentación en
+  agregar scroll vertical a las páginas. Los bordes de las cámaras y del túnel son imperfectos,
+  como cavados: los dibuja `lib/cavar.ts` en SVG (con semilla fija por cámara); sin JavaScript
+  quedan los bordes redondeados del CSS. Portada en `pages/index.astro` y documentación en
   `pages/documentacion.astro`: al cambiar algo de la app (atajos, ajustes, comandos),
   actualizar también la documentación. `npm run dev` / `npm run build` dentro de `website/`.
   Se publica solo con `.github/workflows/website.yml` al subir cambios a `main`.
