@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prueba del editor</title>
+  <style>
+    body { display: flex; flex-direction: column; }
+    #panel { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 16px; font: 12px var(--fuente);
+             color: var(--tenue); background: var(--fondo-bajo); }
+    #fps { color: var(--acento); font-weight: 700; }
+    #editor { flex: 1; min-height: 0; }
+    #editor .cm-editor { height: 100%; }
+    html, body { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="panel">
+    <span id="motor"></span>
+    <span id="fps">— fps</span>
+    <span id="peor">peor cuadro: —</span>
+    <label><input type="checkbox" data-op="coincidencias" checked /> resaltar coincidencias</label>
+    <label><input type="checkbox" data-op="ajuste" checked /> ajuste de línea</label>
+    <label><input type="checkbox" data-op="markdown" checked /> Markdown y títulos grandes</label>
+    <label><input type="checkbox" data-op="seleccion" checked /> selección dibujada</label>
+  </div>
+  <div id="editor"></div>
+  <script type="module" src="./editor.ts"></script>
+</body>
+</html>

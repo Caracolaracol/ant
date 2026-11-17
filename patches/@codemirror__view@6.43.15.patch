@@ -1,0 +1,98 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index a75cdaf6caef51a98adee80a57536a9ca12a1e85..c2159da90c9c3d45497a8447176cf760edf12065 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -4787,6 +4787,8 @@ const EmacsyPendingKeys = "dthko";
+ // Key codes for modifier keys
+ const modifierCodes = [16, 17, 18, 20, 91, 92, 224, 225];
+ const dragScrollMargin = 6;
++// Parche de Ant: multiplicador de la velocidad al desplazar seleccionando con el mouse.
++const VELOCIDAD_ARRASTRE = 2.5;
+ function dragScrollSpeed(dist) {
+     return Math.max(0, dist) * 0.7 + 8;
+ }
+@@ -4856,17 +4858,30 @@ class MouseSelection {
+     }
+     setScrollSpeed(sx, sy) {
+         this.scrollSpeed = { x: sx, y: sy };
++        // Parche de Ant: desplaza en cada cuadro (requestAnimationFrame) en vez de a saltos
++        // cada 50 ms (setInterval), que se veía entrecortado (20 fps) al seleccionar arrastrando.
++        // La velocidad sigue en píxeles cada 50 ms y se escala por el tiempo real del cuadro,
++        // multiplicada por VELOCIDAD_ARRASTRE (más rápida que la original de CodeMirror).
+         if (sx || sy) {
+-            if (this.scrolling < 0)
+-                this.scrolling = setInterval(() => this.scroll(), 50);
++            if (this.scrolling < 0) {
++                this.lastScroll = performance.now();
++                const tick = (now) => {
++                    if (this.scrolling < 0) return;
++                    this.scroll(now);
++                    if (this.scrolling > -1) this.scrolling = this.view.win.requestAnimationFrame(tick);
++                };
++                this.scrolling = this.view.win.requestAnimationFrame(tick);
++            }
+         }
+         else if (this.scrolling > -1) {
+-            clearInterval(this.scrolling);
++            this.view.win.cancelAnimationFrame(this.scrolling);
+             this.scrolling = -1;
+         }
+     }
+-    scroll() {
+-        let { x, y } = this.scrollSpeed;
++    scroll(now = performance.now()) {
++        let paso = Math.min((now - this.lastScroll) / 50, 3) * VELOCIDAD_ARRASTRE;
++        this.lastScroll = now;
++        let x = this.scrollSpeed.x * paso, y = this.scrollSpeed.y * paso;
+         if (x && this.scrollParents.x) {
+             this.scrollParents.x.scrollLeft += x;
+             x = 0;
+diff --git a/dist/index.js b/dist/index.js
+index bda68ef32c8741c3c3f85bcf877953496ccf6e20..8d6956bf046652bead16b87382ef2289e124643d 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -4783,6 +4783,8 @@ const EmacsyPendingKeys = "dthko";
+ // Key codes for modifier keys
+ const modifierCodes = [16, 17, 18, 20, 91, 92, 224, 225];
+ const dragScrollMargin = 6;
++// Parche de Ant: multiplicador de la velocidad al desplazar seleccionando con el mouse.
++const VELOCIDAD_ARRASTRE = 2.5;
+ function dragScrollSpeed(dist) {
+     return Math.max(0, dist) * 0.7 + 8;
+ }
+@@ -4852,17 +4854,30 @@ class MouseSelection {
+     }
+     setScrollSpeed(sx, sy) {
+         this.scrollSpeed = { x: sx, y: sy };
++        // Parche de Ant: desplaza en cada cuadro (requestAnimationFrame) en vez de a saltos
++        // cada 50 ms (setInterval), que se veía entrecortado (20 fps) al seleccionar arrastrando.
++        // La velocidad sigue en píxeles cada 50 ms y se escala por el tiempo real del cuadro,
++        // multiplicada por VELOCIDAD_ARRASTRE (más rápida que la original de CodeMirror).
+         if (sx || sy) {
+-            if (this.scrolling < 0)
+-                this.scrolling = setInterval(() => this.scroll(), 50);
++            if (this.scrolling < 0) {
++                this.lastScroll = performance.now();
++                const tick = (now) => {
++                    if (this.scrolling < 0) return;
++                    this.scroll(now);
++                    if (this.scrolling > -1) this.scrolling = this.view.win.requestAnimationFrame(tick);
++                };
++                this.scrolling = this.view.win.requestAnimationFrame(tick);
++            }
+         }
+         else if (this.scrolling > -1) {
+-            clearInterval(this.scrolling);
++            this.view.win.cancelAnimationFrame(this.scrolling);
+             this.scrolling = -1;
+         }
+     }
+-    scroll() {
+-        let { x, y } = this.scrollSpeed;
++    scroll(now = performance.now()) {
++        let paso = Math.min((now - this.lastScroll) / 50, 3) * VELOCIDAD_ARRASTRE;
++        this.lastScroll = now;
++        let x = this.scrollSpeed.x * paso, y = this.scrollSpeed.y * paso;
+         if (x && this.scrollParents.x) {
+             this.scrollParents.x.scrollLeft += x;
+             x = 0;

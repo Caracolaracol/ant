@@ -29,6 +29,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - **React + TypeScript + Vite**: la interfaz que rodea al editor (barra de estado y, más
   adelante, navegación, ajustes, etc.). CodeMirror maneja su propio DOM: React no debe
   re-renderizar el texto en cada tecla; se habla con el editor por la ref `EditorHandle`.
+  Tampoco guardar en el estado de React lo que cambia en cada movimiento (como la posición del
+  cursor al seleccionar con el mouse): va en una ref, y solo se actualiza el estado cuando cambia
+  algo visible. Lo que recorre la nota entera (conteo, títulos) va con `useMemo` sobre el texto.
 - Gestor de paquetes: **pnpm**.
 
 ## Comandos
@@ -84,6 +87,15 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   flotan sobre la franja `.arrastre`, que sirve para arrastrarla.
 - `src-tauri/capabilities/default.json` — permisos de las ventanas `main` y `ajustes`. Al
   agregar un plugin o una ventana, sumarlos aquí.
+
+- `patches/` — parches de dependencias (`pnpm patch`, registrados en `pnpm-workspace.yaml`).
+  `@codemirror/view`: al seleccionar arrastrando hasta el borde, CodeMirror desplaza a saltos
+  cada 50 ms (`setInterval`, ~20 fps, se ve entrecortado); el parche lo hace en cada cuadro con
+  `requestAnimationFrame`, y 2,5 veces más rápido (`VELOCIDAD_ARRASTRE`). Al actualizar `@codemirror/view` hay que rehacer el parche
+  (`pnpm patch @codemirror/view@<versión>`, buscar `Parche de Ant` en `dist/index.js` y `.cjs`).
+- `prueba/editor.html` — página de prueba fuera de Tauri (`pnpm dev`, luego
+  `http://localhost:1420/prueba/editor.html`): el mismo editor con una nota larga, medidor de
+  fps y casillas para apagar extensiones. Sirve para comparar motores (Safari/Chrome/Firefox).
 
 - `marca/` — icono de la app (cara de hormiga plana en SVG, PNG de 1024 y script); ver `marca/README.md` para
   regenerar `src-tauri/icons/`. Sigue el sistema visual de Mantis (`~/Code/meeting-recorder`).

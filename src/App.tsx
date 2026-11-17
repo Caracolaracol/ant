@@ -6,13 +6,14 @@
 //   Cmd+Shift+] / Cmd+Shift+[ nota siguiente / anterior · Cmd+\ mostrar u ocultar la barra lateral
 // Cmd+, (Ajustes) lo maneja el menú de la app, en Rust.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { Editor, EditorHandle } from "./editor/Editor";
 import { BarraLateral, NotaResumen } from "./BarraLateral";
 import { Ajustes, escucharAjustes, guardarAjustes, leerAjustes } from "./ajustes";
 import { Entrada, abrirAjustes, listarCarpeta } from "./carpeta";
+import { extraerMarcadores, marcadorActual } from "./marcadores";
 import { elegirNota, elegirRutaGuardado, guardarNota, leerNota, nombreArchivo } from "./notas";
 import "./App.css";
 
@@ -37,7 +38,12 @@ function App() {
   const editor = useRef<EditorHandle>(null);
   const [notas, setNotas] = useState<NotaResumen[]>(() => [notaVacia()]);
   const [activa, setActiva] = useState(() => notas[0].id);
-  const [cursor, setCursor] = useState(0);
+  // Posición del cursor en una ref y no en el estado: cambia en cada movimiento del mouse al
+  // seleccionar, y si cada cambio volviera a dibujar la ventana entera (barra lateral, conteo de
+  // palabras), el scroll al seleccionar texto largo perdería cuadros. Solo se vuelve a dibujar
+  // cuando el cursor pasa a otro título (`tituloCursor`).
+  const cursor = useRef(0);
+  const [, setTituloCursor] = useState(-1);
   const [barraVisible, setBarraVisible] = useState(true);
   const [ajustes, setAjustes] = useState<Ajustes>({ carpeta: null, fijados: [] });
   const carpeta = ajustes.carpeta;
@@ -210,7 +216,17 @@ function App() {
     getCurrentWindow().setTitle(`${nota.sucio ? "• " : ""}${nombre}`).catch(() => {});
   }, [nombre, nota.sucio]);
 
-  const { palabras, lineas, caracteres } = contar(nota.texto);
+  // El conteo y los títulos recorren la nota entera: solo se recalculan cuando cambia su texto.
+  const { palabras, lineas, caracteres } = useMemo(() => contar(nota.texto), [nota.texto]);
+  const marcadores = useMemo(() => extraerMarcadores(nota.texto), [nota.texto]);
+  const marcadoresRef = useRef(marcadores);
+  marcadoresRef.current = marcadores;
+
+  /** Guarda la posición del cursor y vuelve a dibujar solo si cambió el título en el que está. */
+  const alMoverCursor = useCallback((pos: number) => {
+    cursor.current = pos;
+    setTituloCursor(marcadorActual(marcadoresRef.current, pos));
+  }, []);
 
   return (
     <main className="app">
@@ -227,7 +243,8 @@ function App() {
             onDesfijar={(ruta) => cambiarFijados((f) => f.filter((r) => r !== ruta))}
             notas={notas}
             activa={activa}
-            cursor={cursor}
+            marcadores={marcadores}
+            tituloActual={marcadorActual(marcadores, cursor.current)}
             onElegir={setActiva}
             onAbrirRuta={(ruta) => abrirRuta(ruta).then(() => setError(null), fallo)}
             onCerrar={(id) => cerrar(id).catch(fallo)}
@@ -235,7 +252,7 @@ function App() {
             onAbrirAjustes={() => abrirAjustes().catch(fallo)}
           />
         )}
-        <Editor ref={editor} onChange={alCambiar} onCursor={setCursor} />
+        <Editor ref={editor} onChange={alCambiar} onCursor={alMoverCursor} />
       </div>
       <footer className="estado">
         <span>{nota.sucio ? `${nombre} *` : nombre}</span>

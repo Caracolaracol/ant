@@ -6,9 +6,9 @@
 //   3. La carpeta de trabajo (elegida en Ajustes) como árbol de subcarpetas y notas.
 // Bajo la nota visible aparecen sus títulos (`#`, `##`, …) para saltar a ellos, como en Left.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Entrada, carpetasPadre, estaDentro } from "./carpeta";
-import { Marcador, extraerMarcadores, marcadorActual } from "./marcadores";
+import { Marcador } from "./marcadores";
 import { MenuContextual } from "./MenuContextual";
 import { nombreArchivo } from "./notas";
 
@@ -27,8 +27,10 @@ interface Props {
   fijados: string[];
   notas: NotaResumen[];
   activa: string;
-  /** Posición del cursor en la nota activa. */
-  cursor: number;
+  /** Títulos de la nota activa (los calcula App, solo cuando cambia el texto). */
+  marcadores: Marcador[];
+  /** Índice del título donde está el cursor, o -1. */
+  tituloActual: number;
   onElegir(id: string): void;
   onAbrirRuta(ruta: string): void;
   onCerrar(id: string): void;
@@ -80,13 +82,8 @@ function Marcadores({ marcadores, seleccionado, nivelBase, onSaltar }: {
 }
 
 export function BarraLateral(props: Props) {
-  const { carpeta, arbol, fijados, notas, activa, cursor } = props;
+  const { carpeta, arbol, fijados, notas, activa, marcadores, tituloActual: seleccionado } = props;
   const notaActiva = notas.find((n) => n.id === activa);
-
-  // Los títulos solo se recalculan cuando cambia el texto de la nota activa, no al mover el cursor.
-  const textoActivo = notaActiva?.texto ?? "";
-  const marcadores = useMemo(() => extraerMarcadores(textoActivo), [textoActivo]);
-  const seleccionado = marcadorActual(marcadores, cursor);
 
   // Carpetas desplegadas (del árbol o fijadas). Al abrir una nota se despliegan las que la contienen.
   const [abiertas, setAbiertas] = useState<Set<string>>(new Set());
