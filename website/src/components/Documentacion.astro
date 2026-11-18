@@ -13,7 +13,7 @@ const t = traductor(idioma);
 
 // Temas en orden: id (en el idioma de la página) y nombre para el índice.
 const temas = [
-  { id: t('install', 'instalar'), nombre: t('Install', 'Instalar') },
+  { id: t('install', 'instalar'), nombre: t('Download', 'Descargar') },
   { id: t('getting-started', 'primeros-pasos'), nombre: t('Getting started', 'Primeros pasos') },
   { id: t('writing', 'escribir'), nombre: t('Writing and saving', 'Escribir y guardar') },
   { id: t('sidebar', 'barra-lateral'), nombre: t('Sidebar', 'Barra lateral') },
@@ -54,10 +54,22 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
 
       <section class="tema" id={instalar.id} data-nombre={instalar.nombre}>
         <p class="etiqueta">01</p>
-        <h2>{t('Build Ant', 'Compilar Ant')}</h2>
-        <p>{t('For now, Ant is installed by building it from source. You need:', 'Por ahora Ant se instala compilándola desde el código. Necesitas:')}</p>
+        <h2>{t('Download Ant', 'Descargar Ant')}</h2>
+        <p>{t('Get the latest version from', 'Baja la última versión desde')} <a href={sitio.descargas}>GitHub Releases</a>:</p>
         <ul>
-          <li>{t('macOS (Tauri can also build Ant for Windows and Linux, but it is tested on Mac)', 'macOS (Tauri también puede compilar Ant para Windows y Linux, pero se prueba en Mac)')}</li>
+          <li><strong>macOS</strong>: <code>Ant_x.y.z_universal.dmg</code> {t('(Apple Silicon and Intel). Open it and drag Ant to Applications.', '(Apple Silicon e Intel). Ábrelo y arrastra Ant a Aplicaciones.')}</li>
+          <li><strong>Windows</strong>: <code>Ant_x.y.z_x64-setup.exe</code> {t('or the', 'o el')} <code>.msi</code>.</li>
+          <li><strong>Linux</strong>: <code>.AppImage</code>, <code>.deb</code> {t('(Debian, Ubuntu) or', '(Debian, Ubuntu) o')} <code>.rpm</code> {t('(Fedora).', '(Fedora).')}</li>
+        </ul>
+        <p class="tenue">{t(
+          'Ant is not signed by Apple or Microsoft, so the first time the system warns you. On macOS: try to open it, then go to System Settings → Privacy & Security → Open Anyway. On Windows: More info → Run anyway. On Windows and Linux shortcuts use Ctrl where this guide says Cmd.',
+          'Ant no está firmada por Apple ni por Microsoft, así que la primera vez el sistema avisa. En macOS: intenta abrirla y luego ve a Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente. En Windows: Más información → Ejecutar de todas formas. En Windows y Linux los atajos usan Ctrl donde esta guía dice Cmd.',
+        )}</p>
+        <p>{t('Every change is listed in the', 'Cada cambio queda anotado en el')} <a href={sitio.changelog}>CHANGELOG</a>.</p>
+
+        <h3>{t('Build it from source', 'Compilarla desde el código')}</h3>
+        <p>{t('You need:', 'Necesitas:')}</p>
+        <ul>
           <li><a href="https://www.rust-lang.org/tools/install">Rust</a> {t('(stable)', 'estable')}</li>
           <li>{t('Node.js 22 or newer and', 'Node.js 22 o superior y')} <a href="https://pnpm.io/installation">pnpm</a></li>
         </ul>
@@ -65,11 +77,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
 <span class="pr">$ </span>cd ant
 <span class="pr">$ </span>pnpm install
 <span class="pr">$ </span>pnpm tauri build</code></pre>
-        <p>{t('The app ends up in', 'La app queda en')} <code>src-tauri/target/release/bundle/macos/Ant.app</code> {t('(plus a', '(y un')} <code>.dmg</code> {t('in', 'en')} <code>bundle/dmg/</code>). {t('Drag it to Applications.', 'Arrástrala a Aplicaciones.')}</p>
-        <p class="tenue">{t(
-          'Ant is not signed by Apple. If you open it from a downloaded .dmg, macOS may say it cannot verify it: right-click the app → Open.',
-          'Ant no está firmada por Apple. Si la abres desde un .dmg descargado, macOS puede avisar que no la reconoce: clic derecho sobre la app → Abrir.',
-        )}</p>
+        <p>{t('The installers end up in', 'Los instaladores quedan en')} <code>src-tauri/target/release/bundle/</code> {t('(on Mac, also', '(en Mac, también')} <code>macos/Ant.app</code>). {t('Tauri builds for the system you run it on: Windows on Windows, Linux on Linux.', 'Tauri compila para el sistema donde lo corres: Windows en Windows, Linux en Linux.')}</p>
       </section>
 
       <section class="tema" id={primeros.id} data-nombre={primeros.nombre}>

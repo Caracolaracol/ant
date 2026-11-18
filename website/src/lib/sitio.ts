@@ -5,6 +5,8 @@ export const sitio = {
   nombre: 'Ant',
   repo: 'https://github.com/Caracolaracol/ant',
   licencia: 'https://github.com/Caracolaracol/ant/blob/main/LICENSE',
+  descargas: 'https://github.com/Caracolaracol/ant/releases/latest',
+  changelog: 'https://github.com/Caracolaracol/ant/blob/main/CHANGELOG.md',
   left: 'https://github.com/hundredrabbits/Left',
   hundredRabbits: 'https://100r.co',
   autor: 'Agustín Rojas',

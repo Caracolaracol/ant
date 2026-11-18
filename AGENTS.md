@@ -41,6 +41,12 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `pnpm build` — revisa los tipos y compila solo la interfaz (rápido para verificar cambios).
 - `cd src-tauri && cargo check` — verifica que compile el lado Rust.
 - `pnpm tauri build` — genera la app final (`.app` y `.dmg`) en `src-tauri/target/release/bundle/`.
+- Publicar una versión: subir la versión en `package.json`, `src-tauri/tauri.conf.json` y
+  `src-tauri/Cargo.toml`, mover lo de «Sin publicar» a una sección nueva en `CHANGELOG.md`,
+  y empujar la etiqueta `vX.Y.Z`. `.github/workflows/release.yml` compila en macOS (universal),
+  Windows y Linux, crea la versión como borrador con esa sección del CHANGELOG como notas y la
+  publica si compilaron los tres. La app no está firmada (en macOS, firma ad-hoc `-`).
+- Anotar en `CHANGELOG.md` («Sin publicar») cada cambio visible para quien usa la app.
 
 ## Estructura del proyecto
 

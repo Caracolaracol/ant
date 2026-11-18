@@ -7,15 +7,26 @@ Sitio y documentación: **https://caracolaracol.github.io/ant/**
 
 Hecha con Tauri 2, React, TypeScript, Vite y CodeMirror 6.
 
+## Descargar
+
+Para macOS (Apple Silicon e Intel), Windows y Linux en
+[Releases](https://github.com/Caracolaracol/ant/releases/latest). Los cambios de cada versión
+están en el [CHANGELOG](CHANGELOG.md).
+
+La app no está firmada por Apple ni por Microsoft: la primera vez el sistema avisa. En macOS,
+intenta abrirla y luego ve a Ajustes del Sistema → Privacidad y seguridad → Abrir igualmente.
+
 ## Desarrollo
 
 ```sh
 pnpm install
 pnpm tauri dev     # abre la app con recarga en caliente
-pnpm tauri build   # genera el .app y el .dmg en src-tauri/target/release/bundle/
+pnpm tauri build   # genera los instaladores en src-tauri/target/release/bundle/
 ```
 
 ## Atajos
+
+En Windows y Linux, Ctrl en lugar de Cmd.
 
 | Atajo | Acción |
 |---|---|

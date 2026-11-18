@@ -40,10 +40,11 @@ jobs:
           ' CHANGELOG.md > notas.md
           grep -q '[^[:space:]]' notas.md \
             || { echo "::error::CHANGELOG.md no tiene una sección para $version"; exit 1; }
-          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
-            --title "Ant $version" --notes-file notas.md
-          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-            --jq "map(select(.tag_name == \"$GITHUB_REF_NAME\"))[0].id")
+          # La API devuelve el id del borrador al crearlo; tauri-action sube los archivos ahí.
+          id=$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" \
+            -f tag_name="$GITHUB_REF_NAME" -f name="Ant $version" -F body=@notas.md \
+            -F draft=true --jq .id)
+          [ -n "$id" ] || { echo "::error::No se pudo crear el borrador"; exit 1; }
           echo "id=$id" >> "$GITHUB_OUTPUT"
 
   compilar:
@@ -92,12 +93,20 @@ jobs:
         with:
           releaseId: ${{ needs.borrador.outputs.id }}
           args: ${{ matrix.args }}
+          uploadUpdaterJson: false
 
   publicar:
-    needs: compilar
+    needs: [borrador, compilar]
     runs-on: ubuntu-latest
     steps:
-      - name: Publicar la versión
+      - name: Publicar la versión (si tiene los archivos de los tres sistemas)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          ID: ${{ needs.borrador.outputs.id }}
+        run: |
+          archivos=$(gh api "repos/$GITHUB_REPOSITORY/releases/$ID" --jq '.assets[].name')
+          echo "$archivos"
+          for ext in .dmg .exe .msi .AppImage .deb .rpm; do
+            grep -qF "$ext" <<< "$archivos" || { echo "::error::Falta el archivo $ext"; exit 1; }
+          done
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$ID" -F draft=false -f make_latest=true --jq .html_url
