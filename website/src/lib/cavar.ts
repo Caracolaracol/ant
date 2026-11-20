@@ -187,8 +187,13 @@ export function cavar(fila: HTMLElement, { tunel = true } = {}) {
     hueco.classList.add('cavado');
   };
 
+  // El túnel nace en el borde izquierdo y termina dentro de la última cámara (a la mitad de su
+  // hueco, tapado por ella): es el final del nido y no sale otro túnel hacia la derecha.
   const dibujarTunel = () => {
-    const w = fila.scrollWidth;
+    const ultimo = huecos[huecos.length - 1];
+    const w = ultimo
+      ? ultimo.getBoundingClientRect().left - fila.getBoundingClientRect().left + ultimo.offsetWidth / 2
+      : fila.scrollWidth;
     const alto = 70;
     const path = forma(fila, 'tunel');
     const svg = path.ownerSVGElement!;
