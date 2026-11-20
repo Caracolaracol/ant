@@ -28,10 +28,16 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   CodeMirror.
 - **React + TypeScript + Vite**: la interfaz que rodea al editor (barra de estado y, más
   adelante, navegación, ajustes, etc.). CodeMirror maneja su propio DOM: React no debe
-  re-renderizar el texto en cada tecla; se habla con el editor por la ref `EditorHandle`.
+  re-renderizar el texto en cada tecla; se habla con el editor por la ref `ControlDelEditor`.
   Tampoco guardar en el estado de React lo que cambia en cada movimiento (como la posición del
   cursor al seleccionar con el mouse): va en una ref, y solo se actualiza el estado cuando cambia
-  algo visible. Lo que recorre la nota entera (conteo, títulos) va con `useMemo` sobre el texto.
+  algo visible. El editor tampoco copia el texto en cada tecla: solo avisa que cambió, y lo que
+  recorre la nota entera (conteo, títulos) se recalcula tras una pausa
+  (`PAUSA_PARA_CONTAR_Y_BUSCAR_TITULOS`), con `useMemo` sobre ese texto. Nada de lo que pasa en
+  cada tecla debe crecer con el largo de la nota (una novela entera puede estar en una sola).
+- En Rust, lo que toca el disco y puede tardar (leer notas, listar el hormiguero) va en comandos
+  `async` con `en_segundo_plano` (`lib.rs`): los comandos sin `async` corren en el hilo principal
+  y trabarían la ventana.
 - Gestor de paquetes: **pnpm**.
 
 ## Comandos

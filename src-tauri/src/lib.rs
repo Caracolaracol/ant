@@ -24,19 +24,31 @@ fn salir(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+/// Corre un trabajo de disco en un hilo aparte y espera su resultado. Los comandos sin `async`
+/// corren en el hilo principal, el mismo que dibuja la ventana: leer una nota enorme o un
+/// hormiguero con miles de archivos la dejaría trabada mientras tanto.
+pub(crate) async fn en_segundo_plano<T: Send + 'static>(
+    trabajo: impl FnOnce() -> Result<T, String> + Send + 'static,
+) -> Result<T, String> {
+    tauri::async_runtime::spawn_blocking(trabajo)
+        .await
+        .map_err(|error| format!("Background task failed: {error}"))?
+}
+
 /// Lee una nota desde `path` y devuelve su contenido como texto UTF-8.
-/// Se llama desde la interfaz al abrir un archivo (diálogo «Abrir» o clic en la barra lateral).
+/// Se llama desde la interfaz al abrir un archivo (diálogo «Abrir» o clic en la barra lateral) y
+/// antes de cada guardado automático (para no pisar cambios hechos fuera de Ant).
 #[tauri::command]
-fn read_note(path: String) -> Result<String, String> {
-    fs::read_to_string(&path).map_err(|e| format!("Could not read {path}: {e}"))
+async fn read_note(path: String) -> Result<String, String> {
+    en_segundo_plano(move || fs::read_to_string(&path).map_err(|error| format!("Could not read {path}: {error}"))).await
 }
 
 /// Guarda `contents` en `path`, creando el archivo o reemplazándolo.
 /// Escribe primero en un archivo temporal junto al destino y luego lo renombra, para que un
 /// corte a mitad de escritura nunca deje la nota a medias.
 #[tauri::command]
-fn write_note(path: String, contents: String) -> Result<(), String> {
-    escribir_atomico(Path::new(&path), contents.as_bytes())
+async fn write_note(path: String, contents: String) -> Result<(), String> {
+    en_segundo_plano(move || escribir_atomico(Path::new(&path), contents.as_bytes())).await
 }
 
 /// Escribe en un archivo temporal junto al destino y luego lo renombra, para que un corte a

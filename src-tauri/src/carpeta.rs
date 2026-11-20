@@ -59,14 +59,18 @@ fn leer(dir: &Path, profundidad: usize) -> Vec<Entrada> {
     entradas
 }
 
-/// Devuelve el árbol de notas de la carpeta `path`.
+/// Devuelve el árbol de notas de la carpeta `path`. Corre en un hilo aparte (`en_segundo_plano`):
+/// un hormiguero con miles de notas no traba la ventana mientras se lee.
 #[tauri::command]
-pub fn listar_carpeta(path: String) -> Result<Vec<Entrada>, String> {
-    let dir = Path::new(&path);
-    if !dir.is_dir() {
-        return Err(format!("The folder {path} does not exist"));
-    }
-    Ok(leer(dir, 0))
+pub async fn listar_carpeta(path: String) -> Result<Vec<Entrada>, String> {
+    crate::en_segundo_plano(move || {
+        let carpeta_del_hormiguero = Path::new(&path);
+        if !carpeta_del_hormiguero.is_dir() {
+            return Err(format!("The folder {path} does not exist"));
+        }
+        Ok(leer(carpeta_del_hormiguero, 0))
+    })
+    .await
 }
 
 /// Crea la carpeta de un hormiguero nuevo, `nombre` dentro de `padre`, y devuelve su ruta. No

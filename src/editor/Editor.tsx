@@ -8,6 +8,9 @@
 // en memoria aunque la nota se cierre (hasta `LIMITE_DE_NOTAS_RECORDADAS`), así al volver a
 // abrirla siguen ahí el cursor y el deshacer. Si el archivo cambió fuera de Ant, el texto se pone
 // al día sin perder el historial (`reemplazarTextoDesdeDisco`).
+// En cada tecla solo se avisa *que* cambió el texto (`alCambiarTexto`), sin copiarlo: con una
+// novela entera en una nota, copiar todo el texto en cada tecla haría lento escribir. Quien
+// necesita el texto lo pide con `obtenerTextoDeNota`.
 // El modo escritor (`escritor.ts`) va en un `Compartment`: se enciende, apaga o cambia en vivo,
 // y cada nota guardada se pone al día al volver a mostrarse.
 
@@ -33,10 +36,13 @@ const cambioQueVieneDelDisco = Annotation.define<boolean>();
 /** Métodos que la app puede llamar sobre el editor desde fuera. */
 export interface ControlDelEditor {
   /**
-   * Muestra la nota `idNota` con `textoActual`. Si el editor ya la recordaba, vuelve con su cursor
-   * y su historial (y pone su texto al día si cambió); si no, la crea.
+   * Muestra la nota `idNota`. Si el editor ya la recordaba, vuelve con su cursor y su historial;
+   * si no, la crea con `textoInicial`. (Para poner al día una nota recordada con lo que hay en su
+   * archivo, `reemplazarTextoDesdeDisco`.)
    */
-  mostrarNota(idNota: string, textoActual: string): void;
+  mostrarNota(idNota: string, textoInicial: string): void;
+  /** Indica si el editor recuerda el estado de una nota (aunque esté cerrada). */
+  recuerdaLaNota(idNota: string): boolean;
   /** Olvida para siempre el estado de una nota (una nota en blanco que se descarta). */
   olvidarNota(idNota: string): void;
   /** Devuelve el texto de una nota (la visible o una recordada en segundo plano). */
@@ -50,8 +56,8 @@ export interface ControlDelEditor {
 }
 
 interface Props {
-  /** Se llama cada vez que el usuario cambia el texto de la nota visible. */
-  alCambiarTexto(textoNuevo: string): void;
+  /** Se llama cada vez que el usuario cambia el texto de la nota visible (sin el texto, ver arriba). */
+  alCambiarTexto(): void;
   /** Se llama cuando el cursor se mueve, con su posición (para marcar el título actual). */
   alMoverCursor(posicion: number): void;
   /** Configuración del modo escritor, o `null` si está apagado. */
@@ -119,7 +125,7 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
     compartimentoModoEscritor.of(extensionesEscritor(configuracionModoEscritorVigente.current)),
     EditorView.updateListener.of((actualizacion) => {
       const vieneDelDisco = actualizacion.transactions.some((transaccion) => transaccion.annotation(cambioQueVieneDelDisco));
-      if (actualizacion.docChanged && !vieneDelDisco) callbacksVigentes.current.alCambiarTexto(actualizacion.state.doc.toString());
+      if (actualizacion.docChanged && !vieneDelDisco) callbacksVigentes.current.alCambiarTexto();
       if (actualizacion.selectionSet || actualizacion.docChanged) callbacksVigentes.current.alMoverCursor(actualizacion.state.selection.main.head);
     }),
   ];
@@ -149,24 +155,21 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
   }, [configuracionModoEscritorComoTexto]);
 
   useImperativeHandle(referenciaDelControl, () => ({
-    mostrarNota(idNota, textoActual) {
+    mostrarNota(idNota, textoInicial) {
       const vista = vistaDelEditor.current;
       if (!vista) return;
       // Recuerda el estado de la nota que se deja, para volver a ella con su cursor y su historial.
       if (idNotaVisible.current) recordarEstado(idNotaVisible.current, vista.state);
       const estadoRecordado = estadosRecordadosPorNota.current.get(idNota);
-      vista.setState(estadoRecordado ?? EditorState.create({ doc: textoActual, extensions: crearExtensiones() }));
+      vista.setState(estadoRecordado ?? EditorState.create({ doc: textoInicial, extensions: crearExtensiones() }));
       idNotaVisible.current = idNota;
       recordarEstado(idNota, vista.state);
-      // Si el archivo cambió desde la última vez, el texto recordado se pone al día.
-      if (estadoRecordado && estadoRecordado.doc.toString() !== textoActual) {
-        vista.dispatch(transaccionDesdeDisco(vista.state, textoActual));
-      }
       // Una nota recordada pudo quedar con otra configuración del modo escritor: se pone al día.
       vista.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesEscritor(configuracionModoEscritorVigente.current)) });
       callbacksVigentes.current.alMoverCursor(vista.state.selection.main.head);
       vista.focus();
     },
+    recuerdaLaNota: (idNota) => idNota === idNotaVisible.current || estadosRecordadosPorNota.current.has(idNota),
     olvidarNota(idNota) {
       estadosRecordadosPorNota.current.delete(idNota);
       if (idNotaVisible.current === idNota) idNotaVisible.current = null;

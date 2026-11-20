@@ -52,6 +52,13 @@ const idDeNotaConArchivo = (rutaDelArchivo: string) => `archivo:${rutaDelArchivo
 /** Cuánto se espera tras la última tecla para guardar la nota solo, en milisegundos. */
 const PAUSA_GUARDADO = 600;
 
+/**
+ * Cuánto se espera tras la última tecla para volver a contar palabras y buscar los títulos de la
+ * nota (barra de estado y barra lateral). Hacerlo en cada tecla recorrería la nota entera cada
+ * vez, y con una novela en una sola nota escribir se volvería lento.
+ */
+const PAUSA_PARA_CONTAR_Y_BUSCAR_TITULOS = 250;
+
 /** Nota vacía y sin ruta, la que se crea con Cmd+N o al cerrar la última. */
 const notaVacia = (): NotaResumen => ({ id: nuevoId(), ruta: null, texto: "", sucio: false, textoQueHayEnDisco: null });
 
@@ -178,6 +185,17 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   // Guardado automático: cada nota con archivo que cambia tiene un temporizador; al vencer (tras
   // `PAUSA_GUARDADO` sin escribir) se guarda.
   const temporizadores = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  // Cuántos cambios lleva cada nota desde que se abrió: al terminar de guardar, si cambió el número,
+  // es que se siguió escribiendo y la nota sigue con cambios sin guardar.
+  const cambiosPorNota = useRef(new Map<string, number>());
+  // Temporizador para poner al día el texto que se cuenta (palabras, títulos) tras una pausa.
+  const temporizadorDelConteo = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  /** Texto actual de una nota: el del editor (al día) o, si el editor no la tiene, el último conocido. */
+  const textoActualDeNota = useCallback(
+    (nota: NotaResumen) => editor.current?.obtenerTextoDeNota(nota.id) ?? nota.texto,
+    [],
+  );
 
   /**
    * Guarda ya en su archivo una nota con cambios, con el texto del editor. Si mientras se
@@ -192,7 +210,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     temporizadores.current.delete(idNota);
     const notaAGuardar = notasRef.current.find((nota) => nota.id === idNota);
     if (!notaAGuardar?.ruta || !notaAGuardar.sucio) return;
-    const textoAGuardar = editor.current?.obtenerTextoDeNota(idNota) ?? notaAGuardar.texto;
+    const textoAGuardar = textoActualDeNota(notaAGuardar);
+    const cambiosAlEmpezarAGuardar = cambiosPorNota.current.get(idNota) ?? 0;
     if (!aunqueHayaCambiadoFuera) {
       // Si el archivo ya no existe (se borró o movió), se vuelve a crear con lo que hay en Ant.
       const textoQueHayAhoraEnDisco = await leerNota(notaAGuardar.ruta).catch(() => null);
@@ -206,11 +225,11 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     setNotas((notasAbiertas) =>
       notasAbiertas.map((nota) =>
         nota.id === idNota
-          ? { ...nota, textoQueHayEnDisco: textoAGuardar, sucio: nota.texto !== textoAGuardar }
+          ? { ...nota, textoQueHayEnDisco: textoAGuardar, sucio: (cambiosPorNota.current.get(idNota) ?? 0) !== cambiosAlEmpezarAGuardar }
           : nota,
       ),
     );
-  }, []);
+  }, [textoActualDeNota]);
 
   /**
    * Al volver a la ventana: las notas abiertas cuyo archivo cambió fuera de Ant (en Obsidian, por
@@ -222,7 +241,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
       if (!notaAbierta.ruta) continue;
       const textoDelDisco = await leerNota(notaAbierta.ruta).catch(() => null);
       if (textoDelDisco === null || textoDelDisco === notaAbierta.textoQueHayEnDisco) continue;
-      if (notaAbierta.sucio && textoDelDisco !== notaAbierta.texto) {
+      if (notaAbierta.sucio && textoDelDisco !== textoActualDeNota(notaAbierta)) {
         throw new Error(txRef.current.cambiadaFueraDeAnt(nombreArchivo(notaAbierta.ruta)));
       }
       editor.current?.reemplazarTextoDesdeDisco(notaAbierta.id, textoDelDisco);
@@ -232,7 +251,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
         ),
       );
     }
-  }, []);
+  }, [textoActualDeNota]);
 
   /** Guarda ya todas las notas con archivo que tienen cambios (al salir de la ventana o de la app). */
   const guardarPendientes = useCallback(
@@ -291,14 +310,23 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     setNotas((ns) => ns.map((n) => (n.id === id ? { ...n, ...cambios } : n)));
   }, []);
 
-  // Cada cambio en el editor actualiza el texto de la nota activa, la marca como modificada y, si
-  // tiene archivo, programa su guardado.
-  const alCambiar = useCallback((t: string) => {
-    const id = activaRef.current;
-    actualizar(id, { texto: t, sucio: true });
-    if (!notasRef.current.find((n) => n.id === id)?.ruta) return;
-    clearTimeout(temporizadores.current.get(id));
-    temporizadores.current.set(id, setTimeout(() => guardarYa(id).catch(fallo), PAUSA_GUARDADO));
+  // Cada tecla en el editor: la nota activa queda con cambios (eso vuelve a dibujar la ventana
+  // solo con la primera tecla), se programa su guardado si tiene archivo, y tras una pausa se
+  // pone al día el texto que se cuenta. Así escribir no hace trabajo que crezca con el largo de
+  // la nota.
+  const alCambiarTextoEnElEditor = useCallback(() => {
+    const idNota = activaRef.current;
+    cambiosPorNota.current.set(idNota, (cambiosPorNota.current.get(idNota) ?? 0) + 1);
+    const notaQueCambio = notasRef.current.find((nota) => nota.id === idNota);
+    if (notaQueCambio && !notaQueCambio.sucio) actualizar(idNota, { sucio: true });
+    clearTimeout(temporizadorDelConteo.current);
+    temporizadorDelConteo.current = setTimeout(() => {
+      const textoParaContar = editor.current?.obtenerTextoDeNota(idNota);
+      if (textoParaContar !== undefined) actualizar(idNota, { texto: textoParaContar });
+    }, PAUSA_PARA_CONTAR_Y_BUSCAR_TITULOS);
+    if (!notaQueCambio?.ruta) return;
+    clearTimeout(temporizadores.current.get(idNota));
+    temporizadores.current.set(idNota, setTimeout(() => guardarYa(idNota).catch(fallo), PAUSA_GUARDADO));
   }, [actualizar, guardarYa, fallo]);
 
   /**
@@ -324,8 +352,12 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     const yaAbierta = notasRef.current.find((nota) => nota.ruta === ruta);
     if (yaAbierta?.sucio) return dejarSola(yaAbierta);
     const textoDelDisco = await leerNota(ruta);
+    const idNota = yaAbierta?.id ?? idDeNotaConArchivo(ruta);
+    // Si el editor la recuerda de antes, se pone al día con el archivo (pudo cambiar fuera de Ant)
+    // sin perder su cursor ni su historial.
+    if (editor.current?.recuerdaLaNota(idNota)) editor.current.reemplazarTextoDesdeDisco(idNota, textoDelDisco);
     await dejarSola({
-      id: yaAbierta?.id ?? idDeNotaConArchivo(ruta),
+      id: idNota,
       ruta,
       texto: textoDelDisco,
       textoQueHayEnDisco: textoDelDisco,
@@ -347,7 +379,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   /** Abre la nota de un capítulo fijado y lleva el cursor a su título. */
   const abrirCapitulo = useCallback(async (ruta: string, titulo: string) => {
     const abierta = notasRef.current.find((n) => n.ruta === ruta);
-    if (abierta && abierta.id === activaRef.current) return irATitulo(abierta.texto, titulo);
+    if (abierta && abierta.id === activaRef.current) return irATitulo(textoActualDeNota(abierta), titulo);
     capituloPendiente.current = titulo;
     try {
       await abrirRuta(ruta);
@@ -355,7 +387,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
       capituloPendiente.current = null;
       throw e;
     }
-  }, [abrirRuta, irATitulo]);
+  }, [abrirRuta, irATitulo, textoActualDeNota]);
 
   /** Muestra el diálogo «Abrir» (empezando en el hormiguero) y abre la nota elegida. */
   const abrir = useCallback(async () => {
@@ -503,7 +535,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
             onSaltar={(posicion) => editor.current?.llevarCursorA(posicion)}
           />
         )}
-        <Editor ref={editor} alCambiarTexto={alCambiar} alMoverCursor={alMoverCursor} configuracionModoEscritor={escritor} />
+        <Editor ref={editor} alCambiarTexto={alCambiarTextoEnElEditor} alMoverCursor={alMoverCursor} configuracionModoEscritor={escritor} />
       </div>
       {compilando && !bienvenida && (
         <Compilar

@@ -35,6 +35,9 @@ release with that section as its notes, so this file is always written in Englis
 - One note at a time: opening a note replaces the one that was open (it is saved first), instead
   of leaving every note you opened highlighted in the sidebar. Coming back to a note keeps its
   cursor position and its undo history.
+- Typing stays fast in very long notes (a whole novel in one note): the word count and the
+  headings in the sidebar update a moment after you pause, instead of on every key. Large
+  anthills are read in the background, so the window never freezes while Ant reads them.
 - If a note changes outside Ant (in another app, or through a sync service), Ant shows the new
   text when you come back to the window. If it also has changes in Ant, Ant never overwrites the
   file: it warns in the status bar, and Cmd+S keeps your version.
