@@ -36,7 +36,7 @@ En Windows y Linux, Ctrl en lugar de Cmd.
 | Cmd+Shift+S | Guardar como |
 | Cmd+Shift+] / Cmd+Shift+[ | Nota siguiente / anterior |
 | `Cmd+\` | Mostrar u ocultar la barra lateral |
-| Cmd+, | Ajustes (carpeta de trabajo) |
+| Cmd+, | Ajustes (idioma, hormigueros, editor, diario, colores) |
 | Cmd+F | Buscar y reemplazar |
 | Cmd+Z / Cmd+Shift+Z | Deshacer / rehacer |
 

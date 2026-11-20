@@ -1,5 +1,5 @@
-// Acceso a los ajustes de la app desde cualquier ventana. Los guarda y lee el lado Rust
-// (`src-tauri/src/ajustes.rs`), que además avisa a todas las ventanas cuando cambian.
+// Acceso a los ajustes de la app. Los guarda y lee el lado Rust (`src-tauri/src/ajustes.rs`),
+// que además avisa a la interfaz cuando cambian.
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
@@ -9,10 +9,17 @@ import type { OrigenTitulo } from "./compilar/modelo.ts";
 
 /** Preferencias del usuario. Debe coincidir con la estructura `Ajustes` de Rust. */
 export interface Ajustes {
-  /** Carpeta de trabajo que muestra la barra lateral, o `null` si aún no se eligió. */
+  /** Hormiguero abierto (la carpeta que muestra la barra lateral), o `null` si no hay ninguno. */
   carpeta: string | null;
-  /** Notas y carpetas fijadas arriba en la barra lateral (rutas completas, en orden de fijado). */
+  /** Hormigueros del usuario: rutas de sus carpetas, en el orden en que se agregaron. */
+  hormigueros: string[];
+  /**
+   * Notas, carpetas y capítulos fijados arriba en la barra lateral, en orden de fijado: la ruta
+   * completa, o `ruta#título` para un capítulo (ver `fijados.ts`).
+   */
   fijados: string[];
+  /** Icono elegido para cada fijado (un nombre de `iconos.ts`), por su clave en `fijados`. */
+  iconos: Record<string, string>;
   /** Modo diario: calendario en la barra lateral; cada día abre o crea `Daily/AAAA-MM-DD.md`. */
   diario: boolean;
   /** Colores cambiados por el usuario, por nombre de variable CSS sin `--` (ver `colores.ts`). */
@@ -78,14 +85,14 @@ export const OPCIONES_ESCRITOR: OpcionesEscritor = {
 };
 
 /** Ajustes por defecto, mientras se leen los guardados. */
-export const AJUSTES_INICIALES: Ajustes = { carpeta: null, fijados: [], diario: false, colores: {}, ancho_barra: null, idioma: "en", escritor: true, opciones_escritor: OPCIONES_ESCRITOR, autor: "", compilaciones: {} };
+export const AJUSTES_INICIALES: Ajustes = { carpeta: null, hormigueros: [], fijados: [], iconos: {}, diario: false, colores: {}, ancho_barra: null, idioma: "en", escritor: true, opciones_escritor: OPCIONES_ESCRITOR, autor: "", compilaciones: {} };
 
 /** Lee los ajustes guardados (o los valores por defecto si no hay). */
 export const leerAjustes = () => invoke<Ajustes>("leer_ajustes");
 
-/** Guarda los ajustes; Rust emite `ajustes-cambiados` a todas las ventanas. */
+/** Guarda los ajustes; Rust avisa del cambio con el evento `ajustes-cambiados`. */
 export const guardarAjustes = (ajustes: Ajustes) => invoke<void>("guardar_ajustes", { ajustes });
 
-/** Llama a `alCambiar` cada vez que alguna ventana guarda ajustes. Devuelve la función para dejar de escuchar. */
+/** Llama a `alCambiar` cada vez que se guardan los ajustes. Devuelve la función para dejar de escuchar. */
 export const escucharAjustes = (alCambiar: (a: Ajustes) => void): Promise<UnlistenFn> =>
   listen<Ajustes>("ajustes-cambiados", (e) => alCambiar(e.payload));

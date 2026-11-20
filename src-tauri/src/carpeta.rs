@@ -1,5 +1,6 @@
-// Lectura de la carpeta de trabajo para la barra lateral: devuelve su árbol de subcarpetas y
-// notas (.md, .markdown, .txt), ordenado con las carpetas primero y luego por nombre.
+// Carpetas de los hormigueros: lectura del hormiguero abierto para la barra lateral (su árbol de
+// subcarpetas y notas .md, .markdown, .txt, con las carpetas primero y luego por nombre) y
+// creación de la carpeta de un hormiguero nuevo.
 
 use serde::Serialize;
 use std::fs;
@@ -66,4 +67,44 @@ pub fn listar_carpeta(path: String) -> Result<Vec<Entrada>, String> {
         return Err(format!("The folder {path} does not exist"));
     }
     Ok(leer(dir, 0))
+}
+
+/// Crea la carpeta de un hormiguero nuevo, `nombre` dentro de `padre`, y devuelve su ruta. No
+/// usa una carpeta que ya exista (para eso está «elegir una carpeta»), así nunca mezcla un
+/// hormiguero nuevo con lo que ya había ahí.
+#[tauri::command]
+pub fn crear_hormiguero(padre: String, nombre: String) -> Result<String, String> {
+    let nombre = nombre.trim();
+    if nombre.is_empty() || nombre == "." || nombre == ".." || nombre.contains(['/', '\\', ':']) {
+        return Err(format!("“{nombre}” cannot be a folder name"));
+    }
+    let padre = Path::new(&padre);
+    if !padre.is_dir() {
+        return Err(format!("The folder {} does not exist", padre.display()));
+    }
+    let ruta = padre.join(nombre);
+    if ruta.exists() {
+        return Err(format!("There is already a “{nombre}” folder in {}", padre.display()));
+    }
+    fs::create_dir(&ruta).map_err(|e| format!("Could not create {}: {e}", ruta.display()))?;
+    Ok(ruta.to_string_lossy().into_owned())
+}
+
+#[cfg(test)]
+mod pruebas {
+    use super::*;
+
+    #[test]
+    fn crea_el_hormiguero_sin_pisar_una_carpeta() {
+        let base = std::env::temp_dir().join(format!("ant-hormiguero-{}", std::process::id()));
+        fs::create_dir_all(&base).unwrap();
+        let padre = base.to_string_lossy().into_owned();
+        let ruta = crear_hormiguero(padre.clone(), " Novela ".into()).unwrap();
+        assert!(Path::new(&ruta).is_dir());
+        assert!(ruta.ends_with("Novela"));
+        assert!(crear_hormiguero(padre.clone(), "Novela".into()).is_err());
+        assert!(crear_hormiguero(padre.clone(), "a/b".into()).is_err());
+        assert!(crear_hormiguero(padre, "  ".into()).is_err());
+        fs::remove_dir_all(base).unwrap();
+    }
 }

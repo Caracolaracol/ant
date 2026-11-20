@@ -234,8 +234,12 @@ li::marker { color: var(--amarillo); }
 .ventana-cuerpo p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ventana-lateral { width: 36%; padding: 12px 0 12px 14px; color: #7a7a78; }
 .ventana-lateral hr { border: 0; border-top: 1px solid #3a3f5c; margin: 6px 12px 8px 0; }
-.lat-fijados { color: #f9a26c; font-weight: 700; }
+/* Fijados de la maqueta (iconos en cajitas, como en la app) y el nombre del hormiguero. */
 .lat-carpeta { color: #e8e8e6; font-weight: 700; }
+.lat-fijados { display: flex; gap: 5px; margin-right: 12px; }
+.lat-fijados i { display: flex; align-items: center; justify-content: center; flex: 1; max-width: 34px; height: 26px; border: 1px solid transparent; border-radius: 6px; background: #161617; }
+.lat-fijados i.actual { color: #f9a26c; border-color: #f9a26c; }
+.lat-fijados svg { width: 13px; height: 13px; }
 .lat-activa { color: #fff; font-weight: 700; }
 .lat-titulo.actual { color: #f9a26c; }
 .ventana-editor { flex: 1; padding: 12px 18px; color: #e8e8e6; font-size: 13px; line-height: 1.7; min-width: 0; }

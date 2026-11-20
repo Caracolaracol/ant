@@ -29,18 +29,32 @@ const en = {
   cambiosSinGuardar: (nombre: string) => `“${nombre}” has unsaved changes. Close it anyway?`,
   descartarCambios: "Discard changes",
   cancelar: "Cancel",
-  diarioSinCarpeta: "Choose a working folder in Settings to use the diary.",
+  diarioSinCarpeta: "Open an anthill to use the diary.",
 
   // Barra lateral.
   fijados: "Pinned",
   abiertas: "Open",
   cerrarNota: "Close note",
   yaNoEsta: "No longer in the folder",
-  carpetaVacia: "No notes in this folder.",
-  eligeCarpeta: "Choose the folder you will work in.",
-  abrirAjustes: "Open Settings",
+  carpetaVacia: "No notes in this anthill yet.",
   fijarArriba: "Pin to top",
   quitarFijado: "Unpin",
+  cambiarIcono: "Change icon…",
+  iconoPorDefecto: "Default icon",
+  gruposIconos: { lugares: "Places", escritura: "Writing", libros: "Books", ideas: "Ideas", mundo: "World", vida: "Life", animales: "Animals", codigo: "Code" },
+
+  // Hormigueros.
+  nuevoHormigueroBoton: "New anthill…",
+  nuevoHormiguero: "New anthill",
+  nuevoHormigueroAyuda: "An anthill is a folder for one project: a novel, a diary, your work notes. Create a new folder or use one you already have.",
+  hormigueroPorDefecto: "Notes",
+  hormigueroEjemplo: "My novel",
+  nombreHormiguero: "Name",
+  dentroDe: "Inside",
+  cambiar: "Change…",
+  cavarHormiguero: "Dig the anthill",
+  o: "or",
+  usarCarpeta: "Use a folder you already have…",
   bordeBarra: "Drag to resize · double-click to reset",
 
   // Calendario del modo diario.
@@ -69,22 +83,23 @@ const en = {
   correctorAyuda: "Underlines misspelled words, using the system’s spell checker.",
   idioma: "Language",
   idiomaAyuda: "Language of the menus, the sidebar and these settings.",
-  carpetaTrabajo: "Working folder",
-  carpetaAyuda: "The sidebar shows the notes in this folder and its subfolders.",
-  ningunaCarpeta: "None selected",
-  elegir: "Choose…",
+  hormigueros: "Anthills",
+  hormiguerosAyuda: "Each anthill is a folder with its notes. The sidebar shows the open one; switch to another here. Removing one from this list doesn’t delete its folder.",
+  abierto: "Open",
+  abrir: "Open",
   quitar: "Remove",
+  quitarHormigueroAyuda: "Remove from the list (the folder stays on your disk)",
   activarDiario: "Turn on diary mode",
   diarioAyuda: (ejemplo: ReactNode, carpeta: ReactNode): ReactNode => (
     <>
-      Shows a calendar at the top of the sidebar. Click a day to open its note, named after the
+      Shows a calendar at the bottom of the sidebar. Click a day to open its note, named after the
       date (for example {ejemplo}). If the {carpeta} folder or the note do not exist yet, they are
-      created inside the working folder; if the folder already exists, it is used as is. The{" "}
+      created inside the open anthill; if the folder already exists, it is used as is. The{" "}
       {carpeta} folder is hidden from the sidebar tree: you reach daily notes through the calendar.
       Days that already have a note show a dot.
     </>
   ),
-  diarioAviso: "Choose a working folder in General first: the Daily folder goes there.",
+  diarioAviso: "Open an anthill first: the Daily folder goes there.",
   tema: "Theme",
   temaAyuda: "A starting point; then you can change each color below.",
   colores: "Colors",
@@ -103,7 +118,7 @@ const en = {
   } as Record<string, string>,
   // Compilar y exportar.
   compilarTitulo: "Compile and Export",
-  compilarSinCarpeta: "Choose a working folder in Settings first: you compile one of its folders into a book.",
+  compilarSinCarpeta: "Open an anthill first: you compile one of its folders into a book.",
   carpetaLibro: "Folder",
   capitulos: "Chapters",
   capitulosAyuda: "Each note is a chapter. Uncheck the ones you leave out and use the arrows to change the order.",
@@ -133,6 +148,27 @@ const en = {
   exportado: (nombre: string) => `Exported “${nombre}”.`,
   mostrarEnFinder: "Show in folder",
   cerrar: "Close",
+
+  // Bienvenida.
+  bvSeguir: "Follow the tunnel",
+  bvVolver: "Back to my notes",
+  bvLema: "Write without distractions.",
+  bvPresentacion: "A simple, quiet place for stories, novels and notes. Let’s dig your first anthill: it takes a minute.",
+  bvArchivosEtiqueta: "How it works",
+  bvArchivosTitulo: "Your texts are files",
+  bvArchivosTexto: "Every note is a Markdown file in a folder on your computer. No accounts, no cloud, nothing to import.",
+  bvArchivosNota: "Open them with any other app and back them up however you like.",
+  bvHormiguerosEtiqueta: "Anthills",
+  bvHormiguerosTitulo: "One anthill per project",
+  bvHormiguerosTexto: "An anthill is a folder where your notes live, chamber by chamber. Make as many as you want: one for your novel, another for your diary, another for work.",
+  bvEjemplos: "Examples",
+  bvEjemplosLista: ["My novel", "Diary", "Work"],
+  bvHormiguerosNota: "Switch between them in Settings, and dig a new one anytime with File → New Anthill…",
+  bvCavarEtiqueta: "Last chamber",
+  bvCavarTitulo: "Dig your first anthill",
+  bvCavarTexto: "Create a new folder for it, or use one you already have, like a folder of chapters or an Obsidian vault.",
+  bvRecorrido: "Welcome pages",
+  bvCamara: (n: number) => `Page ${n}`,
 };
 
 export type Textos = typeof en;
@@ -148,17 +184,30 @@ const es: Textos = {
   cambiosSinGuardar: (nombre) => `«${nombre}» tiene cambios sin guardar. ¿Cerrarla igual?`,
   descartarCambios: "Descartar cambios",
   cancelar: "Cancelar",
-  diarioSinCarpeta: "Elige una carpeta de trabajo en Ajustes para usar el diario.",
+  diarioSinCarpeta: "Abre un hormiguero para usar el diario.",
 
   fijados: "Fijados",
   abiertas: "Abiertas",
   cerrarNota: "Cerrar nota",
-  yaNoEsta: "Ya no está en la carpeta",
-  carpetaVacia: "No hay notas en esta carpeta.",
-  eligeCarpeta: "Elige la carpeta donde vas a trabajar.",
-  abrirAjustes: "Abrir Ajustes",
+  yaNoEsta: "Ya no está en el hormiguero",
+  carpetaVacia: "Todavía no hay notas en este hormiguero.",
   fijarArriba: "Fijar arriba",
   quitarFijado: "Quitar de fijados",
+  cambiarIcono: "Cambiar icono…",
+  iconoPorDefecto: "Icono por defecto",
+  gruposIconos: { lugares: "Lugares", escritura: "Escritura", libros: "Libros", ideas: "Ideas", mundo: "Mundo", vida: "Vida", animales: "Animales", codigo: "Código" },
+
+  nuevoHormigueroBoton: "Hormiguero nuevo…",
+  nuevoHormiguero: "Hormiguero nuevo",
+  nuevoHormigueroAyuda: "Un hormiguero es una carpeta para un proyecto: una novela, un diario, tus notas del trabajo. Crea una carpeta nueva o usa una que ya tengas.",
+  hormigueroPorDefecto: "Notas",
+  hormigueroEjemplo: "Mi novela",
+  nombreHormiguero: "Nombre",
+  dentroDe: "Dentro de",
+  cambiar: "Cambiar…",
+  cavarHormiguero: "Cavar el hormiguero",
+  o: "o",
+  usarCarpeta: "Usar una carpeta que ya tengo…",
   bordeBarra: "Arrastra para cambiar el ancho · doble clic para restablecerlo",
 
   diasSemana: ["L", "M", "M", "J", "V", "S", "D"],
@@ -185,22 +234,23 @@ const es: Textos = {
   correctorAyuda: "Subraya las palabras mal escritas, con el corrector del sistema.",
   idioma: "Idioma",
   idiomaAyuda: "Idioma de los menús, la barra lateral y estos ajustes.",
-  carpetaTrabajo: "Carpeta de trabajo",
-  carpetaAyuda: "La barra lateral muestra las notas de esta carpeta y sus subcarpetas.",
-  ningunaCarpeta: "Ninguna seleccionada",
-  elegir: "Elegir…",
+  hormigueros: "Hormigueros",
+  hormiguerosAyuda: "Cada hormiguero es una carpeta con sus notas. La barra lateral muestra el abierto; se cambia aquí. Quitar uno de esta lista no borra su carpeta.",
+  abierto: "Abierto",
+  abrir: "Abrir",
   quitar: "Quitar",
+  quitarHormigueroAyuda: "Quitar de la lista (la carpeta queda en tu disco)",
   activarDiario: "Activar el modo diario",
   diarioAyuda: (ejemplo, carpeta) => (
     <>
-      Muestra un calendario arriba de la barra lateral. Al hacer clic en un día se abre su nota, con
+      Muestra un calendario abajo en la barra lateral. Al hacer clic en un día se abre su nota, con
       la fecha como nombre (por ejemplo {ejemplo}). Si la carpeta {carpeta} o la nota aún no existen,
-      se crean dentro de la carpeta de trabajo; si la carpeta ya existe, se usa esa. La carpeta{" "}
+      se crean dentro del hormiguero abierto; si la carpeta ya existe, se usa esa. La carpeta{" "}
       {carpeta} no aparece en el árbol de la barra lateral: a las notas diarias se llega desde el
       calendario. Los días que ya tienen nota llevan un punto.
     </>
   ),
-  diarioAviso: "Elige primero una carpeta de trabajo en General: ahí va la carpeta Daily.",
+  diarioAviso: "Abre primero un hormiguero: ahí va la carpeta Daily.",
   tema: "Tema",
   temaAyuda: "Un punto de partida; después puedes cambiar cada color abajo.",
   colores: "Colores",
@@ -218,7 +268,7 @@ const es: Textos = {
     coincidencia: "Coincidencias",
   },
   compilarTitulo: "Compilar y exportar",
-  compilarSinCarpeta: "Elige primero una carpeta de trabajo en Ajustes: se compila una de sus carpetas como libro.",
+  compilarSinCarpeta: "Abre primero un hormiguero: se compila una de sus carpetas como libro.",
   carpetaLibro: "Carpeta",
   capitulos: "Capítulos",
   capitulosAyuda: "Cada nota es un capítulo. Desmarca las que quedan fuera y usa las flechas para cambiar el orden.",
@@ -248,6 +298,26 @@ const es: Textos = {
   exportado: (nombre) => `Se exportó «${nombre}».`,
   mostrarEnFinder: "Mostrar en la carpeta",
   cerrar: "Cerrar",
+
+  bvSeguir: "Sigue el túnel",
+  bvVolver: "Volver a mis notas",
+  bvLema: "Escribe sin distracciones.",
+  bvPresentacion: "Un lugar simple y silencioso para cuentos, novelas y notas. Cavemos tu primer hormiguero: toma un minuto.",
+  bvArchivosEtiqueta: "Cómo funciona",
+  bvArchivosTitulo: "Tus textos son archivos",
+  bvArchivosTexto: "Cada nota es un archivo Markdown en una carpeta de tu computador. Sin cuentas, sin nube, nada que importar.",
+  bvArchivosNota: "Ábrelos con cualquier otra app y respáldalos como quieras.",
+  bvHormiguerosEtiqueta: "Hormigueros",
+  bvHormiguerosTitulo: "Un hormiguero por proyecto",
+  bvHormiguerosTexto: "Un hormiguero es una carpeta donde viven tus notas, cámara por cámara. Crea todos los que quieras: uno para tu novela, otro para tu diario, otro para el trabajo.",
+  bvEjemplos: "Ejemplos",
+  bvEjemplosLista: ["Mi novela", "Diario", "Trabajo"],
+  bvHormiguerosNota: "Pasa de uno a otro en Ajustes, y cava uno nuevo cuando quieras con Archivo → Hormiguero nuevo…",
+  bvCavarEtiqueta: "Última cámara",
+  bvCavarTitulo: "Cava tu primer hormiguero",
+  bvCavarTexto: "Crea una carpeta nueva para él, o usa una que ya tengas, como una carpeta de capítulos o una bóveda de Obsidian.",
+  bvRecorrido: "Páginas de bienvenida",
+  bvCamara: (n) => `Página ${n}`,
 };
 
 /** Textos del idioma pedido; cualquier valor desconocido (o vacío) cae en inglés. */

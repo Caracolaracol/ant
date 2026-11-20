@@ -1,15 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permisos de la ventana principal y la de Ajustes",
+  "description": "Permisos de la ventana principal (la única: Ajustes se abre dentro de ella)",
   "windows": [
-    "main",
-    "ajustes"
+    "main"
   ],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
     "core:window:allow-close",
+    "core:window:allow-destroy",
     "dialog:default"
   ]
 }

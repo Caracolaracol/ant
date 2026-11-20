@@ -37,9 +37,9 @@ export function MenuContextual({ x, y, opciones, onCerrar }: Props) {
   return (
     // Detiene el mousedown para que hacer clic en una opción no cierre el menú antes de ejecutarla.
     <div className="menu-contextual" style={{ left: x, top: y }} onMouseDown={(e) => e.stopPropagation()}>
-      {opciones.map((o) => (
+      {opciones.map((o, i) => (
         <div
-          key={o.texto}
+          key={i}
           className="menu-opcion"
           onClick={() => {
             o.accion();

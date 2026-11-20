@@ -11,6 +11,35 @@ release with that section as its notes, so this file is always written in Englis
 
 ## [Unreleased]
 
+### Added
+
+- **Welcome**: the first time you open Ant, a short tour in the style of the website, chamber by
+  chamber along a tunnel, that ends by digging your first anthill. It can be seen again from
+  Ant → Welcome to Ant….
+- **Anthills**: each anthill is a folder for one project (a novel, a diary, work notes), and you
+  can have as many as you want. Create a new folder or use one you already have, dig a new one
+  with File → New Anthill…, and switch between them or manage the list in Settings → General. Removing an anthill from the list never deletes its folder. If you already
+  had a working folder, it becomes your first anthill.
+- **Pinned icons**: pins are now a grid of icons, like pinned tabs in Zen or Arc, with the name
+  in a tooltip when you hover. Each one starts with the icon of its kind (folder, note or
+  chapter); right-click → Change icon… to pick another from about a hundred (Lucide icons). A
+  pinned folder unfolds below the grid.
+- Chapters can be pinned too: right-click a heading under the open note → Pin to top. Clicking
+  the pin opens the note at that heading.
+
+### Changed
+
+- **Automatic saving**: notes are saved a moment after you stop typing, and also when you open
+  another note, leave the window or quit Ant. Only a new note that was never saved still needs
+  Cmd+S the first time.
+- One note at a time: opening a note replaces the one that was open (it is saved first), instead
+  of leaving every note you opened highlighted in the sidebar.
+- The diary calendar now sits at the bottom of the sidebar.
+- Settings open inside the main window instead of a separate window. Escape, Cmd+W or a click
+  outside closes them.
+- The blank note Ant opens with no longer shows up in the sidebar as "Untitled" under "Open"; it
+  appears there only once you start writing in it.
+
 ## [0.2.0] - 2026-11-20
 
 ### Changed

@@ -1,20 +1,22 @@
-// Ventana de Ajustes (se abre con Ant → Settings… / Ajustes… o Cmd+,). Está dividida en dos: a la
-// izquierda la lista de áreas de ajustes y a la derecha las opciones del área elegida:
-//   General (idioma y carpeta de trabajo) · Editor (modo escritor) · Diario (calendario y notas
+// Ajustes (Ant → Settings… / Ajustes… o Cmd+,): una ventanita sobre la ventana principal, no una
+// ventana aparte. Está dividida en dos: a la izquierda la lista de áreas de ajustes y a la
+// derecha las opciones del área elegida:
+//   General (idioma y hormigueros) · Editor (modo escritor) · Diario (calendario y notas
 //   diarias) · Apariencia (colores).
-// Los textos salen de `idioma.tsx`, así la ventana cambia de idioma apenas se elige otro.
+// Los cambios se aplican y guardan al instante (`cambiar`, de App); se cierra con Escape, Cmd+W,
+// la × o un clic fuera. Los textos salen de `idioma.tsx`, así cambia de idioma apenas se elige otro.
 // Para agregar un área nueva: sumarla a `AREAS` (y su nombre a `areas` en `idioma.tsx`), crear
-// su panel y mostrarlo en `VentanaAjustes`.
+// su panel y mostrarlo en `ModalAjustes`.
 
 import { useEffect, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { open } from "@tauri-apps/plugin-dialog";
-import { Ajustes, OpcionesEscritor, escucharAjustes, guardarAjustes, leerAjustes } from "../ajustes";
+import { Ajustes, OpcionesEscritor } from "../ajustes";
 import { COLORES_BASE, TEMAS, VARIABLES } from "../colores";
 import { CARPETA_DIARIO } from "../diario";
+import { sinHormiguero } from "../hormigueros/hormigueros";
 import { IDIOMAS, Idioma, idiomaDe, useTextos } from "../idioma";
-import "../App.css";
-import "./VentanaAjustes.css";
+import { nombreArchivo } from "../notas";
+import { ltr } from "../carpeta";
+import "./ModalAjustes.css";
 
 /** Áreas de ajustes que aparecen en la columna izquierda (sus nombres están en `idioma.tsx`). */
 const AREAS = ["general", "editor", "diario", "apariencia"] as const;
@@ -25,16 +27,12 @@ interface PanelProps {
   cambiar(cambios: Partial<Ajustes>): void;
 }
 
-/** Área «General»: idioma de la interfaz y carpeta de trabajo. */
-function PanelGeneral({ ajustes, cambiar }: PanelProps) {
+/**
+ * Área «General»: idioma de la interfaz y la lista de hormigueros, con el abierto marcado. Desde
+ * aquí se abre otro, se quita uno de la lista (su carpeta queda en el disco) o se cava uno nuevo.
+ */
+function PanelGeneral({ ajustes, cambiar, onNuevoHormiguero }: PanelProps & { onNuevoHormiguero(): void }) {
   const tx = useTextos();
-
-  /** Abre el diálogo del sistema para elegir una carpeta. */
-  async function elegirCarpeta() {
-    const carpeta = await open({ directory: true, multiple: false, defaultPath: ajustes.carpeta ?? undefined });
-    if (typeof carpeta === "string") cambiar({ carpeta });
-  }
-
   return (
     <>
       <h1>{tx.areas.general}</h1>
@@ -52,13 +50,25 @@ function PanelGeneral({ ajustes, cambiar }: PanelProps) {
         </select>
       </div>
       <div className="ajuste">
-        <div className="ajuste-titulo">{tx.carpetaTrabajo}</div>
-        <p className="ajuste-ayuda">{tx.carpetaAyuda}</p>
-        <div className="ajuste-carpeta">
-          <code title={ajustes.carpeta ?? undefined}>{ajustes.carpeta ?? tx.ningunaCarpeta}</code>
-          <button onClick={elegirCarpeta}>{tx.elegir}</button>
-          {ajustes.carpeta && <button onClick={() => cambiar({ carpeta: null })}>{tx.quitar}</button>}
+        <div className="ajuste-titulo">{tx.hormigueros}</div>
+        <p className="ajuste-ayuda">{tx.hormiguerosAyuda}</p>
+        <div className="ajuste-hormigueros">
+          {ajustes.hormigueros.map((ruta) => (
+            <div key={ruta} className={`ajuste-hormiguero${ruta === ajustes.carpeta ? " actual" : ""}`}>
+              <div className="ajuste-hormiguero-nombre">
+                <b>{nombreArchivo(ruta)}</b>
+                <code title={ruta}>{ltr(ruta)}</code>
+              </div>
+              {ruta === ajustes.carpeta ? (
+                <span className="ajuste-hormiguero-abierto">{tx.abierto}</span>
+              ) : (
+                <button onClick={() => cambiar({ carpeta: ruta })}>{tx.abrir}</button>
+              )}
+              <button title={tx.quitarHormigueroAyuda} onClick={() => cambiar(sinHormiguero(ajustes, ruta))}>{tx.quitar}</button>
+            </div>
+          ))}
         </div>
+        <button className="ajuste-boton" onClick={onNuevoHormiguero}>{tx.nuevoHormigueroBoton}</button>
       </div>
     </>
   );
@@ -221,56 +231,51 @@ function PanelApariencia({ ajustes, cambiar }: PanelProps) {
   );
 }
 
-export function VentanaAjustes() {
+interface Props {
+  ajustes: Ajustes;
+  /** Aplica y guarda un cambio al instante (no hay botón «Aceptar», como en macOS). */
+  cambiar(cambios: Partial<Ajustes>): void;
+  /** Abre la ventanita «Hormiguero nuevo» encima de los Ajustes. */
+  onNuevoHormiguero(): void;
+  onCerrar(): void;
+}
+
+export function ModalAjustes({ ajustes, cambiar, onNuevoHormiguero, onCerrar }: Props) {
   const tx = useTextos();
   const [area, setArea] = useState<IdArea>("general");
-  const [ajustes, setAjustes] = useState<Ajustes | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  // Carga los ajustes al abrir y los mantiene al día si otra ventana los cambia.
-  useEffect(() => {
-    leerAjustes().then(setAjustes, (e) => setError(String(e)));
-    const dejar = escucharAjustes(setAjustes);
-    return () => void dejar.then((f) => f());
-  }, []);
-
-  // Cmd+W cierra esta ventana (el menú de la app no lo hace, para no cerrar la principal sin querer).
+  // Escape y Cmd+W cierran los Ajustes (Cmd+W no cierra la ventana principal). Si hay una
+  // ventanita encima (hormiguero nuevo), Escape la cierra a ella primero.
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key.toLowerCase() === "w") {
+      const encima = document.querySelector(".modal-encima");
+      if ((e.key === "Escape" && !encima) || (e.metaKey && e.key.toLowerCase() === "w")) {
         e.preventDefault();
-        getCurrentWindow().close();
+        onCerrar();
       }
     };
     window.addEventListener("keydown", alTeclear);
     return () => window.removeEventListener("keydown", alTeclear);
-  }, []);
-
-  /** Aplica un cambio y lo guarda de inmediato (no hay botón «Aceptar», como en macOS). */
-  function cambiar(cambios: Partial<Ajustes>) {
-    if (!ajustes) return;
-    const nuevos = { ...ajustes, ...cambios };
-    setAjustes(nuevos);
-    guardarAjustes(nuevos).then(() => setError(null), (e) => setError(String(e)));
-  }
+  }, [onCerrar]);
 
   return (
-    <main className="ajustes">
-      <nav className="ajustes-areas" data-tauri-drag-region>
-        {AREAS.map((a) => (
-          <div key={a} className={`ajustes-area${a === area ? " activa" : ""}`} onClick={() => setArea(a)}>
-            {tx.areas[a]}
-          </div>
-        ))}
-      </nav>
-      <section className="ajustes-panel">
-        <div className="arrastre" data-tauri-drag-region />
-        {ajustes && area === "general" && <PanelGeneral ajustes={ajustes} cambiar={cambiar} />}
-        {ajustes && area === "editor" && <PanelEditor ajustes={ajustes} cambiar={cambiar} />}
-        {ajustes && area === "diario" && <PanelDiario ajustes={ajustes} cambiar={cambiar} />}
-        {ajustes && area === "apariencia" && <PanelApariencia ajustes={ajustes} cambiar={cambiar} />}
-        {error && <p className="ajustes-error">{error}</p>}
-      </section>
-    </main>
+    <div className="modal-fondo" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
+      <div className="modal ajustes" role="dialog" aria-label={tx.ajustes}>
+        <nav className="ajustes-areas">
+          {AREAS.map((a) => (
+            <div key={a} className={`ajustes-area${a === area ? " activa" : ""}`} onClick={() => setArea(a)}>
+              {tx.areas[a]}
+            </div>
+          ))}
+        </nav>
+        <section className="ajustes-panel">
+          <button className="modal-cerrar" aria-label={tx.cerrar} onClick={onCerrar}>×</button>
+          {area === "general" && <PanelGeneral ajustes={ajustes} cambiar={cambiar} onNuevoHormiguero={onNuevoHormiguero} />}
+          {area === "editor" && <PanelEditor ajustes={ajustes} cambiar={cambiar} />}
+          {area === "diario" && <PanelDiario ajustes={ajustes} cambiar={cambiar} />}
+          {area === "apariencia" && <PanelApariencia ajustes={ajustes} cambiar={cambiar} />}
+        </section>
+      </div>
+    </div>
   );
 }

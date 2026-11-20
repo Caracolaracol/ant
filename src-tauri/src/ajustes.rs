@@ -1,8 +1,8 @@
-// Ajustes de la app (idioma, modo escritor, carpeta de trabajo, fijados y ancho de la barra lateral, modo diario y colores), guardados como JSON en la carpeta de
+// Ajustes de la app (idioma, modo escritor, hormigueros y el que está abierto, fijados con sus
+// iconos, ancho de la barra lateral, modo diario y colores), guardados como JSON en la carpeta de
 // configuración de la app (en macOS, ~/Library/Application Support/cl.agus.ant/ajustes.json).
-// Cada vez que se guardan, se avisa a todas las ventanas con el evento `ajustes-cambiados`,
-// así la ventana principal se entera de lo que se cambió en la de Ajustes. Si cambió el idioma,
-// además se rehace el menú de la app en el idioma nuevo.
+// Cada vez que se guardan, se avisa a la interfaz con el evento `ajustes-cambiados`. Si cambió el
+// idioma, además se rehace el menú de la app en el idioma nuevo.
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -17,12 +17,21 @@ pub const EVENTO_CAMBIO: &str = "ajustes-cambiados";
 /// archivo de una versión anterior se siga leyendo.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ajustes {
-    /// Carpeta donde el usuario trabaja; la barra lateral muestra su contenido.
+    /// Hormiguero abierto: la carpeta donde el usuario trabaja ahora; la barra lateral muestra su contenido.
     #[serde(default)]
     pub carpeta: Option<String>,
-    /// Notas y carpetas fijadas arriba en la barra lateral (rutas completas, en el orden en que se fijaron).
+    /// Hormigueros del usuario (rutas de carpetas), en el orden en que se agregaron. Sin ninguno,
+    /// la interfaz muestra la bienvenida para crear el primero.
+    #[serde(default)]
+    pub hormigueros: Vec<String>,
+    /// Notas, carpetas y capítulos fijados arriba en la barra lateral, en el orden en que se
+    /// fijaron: la ruta, o `ruta#título` para un capítulo (un título `#` dentro de una nota).
     #[serde(default)]
     pub fijados: Vec<String>,
+    /// Icono elegido para cada fijado (nombre de un icono de `src/iconos.ts`), por su clave en
+    /// `fijados`. Los que no están aquí usan el de su tipo (carpeta, nota o capítulo).
+    #[serde(default)]
+    pub iconos: BTreeMap<String, String>,
     /// Modo diario: muestra un calendario en la barra lateral y cada día abre su nota en `Daily/`.
     #[serde(default)]
     pub diario: bool,
@@ -104,7 +113,9 @@ impl Default for Ajustes {
     fn default() -> Self {
         Ajustes {
             carpeta: None,
+            hormigueros: Vec::new(),
             fijados: Vec::new(),
+            iconos: BTreeMap::new(),
             diario: false,
             colores: BTreeMap::new(),
             ancho_barra: None,
@@ -126,15 +137,40 @@ fn ruta_archivo(app: &AppHandle) -> Result<PathBuf, String> {
 /// Lee los ajustes guardados. Si el archivo no existe o está dañado, devuelve los valores por defecto.
 #[tauri::command]
 pub fn leer_ajustes(app: AppHandle) -> Ajustes {
-    ruta_archivo(&app)
+    let ajustes: Ajustes = ruta_archivo(&app)
         .ok()
         .and_then(|ruta| fs::read_to_string(ruta).ok())
         .and_then(|texto| serde_json::from_str(&texto).ok())
-        .unwrap_or_default()
+        .unwrap_or_default();
+    con_hormiguero_actual(ajustes)
 }
 
-/// Guarda los ajustes en disco y avisa a todas las ventanas. Si cambió el idioma, traduce el
-/// menú de la app y el título de la ventana de Ajustes.
+/// Los ajustes de antes de los hormigueros (0.2.0 y anteriores) solo tenían `carpeta`: esa
+/// carpeta pasa a ser el primer hormiguero, así quien actualiza no ve la bienvenida.
+fn con_hormiguero_actual(mut ajustes: Ajustes) -> Ajustes {
+    if let Some(carpeta) = &ajustes.carpeta {
+        if !ajustes.hormigueros.contains(carpeta) {
+            ajustes.hormigueros.push(carpeta.clone());
+        }
+    }
+    ajustes
+}
+
+#[cfg(test)]
+mod pruebas {
+    use super::*;
+
+    #[test]
+    fn la_carpeta_de_antes_pasa_a_ser_un_hormiguero() {
+        let viejos: Ajustes = serde_json::from_str(r#"{"carpeta": "/notas", "fijados": ["/notas/a.md"]}"#).unwrap();
+        let ajustes = con_hormiguero_actual(viejos);
+        assert_eq!(ajustes.hormigueros, vec!["/notas".to_string()]);
+        assert_eq!(ajustes.fijados, vec!["/notas/a.md".to_string()]);
+        assert!(con_hormiguero_actual(Ajustes::default()).hormigueros.is_empty());
+    }
+}
+
+/// Guarda los ajustes en disco y avisa a la interfaz. Si cambió el idioma, traduce el menú de la app.
 #[tauri::command]
 pub fn guardar_ajustes(app: AppHandle, ajustes: Ajustes) -> Result<(), String> {
     let idioma_anterior = leer_ajustes(app.clone()).idioma;

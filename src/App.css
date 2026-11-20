@@ -96,16 +96,17 @@ body,
   user-select: none !important;
 }
 
-/* Sección del modo diario (calendario y notas diarias abiertas), separada del resto con una línea. */
+/* Modo diario: la nota diaria abierta y el calendario, pegados al fondo de la barra (fuera del
+   scroll de `.barra-contenido`), separados del resto con una línea. */
 .barra-diario {
-  padding-bottom: 12px;
-  margin-right: 12px;
-  border-bottom: 1px solid var(--seleccion);
+  flex-shrink: 0;
+  margin: 0 12px 0 16px;
+  padding: 10px 0 14px;
+  border-top: 1px solid var(--seleccion);
 }
 
 /* Calendario del modo diario: siete columnas de días, de lunes a domingo. */
 .calendario {
-  margin-bottom: 6px;
   line-height: 1.6;
 }
 
@@ -199,7 +200,7 @@ body,
   margin-top: 16px;
 }
 
-/* Título de cada sección: «Abiertas» o el nombre de la carpeta de trabajo. */
+/* Título de cada sección: «Abiertas», el nombre del hormiguero o el de una carpeta fijada desplegada. */
 .barra-encabezado {
   padding-left: 4px;
   font-weight: 700;
@@ -242,22 +243,159 @@ body,
   color: var(--texto);
 }
 
-/* Sección de fijados: separada del resto con una línea, como las pestañas fijadas de Arc o Zen. */
+/* Fijados: una grilla de iconos sin texto, como las pestañas fijadas de Zen o Arc, separada del
+   resto con una línea. */
 .barra-fijados {
   padding-bottom: 12px;
   margin-right: 12px;
   border-bottom: 1px solid var(--seleccion);
 }
 
-.barra-fijados .barra-encabezado {
+.fijados-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 6px;
+}
+
+.fijado {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--fondo-bajo);
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.fijado:hover {
+  color: var(--texto);
+  border-color: var(--seleccion);
+}
+
+/* La nota (o el capítulo) visible, y la carpeta fijada desplegada abajo. */
+.fijado.activo,
+.fijado.desplegado {
+  color: var(--acento);
+  border-color: var(--acento);
+}
+
+/* Nota fijada abierta pero no visible: un punto abajo. */
+.fijado.abierto::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  border-radius: 50%;
+  background: var(--texto);
+}
+
+/* Fijado que ya no existe en el hormiguero (se borró o se movió). */
+.fijado.perdido {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Bajo la grilla: la carpeta fijada desplegada o la nota fijada visible, con sus títulos. */
+.fijados-carpeta {
+  margin-top: 10px;
+}
+
+/* Globo con el nombre de un fijado (o de un icono), al pasar el mouse. */
+.globo {
+  position: fixed;
+  z-index: 60;
+  max-width: 260px;
+  padding: 3px 8px;
+  border: 1px solid var(--seleccion);
+  border-radius: 6px;
+  background: var(--fondo-bajo);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  color: var(--texto);
+  font-family: var(--fuente);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* Selector de iconos de un fijado: grupos con una grilla de iconos cada uno. */
+.elegir-icono {
+  position: fixed;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: 296px;
+  max-height: min(420px, calc(100vh - 16px));
+  padding: 8px;
+  border: 1px solid var(--seleccion);
+  border-radius: 10px;
+  background: var(--fondo-bajo);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  font-family: var(--fuente);
+  font-size: 11px;
+  color: var(--tenue);
+}
+
+.elegir-icono-lista {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.elegir-icono-grupo {
+  margin: 6px 4px 4px;
+}
+
+.elegir-icono-grilla {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+
+.elegir-icono-opcion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.elegir-icono-opcion:hover {
+  background: var(--seleccion);
+}
+
+.elegir-icono-opcion.elegido {
+  border-color: var(--acento);
   color: var(--acento);
 }
 
-/* Elemento fijado que ya no existe en la carpeta (se borró o se movió). */
-.barra-nota.perdida {
-  opacity: 0.5;
-  font-style: italic;
-  cursor: default;
+.elegir-icono-defecto {
+  margin-top: 8px;
+  padding: 6px;
+  border: 1px solid var(--seleccion);
+  border-radius: 6px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.elegir-icono-defecto:hover {
+  border-color: var(--acento);
 }
 
 /* Menú de clic derecho de la barra lateral. */
@@ -287,21 +425,6 @@ body,
 
 .barra-vacia {
   padding: 0 8px 8px 4px;
-}
-
-.barra-boton {
-  margin-left: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--seleccion);
-  border-radius: 6px;
-  background: none;
-  color: var(--texto);
-  font: inherit;
-  cursor: pointer;
-}
-
-.barra-boton:hover {
-  border-color: var(--acento);
 }
 
 .barra-nota.activa {
@@ -359,4 +482,61 @@ body,
 
 .estado-error {
   color: var(--acento);
+}
+
+/* Ventanitas sobre la ventana principal (Ajustes, Hormiguero nuevo): fondo oscurecido y una caja
+   centrada. `.modal-encima` va sobre otra ventanita (Hormiguero nuevo abierto desde Ajustes). */
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px 24px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.modal-encima {
+  z-index: 40;
+}
+
+.modal {
+  position: relative;
+  max-height: 100%;
+  padding: 22px 24px 20px;
+  border: 1px solid var(--seleccion);
+  border-radius: 12px;
+  background: var(--fondo);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  font-family: var(--fuente);
+  font-size: 13px;
+  color: var(--texto);
+}
+
+.modal h1 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: var(--titulo);
+}
+
+.modal-cerrar {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--tenue);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-cerrar:hover {
+  color: var(--texto);
+  background: var(--coincidencia);
 }

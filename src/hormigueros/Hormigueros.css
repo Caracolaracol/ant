@@ -1,0 +1,126 @@
+/* Formulario para cavar un hormiguero (ElegirHormiguero) y la ventanita «Hormiguero nuevo».
+   Toma los colores de las variables que lo rodean: las de App.css en la ventana principal, y
+   las de la tierra en la bienvenida (Bienvenida.css las redefine). */
+
+.elegir-hormiguero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--fuente);
+  font-size: 13px;
+}
+
+.eh-nuevo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eh-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eh-campo > span {
+  color: var(--tenue);
+  font-size: 12px;
+}
+
+.eh-campo input,
+.eh-donde code {
+  padding: 8px 10px;
+  border: 1px solid var(--seleccion);
+  border-radius: 7px;
+  background: var(--fondo-bajo);
+  color: var(--texto);
+  font: inherit;
+}
+
+.eh-campo input:focus {
+  outline: none;
+  border-color: var(--acento);
+}
+
+.eh-donde {
+  display: flex;
+  gap: 8px;
+}
+
+/* Ruta de la carpeta: si no cabe, se corta el principio y se ve el final. */
+.eh-donde code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+  color: var(--codigo);
+}
+
+.eh-donde button,
+.eh-existente {
+  padding: 8px 12px;
+  border: 1px solid var(--seleccion);
+  border-radius: 7px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.eh-donde button:hover,
+.eh-existente:hover:not(:disabled) {
+  border-color: var(--acento);
+}
+
+.eh-cavar {
+  padding: 9px 14px;
+  border: none;
+  border-radius: 7px;
+  background: var(--acento);
+  color: var(--fondo);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.eh-cavar:disabled,
+.eh-existente:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* «o», entre dos líneas. */
+.eh-o {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--tenue);
+  font-size: 12px;
+}
+
+.eh-o::before,
+.eh-o::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--seleccion);
+}
+
+.eh-error {
+  margin: 0;
+  color: var(--acento);
+}
+
+/* Ventanita «Hormiguero nuevo». */
+.nuevo-hormiguero {
+  width: min(420px, 100%);
+}
+
+.nuevo-hormiguero-ayuda {
+  margin: 0 0 18px;
+  color: var(--tenue);
+  line-height: 1.5;
+}

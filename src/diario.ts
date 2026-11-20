@@ -5,7 +5,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Entrada } from "./carpeta";
 
-/** Nombre de la carpeta de notas diarias dentro de la carpeta de trabajo (igual que en Rust). */
+/** Nombre de la carpeta de notas diarias dentro del hormiguero abierto (igual que en Rust). */
 export const CARPETA_DIARIO = "Daily";
 
 /** Ruta donde se crearía la carpeta `Daily` dentro de `carpeta`, con el mismo separador que use la carpeta. */
@@ -40,7 +40,7 @@ export const abrirDia = (carpeta: string, fecha: Date, locale: string) =>
 export const entradaDiario = (arbol: Entrada[]) =>
   arbol.find((e) => e.es_carpeta && e.nombre.toLowerCase() === CARPETA_DIARIO.toLowerCase());
 
-/** Días que ya tienen nota, según el árbol de la carpeta de trabajo (`Daily/AAAA-MM-DD.md`). */
+/** Días que ya tienen nota, según el árbol del hormiguero abierto (`Daily/AAAA-MM-DD.md`). */
 export function diasConNota(arbol: Entrada[]): Set<string> {
   const daily = entradaDiario(arbol);
   const dias = new Set<string>();

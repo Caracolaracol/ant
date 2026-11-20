@@ -1,18 +1,20 @@
-/* Estilos de la ventana de Ajustes: columna de áreas a la izquierda y panel de opciones a la
-   derecha. Usa las mismas variables de color que la ventana principal (App.css). */
+/* Estilos de los Ajustes: una ventanita sobre la principal (el fondo y el marco son `.modal` de
+   App.css), con la columna de áreas a la izquierda y el panel de opciones a la derecha. Usa las
+   mismas variables de color que la ventana principal (App.css). */
 
 .ajustes {
   display: flex;
-  height: 100%;
-  font-family: var(--fuente);
-  font-size: 13px;
+  width: min(720px, 100%);
+  height: min(540px, 100%);
+  padding: 0;
+  overflow: hidden;
 }
 
-/* Columna de áreas; el margen superior deja espacio a los botones de la ventana. */
+/* Columna de áreas. */
 .ajustes-areas {
   width: 170px;
   flex-shrink: 0;
-  padding: 44px 8px 16px;
+  padding: 16px 8px;
   background: var(--fondo-bajo);
   user-select: none;
 }
@@ -34,9 +36,10 @@
 }
 
 .ajustes-panel {
+  position: relative;
   flex: 1;
   min-width: 0;
-  padding: 0 28px 24px;
+  padding: 20px 28px 24px;
   overflow-y: auto;
 }
 
@@ -56,19 +59,42 @@
   color: var(--tenue);
 }
 
-/* Ruta de la carpeta (cortada con «…» si es larga) y sus botones. */
-.ajuste-carpeta {
+/* Lista de hormigueros: nombre y ruta (cortada con «…» si es larga) y sus botones. El abierto
+   lleva el borde del color de acento. */
+.ajuste-hormigueros {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.ajuste-hormiguero {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--seleccion);
+  border-radius: 8px;
+  background: var(--fondo-bajo);
 }
 
-.ajuste-carpeta code {
+.ajuste-hormiguero.actual {
+  border-color: var(--acento);
+}
+
+.ajuste-hormiguero-nombre {
   flex: 1;
   min-width: 0;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: var(--fondo-bajo);
+  display: flex;
+  flex-direction: column;
+}
+
+.ajuste-hormiguero-nombre b {
+  color: var(--titulo);
+}
+
+.ajuste-hormiguero-nombre code {
+  font-size: 11px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -76,7 +102,13 @@
   text-align: left;
 }
 
-.ajuste-carpeta button,
+.ajuste-hormiguero-abierto {
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--acento);
+}
+
+.ajuste-hormiguero button,
 .ajuste-boton,
 .ajuste-select {
   padding: 6px 12px;
@@ -88,7 +120,7 @@
   cursor: pointer;
 }
 
-.ajuste-carpeta button:hover,
+.ajuste-hormiguero button:hover,
 .ajuste-boton:hover,
 .ajuste-select:hover {
   border-color: var(--acento);
@@ -280,6 +312,3 @@
   color: var(--tenue);
 }
 
-.ajustes-error {
-  color: var(--acento);
-}

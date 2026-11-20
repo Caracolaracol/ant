@@ -1,5 +1,5 @@
-// Lectura de la carpeta de trabajo desde la interfaz: pide a Rust (`src-tauri/src/carpeta.rs`)
-// el árbol de subcarpetas y notas que muestra la barra lateral.
+// Carpetas desde la interfaz: pide a Rust (`src-tauri/src/carpeta.rs`) el árbol de subcarpetas
+// y notas del hormiguero abierto, que muestra la barra lateral. También utilidades de rutas.
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -14,8 +14,6 @@ export interface Entrada {
 /** Devuelve el árbol de notas (.md, .markdown, .txt) de `carpeta`, con las carpetas primero. */
 export const listarCarpeta = (carpeta: string) => invoke<Entrada[]>("listar_carpeta", { path: carpeta });
 
-/** Pide a Rust que abra (o traiga al frente) la ventana de Ajustes. */
-export const abrirAjustes = () => invoke<void>("abrir_ajustes");
 
 /** Indica si `ruta` está dentro de `carpeta` (o es la carpeta misma). */
 export function estaDentro(ruta: string, carpeta: string): boolean {
@@ -36,3 +34,10 @@ export function carpetasPadre(ruta: string, carpeta: string): string[] {
   }
   return padres;
 }
+
+/**
+ * Marca una ruta como texto de izquierda a derecha. Las rutas largas se muestran con
+ * `direction: rtl` para que, si no caben, se corte el principio y se vea el final; sin esta marca
+ * la `/` del principio aparecería al final.
+ */
+export const ltr = (ruta: string) => `\u200e${ruta}\u200e`;

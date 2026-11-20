@@ -1,48 +1,48 @@
-// Punto de entrada de la interfaz. Todas las ventanas cargan este mismo index.html; la de Ajustes
-// llega con `#ajustes` en la dirección (ver `src-tauri/src/menu.rs`) y aquí se elige qué montar.
-// También aplica en todas las ventanas por igual lo que afecta a la app entera: los colores de
-// Ajustes → Apariencia y el idioma de Ajustes → General (con `ContextoTextos`).
+// Punto de entrada de la interfaz: monta la ventana principal (`App`), la única ventana de la app
+// (Ajustes, la bienvenida y los diálogos se abren dentro de ella). También aplica lo que afecta a
+// la app entera: los colores de Ajustes → Apariencia y el idioma de Ajustes → General (con
+// `ContextoTextos`), al abrir y cada vez que cambian los ajustes.
 
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import { VentanaAjustes } from "./ajustes/VentanaAjustes";
-import { Ajustes, escucharAjustes, leerAjustes } from "./ajustes";
+import { AJUSTES_INICIALES, Ajustes, escucharAjustes, leerAjustes } from "./ajustes";
 import { aplicarColores } from "./colores";
-import { ContextoTextos, Idioma, idiomaDe, textosDe } from "./idioma";
-
-const esAjustes = window.location.hash === "#ajustes";
+import { ContextoTextos, idiomaDe, textosDe } from "./idioma";
 
 /** Aplica colores e idioma del documento (atributo `lang`) a partir de los ajustes. */
-function aplicar(a: Partial<Ajustes>): Idioma {
+function aplicar(a: Partial<Ajustes>) {
   aplicarColores(a.colores ?? {});
-  const idioma = idiomaDe(a.idioma);
-  document.documentElement.lang = idioma;
-  return idioma;
+  document.documentElement.lang = idiomaDe(a.idioma);
 }
 
-/** Raíz de cada ventana: entrega los textos del idioma actual y los cambia cuando cambian los ajustes. */
-function Raiz({ idiomaInicial }: { idiomaInicial: Idioma }) {
-  const [idioma, setIdioma] = useState(idiomaInicial);
+/** Raíz: entrega los textos del idioma actual y los cambia cuando cambian los ajustes. */
+function Raiz({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
+  const [idioma, setIdioma] = useState(idiomaDe(ajustesIniciales.idioma));
   useEffect(() => {
-    const dejar = escucharAjustes((a) => setIdioma(aplicar(a)));
+    const dejar = escucharAjustes((a) => {
+      aplicar(a);
+      setIdioma(idiomaDe(a.idioma));
+    });
     return () => void dejar.then((f) => f());
   }, []);
   return (
     <ContextoTextos.Provider value={textosDe(idioma)}>
-      {esAjustes ? <VentanaAjustes /> : <App />}
+      <App ajustesIniciales={ajustesIniciales} />
     </ContextoTextos.Provider>
   );
 }
 
-// Los ajustes se leen antes de montar, para no ver un instante el tema o el idioma por defecto;
-// si la lectura falla, la ventana se abre igual, en inglés y con los colores de `App.css`.
+// Los ajustes se leen antes de montar, para no ver un instante el tema, el idioma por defecto o
+// la bienvenida; si la lectura falla, la ventana se abre igual, en inglés y con los colores de
+// `App.css`.
 leerAjustes()
-  .then(aplicar, () => aplicar({}))
-  .then((idioma) =>
+  .catch(() => AJUSTES_INICIALES)
+  .then((ajustes) => {
+    aplicar(ajustes);
     ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       <React.StrictMode>
-        <Raiz idiomaInicial={idioma} />
+        <Raiz ajustesIniciales={ajustes} />
       </React.StrictMode>,
-    ),
-  );
+    );
+  });
