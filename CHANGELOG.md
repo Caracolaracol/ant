@@ -11,6 +11,8 @@ Linux y publica la versión con esta sección como notas.
 
 ## [Sin publicar]
 
+## [0.2.0] - 2026-11-20
+
 ### Cambiado
 
 - Ant está en inglés por defecto: menús, barra lateral, diálogos y Ajustes. El español se elige
@@ -75,5 +77,6 @@ Primera versión pública.
 - Sitio y documentación en inglés y español: https://caracolaracol.github.io/ant/
 - Licencia MIT.
 
-[Sin publicar]: https://github.com/Caracolaracol/ant/compare/v0.1.0...HEAD
+[Sin publicar]: https://github.com/Caracolaracol/ant/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Caracolaracol/ant/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Caracolaracol/ant/releases/tag/v0.1.0

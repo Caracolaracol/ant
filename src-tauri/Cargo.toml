@@ -1,6 +1,6 @@
 [package]
 name = "ant"
-version = "0.1.0"
+version = "0.2.0"
 description = "App de escritorio para tomar notas"
 authors = ["Agustin Rojas"]
 license = "MIT"
