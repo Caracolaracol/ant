@@ -8,6 +8,7 @@ mod diario;
 mod menu;
 
 use std::fs;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tauri::{Emitter, Manager};
@@ -35,15 +36,19 @@ fn read_note(path: String) -> Result<String, String> {
 /// corte a mitad de escritura nunca deje la nota a medias.
 #[tauri::command]
 fn write_note(path: String, contents: String) -> Result<(), String> {
-    escribir_atomico(&path, contents.as_bytes())
+    escribir_atomico(Path::new(&path), contents.as_bytes())
 }
 
 /// Escribe en un archivo temporal junto al destino y luego lo renombra, para que un corte a
-/// mitad de escritura nunca deje el archivo a medias.
-fn escribir_atomico(path: &str, datos: &[u8]) -> Result<(), String> {
-    let tmp = format!("{path}.tmp");
-    fs::write(&tmp, datos).map_err(|e| format!("Could not write {path}: {e}"))?;
-    fs::rename(&tmp, path).map_err(|e| format!("Could not save {path}: {e}"))
+/// mitad de escritura nunca deje el archivo a medias. La usan las notas, los archivos de
+/// «Compilar y exportar» y `ajustes.json`.
+pub(crate) fn escribir_atomico(ruta_de_destino: &Path, datos: &[u8]) -> Result<(), String> {
+    let mut nombre_temporal = ruta_de_destino.as_os_str().to_owned();
+    nombre_temporal.push(".tmp");
+    let ruta_temporal = std::path::PathBuf::from(nombre_temporal);
+    let destino = ruta_de_destino.display();
+    fs::write(&ruta_temporal, datos).map_err(|error| format!("Could not write {destino}: {error}"))?;
+    fs::rename(&ruta_temporal, ruta_de_destino).map_err(|error| format!("Could not save {destino}: {error}"))
 }
 
 /// Deshace el `encodeURIComponent` con que la interfaz manda la ruta en un encabezado (los
@@ -80,7 +85,7 @@ fn guardar_binario(request: tauri::ipc::Request<'_>) -> Result<(), String> {
         .and_then(|v| v.to_str().ok())
         .map(decodificar_ruta)
         .ok_or("Missing file path")?;
-    escribir_atomico(&ruta, datos)
+    escribir_atomico(Path::new(&ruta), datos)
 }
 
 #[cfg(test)]

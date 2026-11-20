@@ -96,13 +96,10 @@ body,
   user-select: none !important;
 }
 
-/* Modo diario: la nota diaria abierta y el calendario, pegados al fondo de la barra (fuera del
-   scroll de `.barra-contenido`), separados del resto con una línea. */
+/* Modo diario: el calendario arriba de la barra y, bajo él, la nota diaria abierta. Sin líneas
+   separadoras: las secciones se separan solo con espacio. */
 .barra-diario {
-  flex-shrink: 0;
-  margin: 0 12px 0 16px;
-  padding: 10px 0 14px;
-  border-top: 1px solid var(--seleccion);
+  margin-right: 12px;
 }
 
 /* Calendario del modo diario: siete columnas de días, de lunes a domingo. */
@@ -243,12 +240,9 @@ body,
   color: var(--texto);
 }
 
-/* Fijados: una grilla de iconos sin texto, como las pestañas fijadas de Zen o Arc, separada del
-   resto con una línea. */
+/* Fijados: una grilla de iconos sin texto, como las pestañas fijadas de Zen o Arc. */
 .barra-fijados {
-  padding-bottom: 12px;
   margin-right: 12px;
-  border-bottom: 1px solid var(--seleccion);
 }
 
 .fijados-grilla {

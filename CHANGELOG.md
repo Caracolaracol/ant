@@ -33,8 +33,14 @@ release with that section as its notes, so this file is always written in Englis
   another note, leave the window or quit Ant. Only a new note that was never saved still needs
   Cmd+S the first time.
 - One note at a time: opening a note replaces the one that was open (it is saved first), instead
-  of leaving every note you opened highlighted in the sidebar.
-- The diary calendar now sits at the bottom of the sidebar.
+  of leaving every note you opened highlighted in the sidebar. Coming back to a note keeps its
+  cursor position and its undo history.
+- If a note changes outside Ant (in another app, or through a sync service), Ant shows the new
+  text when you come back to the window. If it also has changes in Ant, Ant never overwrites the
+  file: it warns in the status bar, and Cmd+S keeps your version.
+- Settings are saved safely (written to a temporary file first), and if the settings file is ever
+  damaged, Ant keeps a copy of it (`ajustes-ilegibles.json`) instead of losing your anthills.
+- The sidebar has no separator lines: sections are separated by space only.
 - Settings open inside the main window instead of a separate window. Escape, Cmd+W or a click
   outside closes them.
 - The blank note Ant opens with no longer shows up in the sidebar as "Untitled" under "Open"; it

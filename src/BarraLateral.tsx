@@ -1,5 +1,9 @@
 // Barra lateral de la ventana principal, de arriba hacia abajo (simple a propósito: cambiar de
-// hormiguero o cavar uno nuevo se hace en Ajustes o en el menú, no aquí):
+// hormiguero o cavar uno nuevo se hace en Ajustes o en el menú, no aquí; y sin líneas
+// separadoras, las secciones se separan solo con espacio):
+//   1. El calendario del modo diario si está activo en Ajustes (ver `Calendario.tsx`), con la
+//      nota diaria abierta debajo. En ese modo la carpeta `Daily` no aparece en el árbol: a las
+//      notas diarias se llega desde el calendario.
 //   2. Fijados: carpetas, notas y capítulos que el usuario fijó (clic derecho → Fijar arriba), como
 //      las pestañas fijadas de Zen o Arc: una grilla de iconos sin texto, con el nombre en un
 //      globo al pasar el mouse. Cada uno tiene el icono de su tipo hasta que se elige otro (clic
@@ -8,9 +12,6 @@
 //   3. «Abiertas»: notas abiertas que no están en el hormiguero (nuevas sin guardar, ya con
 //      algo escrito, o de otro lugar).
 //   4. El hormiguero abierto, con su nombre, como árbol de subcarpetas y notas.
-//   5. Pegado al fondo (fuera del scroll), el calendario del modo diario si está activo en Ajustes
-//      (ver `Calendario.tsx`), con la nota diaria abierta encima. En ese modo la carpeta `Daily`
-//      no aparece en el árbol: a las notas diarias se llega desde el calendario.
 // Bajo la nota visible aparecen sus títulos (`#`, `##`, …) para saltar a ellos, como en Left.
 // El borde derecho no se ve, pero al pasar el mouse el puntero cambia a ↔ y arrastrándolo se
 // ensancha o achica la barra (doble clic vuelve al ancho por defecto).
@@ -34,6 +35,11 @@ export interface NotaResumen {
   ruta: string | null;
   texto: string;
   sucio: boolean;
+  /**
+   * Lo que hay en su archivo según la última vez que Ant lo leyó o lo guardó (`null` si no tiene
+   * archivo). Sirve para notar si el archivo cambió fuera de Ant y no pisar esos cambios.
+   */
+  textoQueHayEnDisco: string | null;
 }
 
 interface Props {
@@ -212,7 +218,7 @@ export function BarraLateral(props: Props) {
       : [{ texto: tx.fijarArriba, accion: () => props.onFijar(clave) }];
 
   // Con el modo diario activo, la carpeta `Daily` se esconde del árbol y su nota abierta se
-  // muestra sobre el calendario.
+  // muestra bajo el calendario.
   // Se usa la carpeta `Daily` que ya exista (aunque esté en minúsculas) o, si no, donde se creará.
   const daily = props.diario && carpeta ? (entradaDiario(arbol)?.ruta ?? rutaDiario(carpeta)) : null;
   const arbolVisible = daily ? arbol.filter((e) => e.ruta !== daily) : arbol;
@@ -346,6 +352,17 @@ export function BarraLateral(props: Props) {
   return (
     <nav className="barra" ref={barra} style={{ width: props.ancho }}>
       <div className="barra-contenido">
+        {/* Modo diario: el calendario y, bajo él, la nota diaria abierta. */}
+        {daily && (
+          <section className="barra-seccion barra-diario">
+            <Calendario conNota={conNota} activo={diaDeRuta(notaActiva?.ruta ?? null)} onElegir={props.onAbrirDia} />
+            {diarias.map((notaDiaria) => (
+              <div key={notaDiaria.id}>
+                {filaNota(sinExtension(nombreArchivo(notaDiaria.ruta!)), 0, notaDiaria, () => props.onElegir(notaDiaria.id))}
+              </div>
+            ))}
+          </section>
+        )}
         {fijadosVisibles.length > 0 && (
           <section className="barra-seccion barra-fijados" aria-label={tx.fijados}>
             <div className="fijados-grilla">{fijadosVisibles.map(dibujarFijado)}</div>
@@ -377,15 +394,6 @@ export function BarraLateral(props: Props) {
           </section>
         )}
       </div>
-      {/* Modo diario: la nota diaria abierta y, pegado al fondo de la barra, el calendario. */}
-      {daily && (
-        <section className="barra-diario">
-          {diarias.map((n) => (
-            <div key={n.id}>{filaNota(sinExtension(nombreArchivo(n.ruta!)), 0, n, () => props.onElegir(n.id))}</div>
-          ))}
-          <Calendario conNota={conNota} activo={diaDeRuta(notaActiva?.ruta ?? null)} onElegir={props.onAbrirDia} />
-        </section>
-      )}
       {/* Borde invisible para cambiar el ancho; doble clic vuelve al ancho por defecto. */}
       <div className="barra-tirador" title={tx.bordeBarra} onPointerDown={alEmpezarArrastre} onDoubleClick={() => props.onCambiarAncho(null)} />
       {menu && <MenuContextual x={menu.x} y={menu.y} onCerrar={cerrarMenu} opciones={menu.opciones} />}

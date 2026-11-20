@@ -62,6 +62,10 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   anterior; solo quedan abiertas las notas nuevas con algo escrito. Guardado automático
   (`guardarYa`): tras `PAUSA_GUARDADO` sin escribir, al cambiar de nota, al perder el foco, al
   cerrar la ventana y al salir (Rust avisa con `antes-de-salir` y espera a `salir`, ver `lib.rs`).
+  Cada nota recuerda `textoQueHayEnDisco`: antes de guardar se relee el archivo y, si cambió
+  fuera de Ant, no se pisa (avisa; Cmd+S fuerza). Al volver el foco, las notas cuyo archivo
+  cambió fuera se recargan (`recargarNotasCambiadasFueraDeAnt`). Las notas con archivo tienen
+  id fijo por ruta (`idDeNotaConArchivo`), así el editor las reconoce al volver a abrirlas.
   Encima abre la bienvenida (sin hormigueros, o con el evento `abrir-bienvenida`), los Ajustes
   (`abrir-ajustes`), «Hormiguero nuevo» (`nuevo-hormiguero`) y «Compilar y exportar»
   (`abrir-compilar`): eventos que manda Rust desde el menú.
@@ -95,9 +99,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   defecto de cada tipo.
 - `src/iconos.ts` — iconos que se pueden elegir para los fijados: una selección de Lucide
   (ISC) copiada aquí, por grupos; `src/Icono.tsx` los dibuja.
-- `src/Calendario.tsx` — calendario del modo diario (pegado al fondo de la barra lateral, si
+- `src/Calendario.tsx` — calendario del modo diario (arriba de la barra lateral, si
   `Ajustes.diario`): un mes, semana desde el lunes, punto en los días con nota. Con el modo
-  diario activo, `BarraLateral` esconde `Daily/` del árbol y muestra sobre el calendario la
+  diario activo, `BarraLateral` esconde `Daily/` del árbol y muestra bajo el calendario la
   nota diaria abierta.
 - `src/diario.ts` — fechas `AAAA-MM-DD`, título inicial de cada nota diaria, días con nota
   (desde el árbol) y llamada a `abrir_dia`. Las notas diarias van en `Daily/` del hormiguero abierto.
@@ -123,8 +127,10 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   elige el usuario (`Ajustes.colores`) pisan estas variables; un tema nuevo va en `TEMAS`.
 - `src/editor/Editor.tsx` — monta CodeMirror 6 con historial, búsqueda (Cmd+F), Markdown y
   resaltado de bloques de código. Una sola vista para todas las notas: cada nota guarda su
-  `EditorState` (texto, cursor, historial) y se intercambia al cambiar de nota. Expone
-  `mostrar`, `olvidar`, `getText`, `irA` y `focus`.
+  `EditorState` (texto, cursor, historial) y se intercambia al cambiar de nota; se recuerdan
+  hasta `LIMITE_DE_NOTAS_RECORDADAS` notas aunque estén cerradas. Expone (`ControlDelEditor`)
+  `mostrarNota`, `olvidarNota`, `obtenerTextoDeNota`, `reemplazarTextoDesdeDisco` (cambio mínimo,
+  fuera del historial y sin avisar como si se hubiera escrito), `llevarCursorA` y `enfocar`.
 - `src/editor/escritor.ts` — modo escritor (Ajustes → Editor, activo por defecto): reemplazos
   tipográficos al teclear (`reemplazo`, probada aparte), Backspace que los deshace, letra de
   libro y corrector. Va en un `Compartment` de `Editor.tsx` (prop `escritor`); nunca toca texto
@@ -156,7 +162,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   lo rehace al guardar otro idioma. No incluye «Cerrar ventana»: Cmd+W no cierra la ventana
   principal.
 - `src-tauri/src/ajustes.rs` — ajustes en `ajustes.json` de la carpeta de configuración de la
-  app; al guardar emite `ajustes-cambiados`. Al leer, la `carpeta` de versiones anteriores pasa
+  app, escritos con `escribir_atomico`; al guardar emite `ajustes-cambiados`. Si el archivo está
+  dañado, guarda una copia (`ajustes-ilegibles.json`) antes de usar los valores por defecto. Al leer, la `carpeta` de versiones anteriores pasa
   a la lista de hormigueros (con test).
 - `src-tauri/src/diario.rs` — `abrir_dia`: usa la carpeta `Daily` que ya exista (sin importar
   mayúsculas) o la crea, y crea `AAAA-MM-DD.md` si no existe

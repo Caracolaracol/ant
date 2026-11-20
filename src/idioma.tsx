@@ -30,6 +30,7 @@ const en = {
   descartarCambios: "Discard changes",
   cancelar: "Cancel",
   diarioSinCarpeta: "Open an anthill to use the diary.",
+  cambiadaFueraDeAnt: (nombre: string) => `“${nombre}” changed outside Ant and was not overwritten. Cmd+S keeps your version.`,
 
   // Barra lateral.
   fijados: "Pinned",
@@ -92,7 +93,7 @@ const en = {
   activarDiario: "Turn on diary mode",
   diarioAyuda: (ejemplo: ReactNode, carpeta: ReactNode): ReactNode => (
     <>
-      Shows a calendar at the bottom of the sidebar. Click a day to open its note, named after the
+      Shows a calendar at the top of the sidebar. Click a day to open its note, named after the
       date (for example {ejemplo}). If the {carpeta} folder or the note do not exist yet, they are
       created inside the open anthill; if the folder already exists, it is used as is. The{" "}
       {carpeta} folder is hidden from the sidebar tree: you reach daily notes through the calendar.
@@ -185,6 +186,7 @@ const es: Textos = {
   descartarCambios: "Descartar cambios",
   cancelar: "Cancelar",
   diarioSinCarpeta: "Abre un hormiguero para usar el diario.",
+  cambiadaFueraDeAnt: (nombre) => `«${nombre}» cambió fuera de Ant y no se sobrescribió. Cmd+S se queda con tu versión.`,
 
   fijados: "Fijados",
   abiertas: "Abiertas",
@@ -243,7 +245,7 @@ const es: Textos = {
   activarDiario: "Activar el modo diario",
   diarioAyuda: (ejemplo, carpeta) => (
     <>
-      Muestra un calendario abajo en la barra lateral. Al hacer clic en un día se abre su nota, con
+      Muestra un calendario arriba de la barra lateral. Al hacer clic en un día se abre su nota, con
       la fecha como nombre (por ejemplo {ejemplo}). Si la carpeta {carpeta} o la nota aún no existen,
       se crean dentro del hormiguero abierto; si la carpeta ya existe, se usa esa. La carpeta{" "}
       {carpeta} no aparece en el árbol de la barra lateral: a las notas diarias se llega desde el

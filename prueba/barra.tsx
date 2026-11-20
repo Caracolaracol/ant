@@ -34,7 +34,7 @@ const ajustes: Ajustes = {
   fijados: [`${base}/Libro I`, `${base}/Ideas.md`, `${base}/Libro I/02 - La lluvia.md#La cueva`, `${base}/Personajes`, `${base}/Borrado.md`],
   iconos: { [`${base}/Personajes`]: "drama", [`${base}/Ideas.md`]: "lightbulb" },
 };
-const notas = [{ id: "a", ruta: `${base}/Libro I/02 - La lluvia.md`, texto, sucio: false }];
+const notas = [{ id: "a", ruta: `${base}/Libro I/02 - La lluvia.md`, texto, sucio: false, textoQueHayEnDisco: texto }];
 const nada = () => {};
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

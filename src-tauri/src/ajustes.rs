@@ -7,7 +7,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter, Manager};
 
 /// Nombre del evento que se emite a todas las ventanas al cambiar los ajustes.
@@ -134,15 +134,34 @@ fn ruta_archivo(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir.join("ajustes.json"))
 }
 
+/// Nombre de la copia que se guarda de un `ajustes.json` que no se pudo leer.
+const COPIA_DE_AJUSTES_ILEGIBLES: &str = "ajustes-ilegibles.json";
+
 /// Lee los ajustes guardados. Si el archivo no existe o está dañado, devuelve los valores por defecto.
 #[tauri::command]
 pub fn leer_ajustes(app: AppHandle) -> Ajustes {
-    let ajustes: Ajustes = ruta_archivo(&app)
-        .ok()
-        .and_then(|ruta| fs::read_to_string(ruta).ok())
-        .and_then(|texto| serde_json::from_str(&texto).ok())
-        .unwrap_or_default();
-    con_hormiguero_actual(ajustes)
+    match ruta_archivo(&app) {
+        Ok(ruta_del_archivo) => leer_ajustes_del_archivo(&ruta_del_archivo),
+        Err(_) => Ajustes::default(),
+    }
+}
+
+/// Lee `ajustes.json`. Si existe pero no se puede entender (se dañó), antes de seguir con los
+/// valores por defecto guarda una copia (`ajustes-ilegibles.json`, junto al original), así los
+/// hormigueros y demás ajustes no se pierden para siempre al guardar los nuevos encima.
+fn leer_ajustes_del_archivo(ruta_del_archivo: &Path) -> Ajustes {
+    let Ok(texto_del_archivo) = fs::read_to_string(ruta_del_archivo) else { return Ajustes::default() };
+    match serde_json::from_str::<Ajustes>(&texto_del_archivo) {
+        Ok(ajustes) => con_hormiguero_actual(ajustes),
+        Err(error) => {
+            let ruta_de_la_copia = ruta_del_archivo.with_file_name(COPIA_DE_AJUSTES_ILEGIBLES);
+            if !ruta_de_la_copia.exists() {
+                let _ = fs::copy(ruta_del_archivo, &ruta_de_la_copia);
+            }
+            eprintln!("Could not read the settings ({error}); a copy was kept in {}", ruta_de_la_copia.display());
+            Ajustes::default()
+        }
+    }
 }
 
 /// Los ajustes de antes de los hormigueros (0.2.0 y anteriores) solo tenían `carpeta`: esa
@@ -168,18 +187,35 @@ mod pruebas {
         assert_eq!(ajustes.fijados, vec!["/notas/a.md".to_string()]);
         assert!(con_hormiguero_actual(Ajustes::default()).hormigueros.is_empty());
     }
+
+    #[test]
+    fn guarda_una_copia_de_los_ajustes_ilegibles() {
+        let carpeta = std::env::temp_dir().join(format!("ant-ajustes-{}", std::process::id()));
+        fs::create_dir_all(&carpeta).unwrap();
+        let ruta_del_archivo = carpeta.join("ajustes.json");
+        fs::write(&ruta_del_archivo, "{ esto no es JSON").unwrap();
+        let ajustes = leer_ajustes_del_archivo(&ruta_del_archivo);
+        assert!(ajustes.hormigueros.is_empty());
+        let copia = fs::read_to_string(carpeta.join(COPIA_DE_AJUSTES_ILEGIBLES)).unwrap();
+        assert_eq!(copia, "{ esto no es JSON");
+        fs::remove_dir_all(carpeta).unwrap();
+    }
 }
 
-/// Guarda los ajustes en disco y avisa a la interfaz. Si cambió el idioma, traduce el menú de la app.
+/// Guarda los ajustes en disco y avisa a la interfaz. Si cambió el idioma, traduce el menú de la
+/// app. Escribe con `escribir_atomico` (archivo temporal + renombrar): un corte a mitad de
+/// escritura nunca deja `ajustes.json` a medias.
 #[tauri::command]
 pub fn guardar_ajustes(app: AppHandle, ajustes: Ajustes) -> Result<(), String> {
     let idioma_anterior = leer_ajustes(app.clone()).idioma;
-    let ruta = ruta_archivo(&app)?;
-    if let Some(dir) = ruta.parent() {
-        fs::create_dir_all(dir).map_err(|e| format!("Could not create {}: {e}", dir.display()))?;
+    let ruta_del_archivo = ruta_archivo(&app)?;
+    if let Some(carpeta_de_configuracion) = ruta_del_archivo.parent() {
+        fs::create_dir_all(carpeta_de_configuracion)
+            .map_err(|error| format!("Could not create {}: {error}", carpeta_de_configuracion.display()))?;
     }
-    let texto = serde_json::to_string_pretty(&ajustes).map_err(|e| e.to_string())?;
-    fs::write(&ruta, texto).map_err(|e| format!("Could not save the settings: {e}"))?;
+    let texto_de_los_ajustes = serde_json::to_string_pretty(&ajustes).map_err(|error| error.to_string())?;
+    crate::escribir_atomico(&ruta_del_archivo, texto_de_los_ajustes.as_bytes())
+        .map_err(|error| format!("Could not save the settings: {error}"))?;
     if ajustes.idioma != idioma_anterior {
         crate::menu::cambiar_idioma(&app, &ajustes.idioma);
     }

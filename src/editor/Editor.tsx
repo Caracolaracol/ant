@@ -3,13 +3,16 @@
 // administra con una ref: React no vuelve a dibujar el texto en cada tecla, lo que mantiene
 // el editor rápido incluso con notas largas.
 //
-// Hay una sola vista para todas las notas abiertas: cada nota guarda su propio EditorState
-// (texto, cursor e historial de deshacer) y al cambiar de nota se intercambia el estado.
+// Hay una sola vista para todas las notas: cada nota guarda su propio EditorState (texto, cursor
+// e historial de deshacer) y al cambiar de nota se intercambia el estado. Los estados se guardan
+// en memoria aunque la nota se cierre (hasta `LIMITE_DE_NOTAS_RECORDADAS`), así al volver a
+// abrirla siguen ahí el cursor y el deshacer. Si el archivo cambió fuera de Ant, el texto se pone
+// al día sin perder el historial (`reemplazarTextoDesdeDisco`).
 // El modo escritor (`escritor.ts`) va en un `Compartment`: se enciende, apaga o cambia en vivo,
 // y cada nota guardada se pone al día al volver a mostrarse.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
+import { Annotation, Compartment, EditorSelection, EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, drawSelection, highlightActiveLine } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
@@ -18,46 +21,91 @@ import { languages } from "@codemirror/language-data";
 import { tema, resaltado } from "./tema";
 import { ConfigEscritor, extensionesEscritor } from "./escritor";
 
+/** Cuántas notas recuerda el editor (cursor e historial) después de cerrarlas. */
+const LIMITE_DE_NOTAS_RECORDADAS = 30;
+
+/**
+ * Marca los cambios que vienen del disco (el archivo cambió fuera de Ant): no avisan a la app
+ * como si el usuario hubiera escrito, así no se vuelven a guardar.
+ */
+const cambioQueVieneDelDisco = Annotation.define<boolean>();
+
 /** Métodos que la app puede llamar sobre el editor desde fuera. */
-export interface EditorHandle {
-  /** Muestra la nota `id`; si es la primera vez, la crea con `texto`. */
-  mostrar(id: string, texto: string): void;
-  /** Olvida el estado guardado de una nota cerrada. */
-  olvidar(id: string): void;
-  /** Devuelve el texto de una nota (la visible o una guardada en segundo plano). */
-  getText(id: string): string;
-  /** Mueve el cursor a la posición `pos` de la nota visible y la centra en pantalla. */
-  irA(pos: number): void;
+export interface ControlDelEditor {
+  /**
+   * Muestra la nota `idNota` con `textoActual`. Si el editor ya la recordaba, vuelve con su cursor
+   * y su historial (y pone su texto al día si cambió); si no, la crea.
+   */
+  mostrarNota(idNota: string, textoActual: string): void;
+  /** Olvida para siempre el estado de una nota (una nota en blanco que se descarta). */
+  olvidarNota(idNota: string): void;
+  /** Devuelve el texto de una nota (la visible o una recordada en segundo plano). */
+  obtenerTextoDeNota(idNota: string): string | undefined;
+  /** Pone al día el texto de una nota con lo que hay en su archivo, sin perder cursor ni historial. */
+  reemplazarTextoDesdeDisco(idNota: string, textoDelDisco: string): void;
+  /** Mueve el cursor a `posicion` en la nota visible y la muestra arriba de la pantalla. */
+  llevarCursorA(posicion: number): void;
   /** Pone el foco en el editor. */
-  focus(): void;
+  enfocar(): void;
 }
 
 interface Props {
   /** Se llama cada vez que el usuario cambia el texto de la nota visible. */
-  onChange(text: string): void;
+  alCambiarTexto(textoNuevo: string): void;
   /** Se llama cuando el cursor se mueve, con su posición (para marcar el título actual). */
-  onCursor(pos: number): void;
+  alMoverCursor(posicion: number): void;
   /** Configuración del modo escritor, o `null` si está apagado. */
-  escritor: ConfigEscritor | null;
+  configuracionModoEscritor: ConfigEscritor | null;
 }
 
-export const Editor = forwardRef<EditorHandle, Props>(function Editor({ onChange, onCursor, escritor }, ref) {
-  const contenedor = useRef<HTMLDivElement>(null);
-  const vista = useRef<EditorView | null>(null);
-  // Nota visible y estados guardados de las demás notas abiertas.
-  const actual = useRef<string | null>(null);
-  const estados = useRef(new Map<string, EditorState>());
+/**
+ * Cambio mínimo para pasar de `textoAnterior` a `textoNuevo`: solo el tramo del medio que es
+ * distinto (lo que coincide al principio y al final se deja), así el cursor y el historial que
+ * están fuera de ese tramo no se mueven.
+ */
+function cambioMinimoEntreTextos(textoAnterior: string, textoNuevo: string) {
+  let inicioComun = 0;
+  const largoMinimo = Math.min(textoAnterior.length, textoNuevo.length);
+  while (inicioComun < largoMinimo && textoAnterior[inicioComun] === textoNuevo[inicioComun]) inicioComun++;
+  let finComun = 0;
+  while (
+    finComun < largoMinimo - inicioComun &&
+    textoAnterior[textoAnterior.length - 1 - finComun] === textoNuevo[textoNuevo.length - 1 - finComun]
+  ) finComun++;
+  return {
+    from: inicioComun,
+    to: textoAnterior.length - finComun,
+    insert: textoNuevo.slice(inicioComun, textoNuevo.length - finComun),
+  };
+}
+
+/** Transacción que pone `textoNuevo` en un estado, marcada como cambio del disco y fuera del historial de deshacer. */
+const transaccionDesdeDisco = (estado: EditorState, textoNuevo: string) => ({
+  changes: cambioMinimoEntreTextos(estado.doc.toString(), textoNuevo),
+  annotations: [cambioQueVieneDelDisco.of(true), Transaction.addToHistory.of(false)],
+});
+
+export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
+  { alCambiarTexto, alMoverCursor, configuracionModoEscritor },
+  referenciaDelControl,
+) {
+  const contenedorDelEditor = useRef<HTMLDivElement>(null);
+  const vistaDelEditor = useRef<EditorView | null>(null);
+  // Nota visible y estados recordados de las demás (el orden del Map es el de uso: la última
+  // usada va al final, así se olvidan primero las más viejas).
+  const idNotaVisible = useRef<string | null>(null);
+  const estadosRecordadosPorNota = useRef(new Map<string, EditorState>());
   // Últimos callbacks en refs: la vista se crea una sola vez y siempre llama a la versión vigente.
-  const callbacks = useRef({ onChange, onCursor });
-  callbacks.current = { onChange, onCursor };
+  const callbacksVigentes = useRef({ alCambiarTexto, alMoverCursor });
+  callbacksVigentes.current = { alCambiarTexto, alMoverCursor };
   // Modo escritor: su compartimento (uno por editor) y la configuración vigente, comparada como
   // texto para no reconfigurar si los ajustes cambiaron en otra cosa (fijados, ancho…).
-  const modoEscritor = useRef(new Compartment()).current;
-  const configEscritor = useRef(escritor);
-  const claveEscritor = JSON.stringify(escritor);
+  const compartimentoModoEscritor = useRef(new Compartment()).current;
+  const configuracionModoEscritorVigente = useRef(configuracionModoEscritor);
+  const configuracionModoEscritorComoTexto = JSON.stringify(configuracionModoEscritor);
 
   /** Extensiones de CodeMirror: historial, atajos, Markdown, tema y avisos a la app. */
-  const extensiones = () => [
+  const crearExtensiones = () => [
     history(),
     drawSelection(),
     highlightActiveLine(),
@@ -68,58 +116,87 @@ export const Editor = forwardRef<EditorHandle, Props>(function Editor({ onChange
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     tema,
     resaltado,
-    modoEscritor.of(extensionesEscritor(configEscritor.current)),
-    EditorView.updateListener.of((update) => {
-      if (update.docChanged) callbacks.current.onChange(update.state.doc.toString());
-      if (update.selectionSet || update.docChanged) callbacks.current.onCursor(update.state.selection.main.head);
+    compartimentoModoEscritor.of(extensionesEscritor(configuracionModoEscritorVigente.current)),
+    EditorView.updateListener.of((actualizacion) => {
+      const vieneDelDisco = actualizacion.transactions.some((transaccion) => transaccion.annotation(cambioQueVieneDelDisco));
+      if (actualizacion.docChanged && !vieneDelDisco) callbacksVigentes.current.alCambiarTexto(actualizacion.state.doc.toString());
+      if (actualizacion.selectionSet || actualizacion.docChanged) callbacksVigentes.current.alMoverCursor(actualizacion.state.selection.main.head);
     }),
   ];
 
+  /** Recuerda el estado de una nota, como la más reciente, y olvida las más viejas si sobran. */
+  function recordarEstado(idNota: string, estado: EditorState) {
+    const estados = estadosRecordadosPorNota.current;
+    estados.delete(idNota);
+    estados.set(idNota, estado);
+    for (const idMasViejo of estados.keys()) {
+      if (estados.size <= LIMITE_DE_NOTAS_RECORDADAS) break;
+      if (idMasViejo !== idNotaVisible.current) estados.delete(idMasViejo);
+    }
+  }
+
   // Crea la vista de CodeMirror al montar el componente y la destruye al desmontarlo.
   useEffect(() => {
-    const view = new EditorView({ parent: contenedor.current!, state: EditorState.create({ extensions: extensiones() }) });
-    vista.current = view;
-    return () => view.destroy();
+    const vista = new EditorView({ parent: contenedorDelEditor.current!, state: EditorState.create({ extensions: crearExtensiones() }) });
+    vistaDelEditor.current = vista;
+    return () => vista.destroy();
   }, []);
 
   // Al cambiar el modo escritor en Ajustes, la nota visible lo aplica al instante.
   useEffect(() => {
-    configEscritor.current = escritor;
-    vista.current?.dispatch({ effects: modoEscritor.reconfigure(extensionesEscritor(escritor)) });
-  }, [claveEscritor]);
+    configuracionModoEscritorVigente.current = configuracionModoEscritor;
+    vistaDelEditor.current?.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesEscritor(configuracionModoEscritor)) });
+  }, [configuracionModoEscritorComoTexto]);
 
-  useImperativeHandle(ref, () => ({
-    mostrar(id, texto) {
-      const view = vista.current;
-      if (!view) return;
-      // Guarda el estado de la nota que se deja, para volver a ella con su cursor y su historial.
-      if (actual.current) estados.current.set(actual.current, view.state);
-      view.setState(estados.current.get(id) ?? EditorState.create({ doc: texto, extensions: extensiones() }));
-      // Una nota guardada pudo quedar con otra configuración del modo escritor: se pone al día.
-      view.dispatch({ effects: modoEscritor.reconfigure(extensionesEscritor(configEscritor.current)) });
-      actual.current = id;
-      callbacks.current.onCursor(view.state.selection.main.head);
-      view.focus();
+  useImperativeHandle(referenciaDelControl, () => ({
+    mostrarNota(idNota, textoActual) {
+      const vista = vistaDelEditor.current;
+      if (!vista) return;
+      // Recuerda el estado de la nota que se deja, para volver a ella con su cursor y su historial.
+      if (idNotaVisible.current) recordarEstado(idNotaVisible.current, vista.state);
+      const estadoRecordado = estadosRecordadosPorNota.current.get(idNota);
+      vista.setState(estadoRecordado ?? EditorState.create({ doc: textoActual, extensions: crearExtensiones() }));
+      idNotaVisible.current = idNota;
+      recordarEstado(idNota, vista.state);
+      // Si el archivo cambió desde la última vez, el texto recordado se pone al día.
+      if (estadoRecordado && estadoRecordado.doc.toString() !== textoActual) {
+        vista.dispatch(transaccionDesdeDisco(vista.state, textoActual));
+      }
+      // Una nota recordada pudo quedar con otra configuración del modo escritor: se pone al día.
+      vista.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesEscritor(configuracionModoEscritorVigente.current)) });
+      callbacksVigentes.current.alMoverCursor(vista.state.selection.main.head);
+      vista.focus();
     },
-    olvidar(id) {
-      estados.current.delete(id);
-      if (actual.current === id) actual.current = null;
+    olvidarNota(idNota) {
+      estadosRecordadosPorNota.current.delete(idNota);
+      if (idNotaVisible.current === idNota) idNotaVisible.current = null;
     },
-    getText(id) {
-      if (id === actual.current) return vista.current?.state.doc.toString() ?? "";
-      return estados.current.get(id)?.doc.toString() ?? "";
+    obtenerTextoDeNota(idNota) {
+      if (idNota === idNotaVisible.current) return vistaDelEditor.current?.state.doc.toString();
+      return estadosRecordadosPorNota.current.get(idNota)?.doc.toString();
     },
-    irA(pos) {
-      const view = vista.current;
-      if (!view) return;
-      view.dispatch({
-        selection: EditorSelection.cursor(pos),
-        effects: EditorView.scrollIntoView(pos, { y: "start", yMargin: 48 }),
+    reemplazarTextoDesdeDisco(idNota, textoDelDisco) {
+      const vista = vistaDelEditor.current;
+      if (vista && idNota === idNotaVisible.current) {
+        if (vista.state.doc.toString() !== textoDelDisco) vista.dispatch(transaccionDesdeDisco(vista.state, textoDelDisco));
+        return;
+      }
+      const estadoRecordado = estadosRecordadosPorNota.current.get(idNota);
+      if (estadoRecordado && estadoRecordado.doc.toString() !== textoDelDisco) {
+        estadosRecordadosPorNota.current.set(idNota, estadoRecordado.update(transaccionDesdeDisco(estadoRecordado, textoDelDisco)).state);
+      }
+    },
+    llevarCursorA(posicion) {
+      const vista = vistaDelEditor.current;
+      if (!vista) return;
+      vista.dispatch({
+        selection: EditorSelection.cursor(posicion),
+        effects: EditorView.scrollIntoView(posicion, { y: "start", yMargin: 48 }),
       });
-      view.focus();
+      vista.focus();
     },
-    focus: () => vista.current?.focus(),
+    enfocar: () => vistaDelEditor.current?.focus(),
   }));
 
-  return <div className="editor" ref={contenedor} />;
+  return <div className="editor" ref={contenedorDelEditor} />;
 });

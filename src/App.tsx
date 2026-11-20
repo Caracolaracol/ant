@@ -17,7 +17,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { Editor, EditorHandle } from "./editor/Editor";
+import { Editor, ControlDelEditor } from "./editor/Editor";
 import { ANCHO_BARRA, BarraLateral, NotaResumen } from "./BarraLateral";
 import { Ajustes, escucharAjustes, guardarAjustes, leerAjustes } from "./ajustes";
 import { ModalAjustes } from "./ajustes/ModalAjustes";
@@ -39,15 +39,21 @@ function contar(texto: string) {
   return { palabras, lineas: texto.split("\n").length, caracteres: texto.length };
 }
 
-/** Genera un identificador único para una nota abierta (no depende de su ruta, que puede cambiar). */
-let contador = 0;
-const nuevoId = () => `nota-${++contador}`;
+/** Genera un identificador único para una nota nueva, que todavía no tiene archivo. */
+let contadorDeNotasNuevas = 0;
+const nuevoId = () => `nota-nueva-${++contadorDeNotasNuevas}`;
+
+/**
+ * Identificador de la nota de un archivo: siempre el mismo para la misma ruta, así el editor la
+ * reconoce al volver a abrirla y recupera su cursor y su historial de deshacer.
+ */
+const idDeNotaConArchivo = (rutaDelArchivo: string) => `archivo:${rutaDelArchivo}`;
 
 /** Cuánto se espera tras la última tecla para guardar la nota solo, en milisegundos. */
 const PAUSA_GUARDADO = 600;
 
 /** Nota vacía y sin ruta, la que se crea con Cmd+N o al cerrar la última. */
-const notaVacia = (): NotaResumen => ({ id: nuevoId(), ruta: null, texto: "", sucio: false });
+const notaVacia = (): NotaResumen => ({ id: nuevoId(), ruta: null, texto: "", sucio: false, textoQueHayEnDisco: null });
 
 /** Une una carpeta y un nombre de archivo con el separador que use la carpeta. */
 const unir = (carpeta: string, nombre: string) =>
@@ -62,7 +68,7 @@ function useEvento(nombre: string, alRecibir: () => void) {
 }
 
 function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
-  const editor = useRef<EditorHandle>(null);
+  const editor = useRef<ControlDelEditor>(null);
   // Textos del idioma elegido; en una ref también, para los callbacks que no se vuelven a crear.
   const tx = useTextos();
   const txRef = useRef(tx);
@@ -156,7 +162,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   /** Texto de una nota abierta, con sus cambios sin guardar (para compilarla tal como se ve). */
   const textoAbierto = useCallback((ruta: string) => {
     const nota = notasRef.current.find((n) => n.ruta === ruta);
-    return nota ? editor.current?.getText(nota.id) : undefined;
+    return nota ? editor.current?.obtenerTextoDeNota(nota.id) : undefined;
   }, []);
 
   /** Vuelve a leer el árbol del hormiguero abierto (tras guardar, o al volver a la ventana). */
@@ -176,15 +182,56 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   /**
    * Guarda ya en su archivo una nota con cambios, con el texto del editor. Si mientras se
    * guardaba se siguió escribiendo, la nota queda con cambios para el próximo guardado.
+   *
+   * Antes de escribir mira el archivo: si cambió fuera de Ant desde la última vez que se leyó o
+   * guardó (otra app, una sincronización), no lo pisa y avisa en la barra de estado. Con
+   * `aunqueHayaCambiadoFuera` (Cmd+S) se guarda igual, quedándose con la versión de Ant.
    */
-  const guardarYa = useCallback(async (id: string) => {
-    clearTimeout(temporizadores.current.get(id));
-    temporizadores.current.delete(id);
-    const nota = notasRef.current.find((n) => n.id === id);
-    if (!nota?.ruta || !nota.sucio) return;
-    const texto = editor.current?.getText(id) ?? nota.texto;
-    await guardarNota(nota.ruta, texto);
-    setNotas((ns) => ns.map((n) => (n.id === id && n.texto === texto ? { ...n, sucio: false } : n)));
+  const guardarYa = useCallback(async (idNota: string, aunqueHayaCambiadoFuera = false) => {
+    clearTimeout(temporizadores.current.get(idNota));
+    temporizadores.current.delete(idNota);
+    const notaAGuardar = notasRef.current.find((nota) => nota.id === idNota);
+    if (!notaAGuardar?.ruta || !notaAGuardar.sucio) return;
+    const textoAGuardar = editor.current?.obtenerTextoDeNota(idNota) ?? notaAGuardar.texto;
+    if (!aunqueHayaCambiadoFuera) {
+      // Si el archivo ya no existe (se borró o movió), se vuelve a crear con lo que hay en Ant.
+      const textoQueHayAhoraEnDisco = await leerNota(notaAGuardar.ruta).catch(() => null);
+      const cambioFueraDeAnt =
+        textoQueHayAhoraEnDisco !== null &&
+        textoQueHayAhoraEnDisco !== notaAGuardar.textoQueHayEnDisco &&
+        textoQueHayAhoraEnDisco !== textoAGuardar;
+      if (cambioFueraDeAnt) throw new Error(txRef.current.cambiadaFueraDeAnt(nombreArchivo(notaAGuardar.ruta)));
+    }
+    await guardarNota(notaAGuardar.ruta, textoAGuardar);
+    setNotas((notasAbiertas) =>
+      notasAbiertas.map((nota) =>
+        nota.id === idNota
+          ? { ...nota, textoQueHayEnDisco: textoAGuardar, sucio: nota.texto !== textoAGuardar }
+          : nota,
+      ),
+    );
+  }, []);
+
+  /**
+   * Al volver a la ventana: las notas abiertas cuyo archivo cambió fuera de Ant (en Obsidian, por
+   * una sincronización…) se ponen al día con lo que hay en el disco. Si además tenían cambios sin
+   * guardar en Ant, no se tocan y se avisa del conflicto (Cmd+S se queda con la versión de Ant).
+   */
+  const recargarNotasCambiadasFueraDeAnt = useCallback(async () => {
+    for (const notaAbierta of notasRef.current) {
+      if (!notaAbierta.ruta) continue;
+      const textoDelDisco = await leerNota(notaAbierta.ruta).catch(() => null);
+      if (textoDelDisco === null || textoDelDisco === notaAbierta.textoQueHayEnDisco) continue;
+      if (notaAbierta.sucio && textoDelDisco !== notaAbierta.texto) {
+        throw new Error(txRef.current.cambiadaFueraDeAnt(nombreArchivo(notaAbierta.ruta)));
+      }
+      editor.current?.reemplazarTextoDesdeDisco(notaAbierta.id, textoDelDisco);
+      setNotas((notasAbiertas) =>
+        notasAbiertas.map((nota) =>
+          nota.id === notaAbierta.id ? { ...nota, texto: textoDelDisco, textoQueHayEnDisco: textoDelDisco, sucio: false } : nota,
+        ),
+      );
+    }
   }, []);
 
   /** Guarda ya todas las notas con archivo que tienen cambios (al salir de la ventana o de la app). */
@@ -199,11 +246,13 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   useEffect(refrescarArbol, [carpeta, refrescarArbol]);
   useEffect(() => {
     const dejar = getCurrentWindow().onFocusChanged(({ payload: enfocada }) => {
-      if (enfocada) refrescarArbol();
-      else guardarPendientes().catch(fallo);
+      if (enfocada) {
+        refrescarArbol();
+        recargarNotasCambiadasFueraDeAnt().catch(fallo);
+      } else guardarPendientes().catch(fallo);
     });
     return () => void dejar.then((f) => f());
-  }, [refrescarArbol, guardarPendientes, fallo]);
+  }, [refrescarArbol, recargarNotasCambiadasFueraDeAnt, guardarPendientes, fallo]);
 
   // Antes de cerrar la ventana (botón rojo) se guarda lo pendiente; si falla, la ventana se
   // cierra igual, para no dejarla trabada.
@@ -222,7 +271,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   /** Lleva el cursor al título `titulo` de la nota visible, cuyo texto es `texto`. */
   const irATitulo = useCallback((texto: string, titulo: string) => {
     const m = extraerMarcadores(texto).find((m) => m.texto === titulo);
-    if (m) editor.current?.irA(m.pos);
+    if (m) editor.current?.llevarCursorA(m.pos);
   }, []);
   // Título al que hay que ir apenas se muestre la nota que se está abriendo (capítulo fijado).
   const capituloPendiente = useRef<string | null>(null);
@@ -232,7 +281,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   useEffect(() => {
     const nota = notasRef.current.find((n) => n.id === activa);
     if (!nota) return;
-    editor.current?.mostrar(nota.id, nota.texto);
+    editor.current?.mostrarNota(nota.id, nota.texto);
     if (capituloPendiente.current) irATitulo(nota.texto, capituloPendiente.current);
     capituloPendiente.current = null;
   }, [activa, irATitulo]);
@@ -253,23 +302,35 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   }, [actualizar, guardarYa, fallo]);
 
   /**
-   * Deja visible `nota` como la única nota con archivo abierta: las demás con archivo se guardan
-   * y se cierran, y también la nota en blanco. Solo siguen abiertas las notas nuevas que ya tienen
+   * Deja visible `notaQueQueda` como la única nota con archivo abierta: las demás con archivo se
+   * guardan y se cierran (el editor las recuerda, con su cursor y su historial, por si se vuelven
+   * a abrir), y la nota en blanco se descarta. Solo siguen abiertas las notas nuevas que ya tienen
    * algo escrito (sin archivo todavía), para no perderlas.
    */
-  const dejarSola = useCallback(async (nota: NotaResumen) => {
-    const otras = notasRef.current.filter((n) => n.id !== nota.id);
-    const salen = otras.filter((n) => n.ruta || (!n.texto && !n.sucio));
-    await Promise.all(salen.map((n) => guardarYa(n.id)));
-    salen.forEach((n) => editor.current?.olvidar(n.id));
-    setNotas([...otras.filter((n) => !salen.includes(n)), nota]);
-    setActiva(nota.id);
+  const dejarSola = useCallback(async (notaQueQueda: NotaResumen) => {
+    const otrasNotas = notasRef.current.filter((nota) => nota.id !== notaQueQueda.id);
+    const notasQueSeCierran = otrasNotas.filter((nota) => nota.ruta || (!nota.texto && !nota.sucio));
+    await Promise.all(notasQueSeCierran.map((nota) => guardarYa(nota.id)));
+    notasQueSeCierran.filter((nota) => !nota.ruta).forEach((notaEnBlanco) => editor.current?.olvidarNota(notaEnBlanco.id));
+    setNotas([...otrasNotas.filter((nota) => !notasQueSeCierran.includes(nota)), notaQueQueda]);
+    setActiva(notaQueQueda.id);
   }, [guardarYa]);
 
-  /** Abre la nota de `ruta` (o la muestra, si ya estaba abierta) en lugar de la que había. */
+  /**
+   * Abre la nota de `ruta` en lugar de la que había. Siempre lee el archivo, así se abre con lo que
+   * hay en el disco aunque haya cambiado fuera de Ant.
+   */
   const abrirRuta = useCallback(async (ruta: string) => {
-    const ya = notasRef.current.find((n) => n.ruta === ruta);
-    await dejarSola(ya ?? { id: nuevoId(), ruta, texto: await leerNota(ruta), sucio: false });
+    const yaAbierta = notasRef.current.find((nota) => nota.ruta === ruta);
+    if (yaAbierta?.sucio) return dejarSola(yaAbierta);
+    const textoDelDisco = await leerNota(ruta);
+    await dejarSola({
+      id: yaAbierta?.id ?? idDeNotaConArchivo(ruta),
+      ruta,
+      texto: textoDelDisco,
+      textoQueHayEnDisco: textoDelDisco,
+      sucio: false,
+    });
   }, [dejarSola]);
 
   /**
@@ -309,7 +370,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   const guardar = useCallback(async (como = false) => {
     const nota = notasRef.current.find((n) => n.id === activaRef.current);
     if (!nota) return;
-    if (nota.ruta && !como) return guardarYa(nota.id);
+    // Cmd+S en una nota con archivo la guarda ya, aunque su archivo haya cambiado fuera de Ant.
+    if (nota.ruta && !como) return guardarYa(nota.id, true);
     let destino = nota.ruta;
     if (!destino || como) {
       const nombre = nota.ruta ? nombreArchivo(nota.ruta) : txRef.current.notaNueva;
@@ -317,8 +379,9 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     }
     if (!destino) return;
     clearTimeout(temporizadores.current.get(nota.id));
-    await guardarNota(destino, editor.current?.getText(nota.id) ?? "");
-    actualizar(nota.id, { ruta: destino, sucio: false });
+    const textoGuardado = editor.current?.obtenerTextoDeNota(nota.id) ?? "";
+    await guardarNota(destino, textoGuardado);
+    actualizar(nota.id, { ruta: destino, sucio: false, textoQueHayEnDisco: textoGuardado });
     refrescarArbol();
   }, [actualizar, refrescarArbol, guardarYa]);
 
@@ -343,7 +406,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
       });
       if (!descartar) return;
     }
-    editor.current?.olvidar(id);
+    // Las notas con archivo se siguen recordando en el editor por si se vuelven a abrir.
+    if (!nota.ruta) editor.current?.olvidarNota(id);
     const resto = lista.filter((n) => n.id !== id);
     // Nunca queda la ventana vacía: si se cerró la última nota, se abre una en blanco.
     if (resto.length === 0) resto.push(notaVacia());
@@ -436,10 +500,10 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
             onElegir={setActiva}
             onAbrirRuta={(ruta) => abrirRuta(ruta).then(() => setError(null), fallo)}
             onCerrar={(id) => cerrar(id).catch(fallo)}
-            onSaltar={(pos) => editor.current?.irA(pos)}
+            onSaltar={(posicion) => editor.current?.llevarCursorA(posicion)}
           />
         )}
-        <Editor ref={editor} onChange={alCambiar} onCursor={alMoverCursor} escritor={escritor} />
+        <Editor ref={editor} alCambiarTexto={alCambiar} alMoverCursor={alMoverCursor} configuracionModoEscritor={escritor} />
       </div>
       {compilando && !bienvenida && (
         <Compilar
@@ -451,7 +515,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           onGuardarAjustes={cambiarAjustes}
           onCerrar={() => {
             setCompilando(false);
-            editor.current?.focus();
+            editor.current?.enfocar();
           }}
         />
       )}
@@ -462,7 +526,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           onNuevoHormiguero={() => setCavando(true)}
           onCerrar={() => {
             setEnAjustes(false);
-            editor.current?.focus();
+            editor.current?.enfocar();
           }}
         />
       )}
