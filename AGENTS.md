@@ -42,11 +42,12 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `cd src-tauri && cargo check` — verifica que compile el lado Rust.
 - `pnpm tauri build` — genera la app final (`.app` y `.dmg`) en `src-tauri/target/release/bundle/`.
 - Publicar una versión: subir la versión en `package.json`, `src-tauri/tauri.conf.json` y
-  `src-tauri/Cargo.toml`, mover lo de «Sin publicar» a una sección nueva en `CHANGELOG.md`,
+  `src-tauri/Cargo.toml`, mover lo de «Unreleased» a una sección nueva en `CHANGELOG.md`,
   y empujar la etiqueta `vX.Y.Z`. `.github/workflows/release.yml` compila en macOS (universal),
   Windows y Linux, crea la versión como borrador con esa sección del CHANGELOG como notas y la
   publica si compilaron los tres. La app no está firmada (en macOS, firma ad-hoc `-`).
-- Anotar en `CHANGELOG.md` («Sin publicar») cada cambio visible para quien usa la app.
+- Anotar en `CHANGELOG.md` («Unreleased») cada cambio visible para quien usa la app, **siempre en
+  inglés**: esa sección son las notas de la versión en GitHub.
 
 ## Estructura del proyecto
 
@@ -161,6 +162,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - Los bordes de las cámaras y del túnel son imperfectos, como cavados: los dibuja
     `lib/cavar.ts` en SVG (con semilla fija por cámara); sin JavaScript quedan los bordes
     redondeados del CSS.
+  - La tierra de fondo es `src/assets/tierra.svg`: granos y piedritas al azar (semilla fija) que
+    genera `website/scripts/tierra.mjs`; para cambiarla, editar el script y correrlo con node.
 
 - `marca/` — icono de la app (cara de hormiga plana en SVG, PNG de 1024 y script); ver `marca/README.md` para
   regenerar `src-tauri/icons/`. Sigue el sistema visual de Mantis (`~/Code/meeting-recorder`).

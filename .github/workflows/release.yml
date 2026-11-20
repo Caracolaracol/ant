@@ -3,8 +3,8 @@
 #   - macOS: .dmg universal (Apple Silicon e Intel)
 #   - Windows: instalador .exe (NSIS) y .msi
 #   - Linux: .AppImage, .deb y .rpm
-# La versión se crea como borrador con las notas de CHANGELOG.md y se publica solo si
-# compilaron los tres sistemas.
+# La versión se crea como borrador con las notas de CHANGELOG.md (escrito en inglés) y se
+# publica solo si compilaron los tres sistemas.
 name: Publicar versión
 
 on:
