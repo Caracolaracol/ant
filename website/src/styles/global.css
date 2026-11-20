@@ -76,6 +76,10 @@ a:hover { text-decoration-thickness: 2px; }
   overflow-y: hidden;
   scrollbar-width: none;
   outline: none;
+  /* La tierra va pintada en el nido y se desplaza con su contenido (`local`): al hacer scroll se
+     mueve junto con las cámaras y el túnel, como si se avanzara por el hormiguero. */
+  background: var(--tierra) url('../assets/tierra.svg');
+  background-attachment: local;
 }
 .nido::-webkit-scrollbar { display: none; }
 
