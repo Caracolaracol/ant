@@ -37,7 +37,8 @@ export const resaltado = syntaxHighlighting(
     { tag: tags.emphasis, fontStyle: "italic" },
     { tag: tags.strikethrough, textDecoration: "line-through" },
     { tag: [tags.link, tags.url], color: "var(--acento)" },
-    { tag: tags.monospace, color: "var(--codigo)" },
+    // El código va siempre en letra de ancho fijo, también con la letra de libro del modo escritor.
+    { tag: tags.monospace, color: "var(--codigo)", fontFamily: "var(--fuente)" },
     { tag: tags.quote, color: "var(--tenue)", fontStyle: "italic" },
     // Los símbolos de marcado (#, *, >, -) van atenuados para que el texto destaque.
     { tag: [tags.processingInstruction, tags.meta, tags.contentSeparator], color: "var(--tenue)" },

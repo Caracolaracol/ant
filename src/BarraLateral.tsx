@@ -1,13 +1,21 @@
 // Barra lateral de la ventana principal, de arriba hacia abajo:
+//   0. El calendario del modo diario, si está activo en Ajustes (ver `Calendario.tsx`), y bajo él
+//      las notas diarias abiertas. En ese modo la carpeta `Daily` no aparece en el árbol: a las
+//      notas diarias se llega desde el calendario.
 //   1. «Fijados»: notas y carpetas que el usuario fijó (clic derecho → Fijar arriba), al estilo
 //      de las pestañas fijadas de Arc o Zen. Lo fijado deja de aparecer en el árbol de abajo.
 //   2. «Abiertas»: notas abiertas que no están en la carpeta de trabajo (nuevas sin guardar o de
 //      otro lugar).
 //   3. La carpeta de trabajo (elegida en Ajustes) como árbol de subcarpetas y notas.
 // Bajo la nota visible aparecen sus títulos (`#`, `##`, …) para saltar a ellos, como en Left.
+// El borde derecho no se ve, pero al pasar el mouse el puntero cambia a ↔ y arrastrándolo se
+// ensancha o achica la barra (doble clic vuelve al ancho por defecto).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Calendario } from "./Calendario";
 import { Entrada, carpetasPadre, estaDentro } from "./carpeta";
+import { diaDeRuta, diasConNota, entradaDiario, rutaDiario } from "./diario";
+import { useTextos } from "./idioma";
 import { Marcador } from "./marcadores";
 import { MenuContextual } from "./MenuContextual";
 import { nombreArchivo } from "./notas";
@@ -25,6 +33,8 @@ interface Props {
   arbol: Entrada[];
   /** Rutas fijadas (de los ajustes); solo se muestran las que están dentro de la carpeta de trabajo. */
   fijados: string[];
+  /** Si el modo diario está activo (muestra el calendario). */
+  diario: boolean;
   notas: NotaResumen[];
   activa: string;
   /** Títulos de la nota activa (los calcula App, solo cuando cambia el texto). */
@@ -38,7 +48,18 @@ interface Props {
   onAbrirAjustes(): void;
   onFijar(ruta: string): void;
   onDesfijar(ruta: string): void;
+  /** Abre (o crea) la nota diaria de `fecha`. */
+  onAbrirDia(fecha: Date): void;
+  /** Ancho de la barra en píxeles. */
+  ancho: number;
+  /** Se llama al soltar el borde tras arrastrarlo, con el ancho nuevo (o `null` para el de por defecto). */
+  onCambiarAncho(ancho: number | null): void;
 }
+
+/** Ancho de la barra por defecto y sus límites al arrastrar el borde. */
+export const ANCHO_BARRA = 200;
+const ANCHO_MIN = 140;
+const ANCHO_MAX = 520;
 
 /** Sangría en píxeles para un nivel de profundidad del árbol. */
 const sangria = (nivel: number) => 4 + nivel * 12;
@@ -83,7 +104,40 @@ function Marcadores({ marcadores, seleccionado, nivelBase, onSaltar }: {
 
 export function BarraLateral(props: Props) {
   const { carpeta, arbol, fijados, notas, activa, marcadores, tituloActual: seleccionado } = props;
+  const tx = useTextos();
   const notaActiva = notas.find((n) => n.id === activa);
+
+  // Arrastre del borde derecho. Mientras se arrastra, el ancho se cambia directo en el DOM (sin
+  // pasar por React, para no volver a dibujar la ventana en cada movimiento del mouse); al soltar
+  // se avisa a App, que lo guarda en los ajustes.
+  const barra = useRef<HTMLElement>(null);
+  const alEmpezarArrastre = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || !barra.current) return;
+    e.preventDefault();
+    const tirador = e.currentTarget;
+    tirador.setPointerCapture(e.pointerId);
+    const inicioX = e.clientX;
+    const inicioAncho = barra.current.offsetWidth;
+    let ancho = inicioAncho;
+    // El puntero ↔ se mantiene en toda la ventana aunque el mouse se salga del borde.
+    document.documentElement.classList.add("redimensionando");
+    const mover = (ev: PointerEvent) => {
+      ancho = Math.min(ANCHO_MAX, Math.max(ANCHO_MIN, inicioAncho + ev.clientX - inicioX));
+      if (barra.current) barra.current.style.width = `${ancho}px`;
+    };
+    const soltar = () => {
+      tirador.removeEventListener("pointermove", mover);
+      tirador.removeEventListener("pointerup", soltar);
+      tirador.removeEventListener("pointercancel", soltar);
+      document.documentElement.classList.remove("redimensionando");
+      if (ancho !== inicioAncho) props.onCambiarAncho(Math.round(ancho));
+    };
+    tirador.addEventListener("pointermove", mover);
+    tirador.addEventListener("pointerup", soltar);
+    tirador.addEventListener("pointercancel", soltar);
+  };
+  // Días con nota en `Daily/`, para marcarlos en el calendario (solo se recalcula si cambia el árbol).
+  const conNota = useMemo(() => diasConNota(arbol), [arbol]);
 
   // Carpetas desplegadas (del árbol o fijadas). Al abrir una nota se despliegan las que la contienen.
   const [abiertas, setAbiertas] = useState<Set<string>>(new Set());
@@ -117,6 +171,13 @@ export function BarraLateral(props: Props) {
   const fijadosVisibles = carpeta ? fijados.filter((r) => estaDentro(r, carpeta)) : [];
   const conjuntoFijados = new Set(fijadosVisibles);
 
+  // Con el modo diario activo, la carpeta `Daily` se esconde del árbol y sus notas abiertas se
+  // listan bajo el calendario.
+  // Se usa la carpeta `Daily` que ya exista (aunque esté en minúsculas) o, si no, donde se creará.
+  const daily = props.diario && carpeta ? (entradaDiario(arbol)?.ruta ?? rutaDiario(carpeta)) : null;
+  const arbolVisible = daily ? arbol.filter((e) => e.ruta !== daily) : arbol;
+  const diarias = daily ? notas.filter((n) => n.ruta && estaDentro(n.ruta, daily)) : [];
+
   const porRuta = new Map(notas.filter((n) => n.ruta).map((n) => [n.ruta!, n]));
   const sueltas = notas.filter((n) => !n.ruta || !carpeta || !estaDentro(n.ruta, carpeta));
 
@@ -137,7 +198,7 @@ export function BarraLateral(props: Props) {
           </span>
           {nota && (
             // Detiene el clic para no activar la nota al mismo tiempo que se cierra.
-            <button className="barra-cerrar" title="Cerrar nota" onClick={(e) => { e.stopPropagation(); props.onCerrar(nota.id); }}>
+            <button className="barra-cerrar" title={tx.cerrarNota} onClick={(e) => { e.stopPropagation(); props.onCerrar(nota.id); }}>
               ×
             </button>
           )}
@@ -179,39 +240,51 @@ export function BarraLateral(props: Props) {
     if (entrada?.es_carpeta) return filaCarpeta(entrada, 0);
     if (entrada) return <div key={ruta}>{filaNota(sinExtension(entrada.nombre), 0, porRuta.get(ruta), () => props.onAbrirRuta(ruta), ruta)}</div>;
     return (
-      <div key={ruta} className="barra-nota perdida" style={{ paddingLeft: sangria(0) }} title="Ya no está en la carpeta" onContextMenu={(e) => alClicDerecho(e, ruta)}>
+      <div key={ruta} className="barra-nota perdida" style={{ paddingLeft: sangria(0) }} title={tx.yaNoEsta} onContextMenu={(e) => alClicDerecho(e, ruta)}>
         <span className="barra-nombre">{sinExtension(nombreArchivo(ruta))}</span>
       </div>
     );
   }
 
   return (
-    <nav className="barra">
-      {fijadosVisibles.length > 0 && (
-        <section className="barra-seccion barra-fijados">
-          <div className="barra-encabezado">Fijados</div>
-          {fijadosVisibles.map(dibujarFijado)}
-        </section>
-      )}
-      {sueltas.length > 0 && (
-        <section className="barra-seccion">
-          <div className="barra-encabezado">Abiertas</div>
-          {sueltas.map((n) => (
-            <div key={n.id}>{filaNota(n.ruta ? nombreArchivo(n.ruta) : "Sin título", 0, n, () => props.onElegir(n.id))}</div>
-          ))}
-        </section>
-      )}
-      {carpeta ? (
-        <section className="barra-seccion">
-          <div className="barra-encabezado" title={carpeta}>{nombreArchivo(carpeta)}</div>
-          {arbol.length ? dibujarArbol(arbol, 0) : <div className="barra-vacia">No hay notas en esta carpeta.</div>}
-        </section>
-      ) : (
-        <section className="barra-seccion">
-          <div className="barra-vacia">Elige la carpeta donde vas a trabajar.</div>
-          <button className="barra-boton" onClick={props.onAbrirAjustes}>Abrir Ajustes</button>
-        </section>
-      )}
+    <nav className="barra" ref={barra} style={{ width: props.ancho }}>
+      <div className="barra-contenido">
+        {daily && (
+          <section className="barra-seccion barra-diario">
+            <Calendario conNota={conNota} activo={diaDeRuta(notaActiva?.ruta ?? null)} onElegir={props.onAbrirDia} />
+            {diarias.map((n) => (
+              <div key={n.id}>{filaNota(sinExtension(nombreArchivo(n.ruta!)), 0, n, () => props.onElegir(n.id))}</div>
+            ))}
+          </section>
+        )}
+        {fijadosVisibles.length > 0 && (
+          <section className="barra-seccion barra-fijados">
+            <div className="barra-encabezado">{tx.fijados}</div>
+            {fijadosVisibles.map(dibujarFijado)}
+          </section>
+        )}
+        {sueltas.length > 0 && (
+          <section className="barra-seccion">
+            <div className="barra-encabezado">{tx.abiertas}</div>
+            {sueltas.map((n) => (
+              <div key={n.id}>{filaNota(n.ruta ? nombreArchivo(n.ruta) : tx.sinTitulo, 0, n, () => props.onElegir(n.id))}</div>
+            ))}
+          </section>
+        )}
+        {carpeta ? (
+          <section className="barra-seccion">
+            <div className="barra-encabezado" title={carpeta}>{nombreArchivo(carpeta)}</div>
+            {arbolVisible.length ? dibujarArbol(arbolVisible, 0) : <div className="barra-vacia">{tx.carpetaVacia}</div>}
+          </section>
+        ) : (
+          <section className="barra-seccion">
+            <div className="barra-vacia">{tx.eligeCarpeta}</div>
+            <button className="barra-boton" onClick={props.onAbrirAjustes}>{tx.abrirAjustes}</button>
+          </section>
+        )}
+      </div>
+      {/* Borde invisible para cambiar el ancho; doble clic vuelve al ancho por defecto. */}
+      <div className="barra-tirador" title={tx.bordeBarra} onPointerDown={alEmpezarArrastre} onDoubleClick={() => props.onCambiarAncho(null)} />
       {menu && (
         <MenuContextual
           x={menu.x}
@@ -219,8 +292,8 @@ export function BarraLateral(props: Props) {
           onCerrar={cerrarMenu}
           opciones={
             conjuntoFijados.has(menu.ruta)
-              ? [{ texto: "Quitar de fijados", accion: () => props.onDesfijar(menu.ruta) }]
-              : [{ texto: "Fijar arriba", accion: () => props.onFijar(menu.ruta) }]
+              ? [{ texto: tx.quitarFijado, accion: () => props.onDesfijar(menu.ruta) }]
+              : [{ texto: tx.fijarArriba, accion: () => props.onFijar(menu.ruta) }]
           }
         />
       )}

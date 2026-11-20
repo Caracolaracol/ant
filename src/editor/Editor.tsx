@@ -5,15 +5,18 @@
 //
 // Hay una sola vista para todas las notas abiertas: cada nota guarda su propio EditorState
 // (texto, cursor e historial de deshacer) y al cambiar de nota se intercambia el estado.
+// El modo escritor (`escritor.ts`) va en un `Compartment`: se enciende, apaga o cambia en vivo,
+// y cada nota guardada se pone al día al volver a mostrarse.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { EditorSelection, EditorState } from "@codemirror/state";
+import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, keymap, drawSelection, highlightActiveLine } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { tema, resaltado } from "./tema";
+import { ConfigEscritor, extensionesEscritor } from "./escritor";
 
 /** Métodos que la app puede llamar sobre el editor desde fuera. */
 export interface EditorHandle {
@@ -34,9 +37,11 @@ interface Props {
   onChange(text: string): void;
   /** Se llama cuando el cursor se mueve, con su posición (para marcar el título actual). */
   onCursor(pos: number): void;
+  /** Configuración del modo escritor, o `null` si está apagado. */
+  escritor: ConfigEscritor | null;
 }
 
-export const Editor = forwardRef<EditorHandle, Props>(function Editor({ onChange, onCursor }, ref) {
+export const Editor = forwardRef<EditorHandle, Props>(function Editor({ onChange, onCursor, escritor }, ref) {
   const contenedor = useRef<HTMLDivElement>(null);
   const vista = useRef<EditorView | null>(null);
   // Nota visible y estados guardados de las demás notas abiertas.
@@ -45,6 +50,11 @@ export const Editor = forwardRef<EditorHandle, Props>(function Editor({ onChange
   // Últimos callbacks en refs: la vista se crea una sola vez y siempre llama a la versión vigente.
   const callbacks = useRef({ onChange, onCursor });
   callbacks.current = { onChange, onCursor };
+  // Modo escritor: su compartimento (uno por editor) y la configuración vigente, comparada como
+  // texto para no reconfigurar si los ajustes cambiaron en otra cosa (fijados, ancho…).
+  const modoEscritor = useRef(new Compartment()).current;
+  const configEscritor = useRef(escritor);
+  const claveEscritor = JSON.stringify(escritor);
 
   /** Extensiones de CodeMirror: historial, atajos, Markdown, tema y avisos a la app. */
   const extensiones = () => [
@@ -58,6 +68,7 @@ export const Editor = forwardRef<EditorHandle, Props>(function Editor({ onChange
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     tema,
     resaltado,
+    modoEscritor.of(extensionesEscritor(configEscritor.current)),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) callbacks.current.onChange(update.state.doc.toString());
       if (update.selectionSet || update.docChanged) callbacks.current.onCursor(update.state.selection.main.head);
@@ -71,6 +82,12 @@ export const Editor = forwardRef<EditorHandle, Props>(function Editor({ onChange
     return () => view.destroy();
   }, []);
 
+  // Al cambiar el modo escritor en Ajustes, la nota visible lo aplica al instante.
+  useEffect(() => {
+    configEscritor.current = escritor;
+    vista.current?.dispatch({ effects: modoEscritor.reconfigure(extensionesEscritor(escritor)) });
+  }, [claveEscritor]);
+
   useImperativeHandle(ref, () => ({
     mostrar(id, texto) {
       const view = vista.current;
@@ -78,6 +95,8 @@ export const Editor = forwardRef<EditorHandle, Props>(function Editor({ onChange
       // Guarda el estado de la nota que se deja, para volver a ella con su cursor y su historial.
       if (actual.current) estados.current.set(actual.current, view.state);
       view.setState(estados.current.get(id) ?? EditorState.create({ doc: texto, extensions: extensiones() }));
+      // Una nota guardada pudo quedar con otra configuración del modo escritor: se pone al día.
+      view.dispatch({ effects: modoEscritor.reconfigure(extensionesEscritor(configEscritor.current)) });
       actual.current = id;
       callbacks.current.onCursor(view.state.selection.main.head);
       view.focus();

@@ -63,7 +63,7 @@ fn leer(dir: &Path, profundidad: usize) -> Vec<Entrada> {
 pub fn listar_carpeta(path: String) -> Result<Vec<Entrada>, String> {
     let dir = Path::new(&path);
     if !dir.is_dir() {
-        return Err(format!("La carpeta {path} no existe"));
+        return Err(format!("The folder {path} does not exist"));
     }
     Ok(leer(dir, 0))
 }

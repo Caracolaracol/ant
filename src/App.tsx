@@ -1,18 +1,24 @@
 // Ventana principal: barra lateral con los fijados, la carpeta de trabajo y los títulos de la nota visible,
 // el editor y una barra de estado abajo, como en Left. Lleva la lista de notas abiertas (ruta,
 // texto y si tienen cambios sin guardar), cuál está visible, los ajustes (carpeta de trabajo y fijados)
-// y los atajos de teclado:
+// el modo diario (calendario → nota del día) y los atajos de teclado:
 //   Cmd+N nueva · Cmd+O abrir · Cmd+S guardar · Cmd+Shift+S guardar como
 //   Cmd+Shift+] / Cmd+Shift+[ nota siguiente / anterior · Cmd+\ mostrar u ocultar la barra lateral
-// Cmd+, (Ajustes) lo maneja el menú de la app, en Rust.
+// Cmd+, (Ajustes) y Cmd+Shift+E (Compilar y exportar) los maneja el menú de la app, en Rust; el
+// segundo avisa con el evento `abrir-compilar` y aquí se abre el diálogo.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen } from "@tauri-apps/api/event";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { Editor, EditorHandle } from "./editor/Editor";
-import { BarraLateral, NotaResumen } from "./BarraLateral";
-import { Ajustes, escucharAjustes, guardarAjustes, leerAjustes } from "./ajustes";
+import { ANCHO_BARRA, BarraLateral, NotaResumen } from "./BarraLateral";
+import { AJUSTES_INICIALES, Ajustes, escucharAjustes, guardarAjustes, leerAjustes } from "./ajustes";
 import { Entrada, abrirAjustes, listarCarpeta } from "./carpeta";
+import { abrirDia } from "./diario";
+import { configEscritor } from "./editor/escritor";
+import { Compilar } from "./compilar/Compilar";
+import { idiomaDe, useTextos } from "./idioma";
 import { extraerMarcadores, marcadorActual } from "./marcadores";
 import { elegirNota, elegirRutaGuardado, guardarNota, leerNota, nombreArchivo } from "./notas";
 import "./App.css";
@@ -36,6 +42,10 @@ const unir = (carpeta: string, nombre: string) =>
 
 function App() {
   const editor = useRef<EditorHandle>(null);
+  // Textos del idioma elegido; en una ref también, para los callbacks que no se vuelven a crear.
+  const tx = useTextos();
+  const txRef = useRef(tx);
+  txRef.current = tx;
   const [notas, setNotas] = useState<NotaResumen[]>(() => [notaVacia()]);
   const [activa, setActiva] = useState(() => notas[0].id);
   // Posición del cursor en una ref y no en el estado: cambia en cada movimiento del mouse al
@@ -45,7 +55,7 @@ function App() {
   const cursor = useRef(0);
   const [, setTituloCursor] = useState(-1);
   const [barraVisible, setBarraVisible] = useState(true);
-  const [ajustes, setAjustes] = useState<Ajustes>({ carpeta: null, fijados: [] });
+  const [ajustes, setAjustes] = useState<Ajustes>(AJUSTES_INICIALES);
   const carpeta = ajustes.carpeta;
   const [arbol, setArbol] = useState<Entrada[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +87,29 @@ function App() {
     setAjustes(nuevos);
     guardarAjustes(nuevos).catch(fallo);
   }, [fallo]);
+
+  /** Cambia algunos ajustes: se aplican al instante y se guardan. */
+  const cambiarAjustes = useCallback((cambios: Partial<Ajustes>) => {
+    const nuevos = { ...ajustesRef.current, ...cambios };
+    setAjustes(nuevos);
+    guardarAjustes(nuevos).catch(fallo);
+  }, [fallo]);
+
+  /** Guarda el ancho de la barra lateral (tras arrastrar su borde) en los ajustes. */
+  const cambiarAnchoBarra = useCallback((ancho: number | null) => cambiarAjustes({ ancho_barra: ancho }), [cambiarAjustes]);
+
+  // Diálogo «Compilar y exportar»: lo abre el menú (File → Compile and Export…).
+  const [compilando, setCompilando] = useState(false);
+  useEffect(() => {
+    const dejar = listen("abrir-compilar", () => setCompilando(true));
+    return () => void dejar.then((f) => f());
+  }, []);
+
+  /** Texto de una nota abierta, con sus cambios sin guardar (para compilarla tal como se ve). */
+  const textoAbierto = useCallback((ruta: string) => {
+    const nota = notasRef.current.find((n) => n.ruta === ruta);
+    return nota ? editor.current?.getText(nota.id) : undefined;
+  }, []);
 
   /** Vuelve a leer el árbol de la carpeta de trabajo (tras guardar, o al volver a la ventana). */
   const refrescarArbol = useCallback(() => {
@@ -132,9 +165,20 @@ function App() {
     } else agregar(nota);
   }, [agregar]);
 
+  /**
+   * Modo diario: abre la nota del día elegido en el calendario (`Daily/AAAA-MM-DD.md`). Rust crea
+   * la carpeta y la nota si no existen; luego se refresca el árbol para que aparezcan.
+   */
+  const abrirDiaElegido = useCallback(async (fecha: Date) => {
+    const dir = carpetaRef.current;
+    if (!dir) throw new Error(txRef.current.diarioSinCarpeta);
+    await abrirRuta(await abrirDia(dir, fecha, txRef.current.locale));
+    refrescarArbol();
+  }, [abrirRuta, refrescarArbol]);
+
   /** Muestra el diálogo «Abrir» (empezando en la carpeta de trabajo) y abre la nota elegida. */
   const abrir = useCallback(async () => {
-    const ruta = await elegirNota(carpetaRef.current);
+    const ruta = await elegirNota(carpetaRef.current, txRef.current.filtroNotas);
     if (ruta) await abrirRuta(ruta);
   }, [abrirRuta]);
 
@@ -147,8 +191,8 @@ function App() {
     if (!nota) return;
     let destino = nota.ruta;
     if (!destino || como) {
-      const nombre = nota.ruta ? nombreArchivo(nota.ruta) : "Nota.md";
-      destino = await elegirRutaGuardado(carpetaRef.current ? unir(carpetaRef.current, nombre) : nombre);
+      const nombre = nota.ruta ? nombreArchivo(nota.ruta) : txRef.current.notaNueva;
+      destino = await elegirRutaGuardado(carpetaRef.current ? unir(carpetaRef.current, nombre) : nombre, txRef.current.filtroNotas);
     }
     if (!destino) return;
     await guardarNota(destino, editor.current?.getText(nota.id) ?? "");
@@ -163,12 +207,13 @@ function App() {
     const nota = lista[i];
     if (!nota) return;
     if (nota.sucio) {
-      const nombre = nota.ruta ? nombreArchivo(nota.ruta) : "Sin título";
-      const descartar = await ask(`«${nombre}» tiene cambios sin guardar. ¿Cerrarla igual?`, {
-        title: "Cerrar nota",
+      const t = txRef.current;
+      const nombre = nota.ruta ? nombreArchivo(nota.ruta) : t.sinTitulo;
+      const descartar = await ask(t.cambiosSinGuardar(nombre), {
+        title: t.cerrarNotaTitulo,
         kind: "warning",
-        okLabel: "Descartar cambios",
-        cancelLabel: "Cancelar",
+        okLabel: t.descartarCambios,
+        cancelLabel: t.cancelar,
       });
       if (!descartar) return;
     }
@@ -209,7 +254,7 @@ function App() {
   }, [guardar, abrir, agregar, moverse, fallo]);
 
   const nota = notas.find((n) => n.id === activa) ?? notas[0];
-  const nombre = nota.ruta ? nombreArchivo(nota.ruta) : "Sin título";
+  const nombre = nota.ruta ? nombreArchivo(nota.ruta) : tx.sinTitulo;
 
   // El título de la ventana (visible en Mission Control y el Dock) muestra la nota y si tiene cambios.
   useEffect(() => {
@@ -221,6 +266,12 @@ function App() {
   const marcadores = useMemo(() => extraerMarcadores(nota.texto), [nota.texto]);
   const marcadoresRef = useRef(marcadores);
   marcadoresRef.current = marcadores;
+
+  // Modo escritor para el editor (o `null` si está apagado), con las comillas según el idioma.
+  const escritor = useMemo(
+    () => (ajustes.escritor ? configEscritor(ajustes.opciones_escritor, idiomaDe(ajustes.idioma)) : null),
+    [ajustes.escritor, ajustes.opciones_escritor, ajustes.idioma],
+  );
 
   /** Guarda la posición del cursor y vuelve a dibujar solo si cambió el título en el que está. */
   const alMoverCursor = useCallback((pos: number) => {
@@ -239,6 +290,10 @@ function App() {
             carpeta={carpeta}
             arbol={arbol}
             fijados={ajustes.fijados}
+            diario={ajustes.diario}
+            ancho={ajustes.ancho_barra ?? ANCHO_BARRA}
+            onCambiarAncho={cambiarAnchoBarra}
+            onAbrirDia={(fecha) => abrirDiaElegido(fecha).then(() => setError(null), fallo)}
             onFijar={(ruta) => cambiarFijados((f) => (f.includes(ruta) ? f : [...f, ruta]))}
             onDesfijar={(ruta) => cambiarFijados((f) => f.filter((r) => r !== ruta))}
             notas={notas}
@@ -252,14 +307,28 @@ function App() {
             onAbrirAjustes={() => abrirAjustes().catch(fallo)}
           />
         )}
-        <Editor ref={editor} onChange={alCambiar} onCursor={alMoverCursor} />
+        <Editor ref={editor} onChange={alCambiar} onCursor={alMoverCursor} escritor={escritor} />
       </div>
+      {compilando && (
+        <Compilar
+          carpeta={carpeta}
+          arbol={arbol}
+          rutaActiva={nota.ruta}
+          ajustes={ajustes}
+          textoAbierto={textoAbierto}
+          onGuardarAjustes={cambiarAjustes}
+          onCerrar={() => {
+            setCompilando(false);
+            editor.current?.focus();
+          }}
+        />
+      )}
       <footer className="estado">
         <span>{nota.sucio ? `${nombre} *` : nombre}</span>
         {error ? (
           <span className="estado-error">{error}</span>
         ) : (
-          <span>{palabras} palabras · {lineas} líneas · {caracteres} caracteres</span>
+          <span>{tx.conteo(palabras, lineas, caracteres)}</span>
         )}
       </footer>
     </main>

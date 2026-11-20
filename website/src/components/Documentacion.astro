@@ -19,12 +19,13 @@ const temas = [
   { id: t('sidebar', 'barra-lateral'), nombre: t('Sidebar', 'Barra lateral') },
   { id: t('pins', 'fijados'), nombre: t('Pins', 'Fijados') },
   { id: t('search', 'buscar'), nombre: t('Find and replace', 'Buscar y reemplazar') },
+  { id: t('export', 'exportar'), nombre: t('Compile and export', 'Compilar y exportar') },
   { id: t('shortcuts', 'atajos'), nombre: t('Shortcuts', 'Atajos') },
   { id: t('settings', 'ajustes'), nombre: t('Settings', 'Ajustes') },
   { id: t('development', 'desarrollo'), nombre: t('Development', 'Desarrollo') },
   { id: t('icon', 'icono'), nombre: t('Icon', 'Icono') },
 ];
-const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, desarrollo, icono] = temas;
+const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos, ajustes, desarrollo, icono] = temas;
 ---
 <Nido
   idioma={idioma}
@@ -88,8 +89,8 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
           'Ant trabaja sobre una carpeta de trabajo: la carpeta donde guardas tus textos. Puede ser una que ya tengas, como tu bóveda de Obsidian o una carpeta llena de capítulos.',
         )}</p>
         <ol>
-          <li>{t('Open', 'Abre')} <b>Ant → Ajustes…</b> {t('(Settings,', '(')}<kbd>⌘</kbd> <kbd>,</kbd>).</li>
-          <li>{t('In', 'En')} <b>General</b>, {t('click', 'pulsa')} <b>Elegir…</b> {t('(Choose…) and pick the folder.', 'y selecciona la carpeta.')}</li>
+          <li>{t('Open', 'Abre')} <b>{t('Ant → Settings…', 'Ant → Ajustes…')}</b> (<kbd>⌘</kbd> <kbd>,</kbd>).</li>
+          <li>{t('In', 'En')} <b>General</b>, {t('click', 'pulsa')} <b>{t('Choose…', 'Elegir…')}</b> {t('and pick the folder.', 'y selecciona la carpeta.')}</li>
           <li>{t('The sidebar shows the folder right away.', 'La barra lateral muestra la carpeta al instante.')}</li>
         </ol>
         <h3>{t('What it shows', 'Qué muestra')}</h3>
@@ -134,11 +135,11 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
         <h2>{t('Three sections', 'Tres secciones')}</h2>
         <p>{t('From top to bottom:', 'De arriba hacia abajo:')}</p>
         <ol>
-          <li><b>{t('Fijados (Pinned)', 'Fijados')}</b>{t(': what you pinned to the top (see the next section).', ': lo que fijaste arriba (ver la siguiente sección).')}</li>
-          <li><b>{t('Abiertas (Open)', 'Abiertas')}</b>{t(': open notes that are not in your folder, such as a new unsaved one.', ': notas abiertas que no están en tu carpeta, como una nueva sin guardar.')}</li>
+          <li><b>{t('Pinned', 'Fijados')}</b>{t(': what you pinned to the top (see the next section).', ': lo que fijaste arriba (ver la siguiente sección).')}</li>
+          <li><b>{t('Open', 'Abiertas')}</b>{t(': open notes that are not in your folder, such as a new unsaved one.', ': notas abiertas que no están en tu carpeta, como una nueva sin guardar.')}</li>
           <li><b>{t('Your folder', 'Tu carpeta')}</b>{t(': the tree of subfolders and notes. Folders fold and unfold with a click.', ': el árbol de subcarpetas y notas. Las carpetas se pliegan con un clic.')}</li>
         </ol>
-        <p><kbd>⌘</kbd> <kbd>\</kbd> {t('shows or hides it.', 'la muestra u oculta.')}</p>
+        <p><kbd>⌘</kbd> <kbd>\</kbd> {t('shows or hides it. To make it wider or narrower, drag its right edge: the pointer changes to ↔ when you are over it. Double-click the edge to go back to the default width.', 'la muestra u oculta. Para ensancharla o achicarla, arrastra su borde derecho: el puntero cambia a ↔ al pasar por encima. Doble clic en el borde la deja con el ancho de siempre.')}</p>
         <div class="columnas">
           <div>
             <h3>{t('The note’s headings', 'Títulos de la nota')}</h3>
@@ -155,9 +156,9 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
       <section class="tema" id={fijados.id} data-nombre={fijados.nombre}>
         <p class="etiqueta">05</p>
         <h2>{t('What you use most, on top', 'Lo que más usas, arriba')}</h2>
-        <p>{t('Like pinned tabs in a browser: right-click a note or folder in the tree →', 'Como las pestañas fijadas de un navegador: clic derecho sobre una nota o carpeta del árbol →')} <b>Fijar arriba</b>{t(' (Pin to top). It moves to the pinned section and is no longer repeated below.', '. Pasa a la sección de fijados y deja de repetirse más abajo.')}</p>
+        <p>{t('Like pinned tabs in a browser: right-click a note or folder in the tree →', 'Como las pestañas fijadas de un navegador: clic derecho sobre una nota o carpeta del árbol →')} <b>{t('Pin to top', 'Fijar arriba')}</b>{t('. It moves to the pinned section and is no longer repeated below.', '. Pasa a la sección de fijados y deja de repetirse más abajo.')}</p>
         <ul>
-          <li>{t('To unpin it: right-click →', 'Para soltarla: clic derecho →')} <b>Quitar de fijados</b>{t(' (Unpin).', '.')}</li>
+          <li>{t('To unpin it: right-click →', 'Para soltarla: clic derecho →')} <b>{t('Unpin', 'Quitar de fijados')}</b>.</li>
           <li>{t('Each working folder has its own pins: when you switch folders, you see that folder’s pins.', 'Cada carpeta de trabajo tiene sus propios fijados: si cambias de carpeta, ves los de esa.')}</li>
           <li>{t('If something pinned is deleted or moved outside Ant, it stays in the list, dimmed and in italics, until you remove it.', 'Si borras o mueves algo fijado fuera de Ant, queda en la lista en gris y cursiva hasta que lo quites.')}</li>
         </ul>
@@ -175,8 +176,37 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
         <p class="tenue">{t('When you select a word, its other appearances on screen are highlighted.', 'Al seleccionar una palabra, sus otras apariciones en pantalla se resaltan.')}</p>
       </section>
 
-      <section class="tema" id={atajos.id} data-nombre={atajos.nombre}>
+      <section class="tema" id={exportar.id} data-nombre={exportar.nombre}>
         <p class="etiqueta">07</p>
+        <h2>{t('From notes to a book', 'De notas a libro')}</h2>
+        <p>{t('A novel is many notes: one per chapter. ', 'Una novela son muchas notas: una por capítulo. ')}<b>{t('File → Compile and Export…', 'Archivo → Compilar y exportar…')}</b> (<kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>E</kbd>) {t('joins the notes of a folder into a single document, in Word or PDF.', 'une las notas de una carpeta en un solo documento, en Word o PDF.')}</p>
+        <ol>
+          <li>{t('Choose the folder. Each note is a chapter: uncheck the ones you leave out (research, drafts) and use the arrows to change the order.', 'Elige la carpeta. Cada nota es un capítulo: desmarca las que quedan fuera (investigación, borradores) y usa las flechas para cambiar el orden.')}</li>
+          <li>{t('Write the title and the author, and choose the format and the style.', 'Escribe el título y el autor, y elige el formato y el estilo.')}</li>
+          <li>{t('Export. Ant remembers everything for that folder, so the next time it is a single click.', 'Exporta. Ant recuerda todo para esa carpeta, así la próxima vez es un clic.')}</li>
+        </ol>
+        <div class="columnas">
+          <div>
+            <h3>{t('Standard manuscript', 'Manuscrito estándar')}</h3>
+            <p>{t('What publishers, agents and contests ask for: Times 12, double spaced, one-inch margins, indented paragraphs, a header with your surname, the title and the page number, a title page with the word count and each chapter on a new page.', 'El que piden editoriales, agentes y concursos: Times 12, doble espacio, márgenes de 2,5 cm, párrafos con sangría, encabezado con tu apellido, el título y la página, portada con el conteo de palabras y cada capítulo en página nueva.')}</p>
+          </div>
+          <div>
+            <h3>{t('Book', 'Libro')}</h3>
+            <p>{t('To read or print: A5 page, justified text, the first paragraph of each chapter and scene without indent, and page numbers at the foot.', 'Para leer o imprimir: página A5, texto justificado, el primer párrafo de cada capítulo y escena sin sangría, y número de página al pie.')}</p>
+          </div>
+        </div>
+        <h3>{t('How your notes become a book', 'Cómo tus notas se vuelven libro')}</h3>
+        <ul>
+          <li>{t('The chapter title is the note’s first heading (', 'El título del capítulo es el primer título de la nota (')}<code># …</code>{t('), or the file name without its numbering («01 - The nest» → «The nest»).', '), o el nombre del archivo sin su numeración («01 - El hormiguero» → «El hormiguero»).')}</li>
+          <li>{t('Each line is a paragraph.', 'Cada línea es un párrafo.')} <code>***</code>, <code>---</code> {t('or', 'o')} <code>#</code> {t('alone on a line mark a scene break.', 'solos en una línea marcan un cambio de escena.')}</li>
+          <li>{t('Text between', 'El texto entre')} <code>%%</code> {t('and', 'y')} <code>%%</code> {t('(notes to yourself) and the YAML header are not exported.', '(notas para ti) y el encabezado YAML no se exportan.')}</li>
+          <li>{t('Optionally, the typography of the whole text is fixed (quotes, dashes, ellipses), without touching your files.', 'Si quieres, se corrige la tipografía de todo el texto (comillas, rayas, puntos suspensivos), sin tocar tus archivos.')}</li>
+        </ul>
+        <p class="tenue">{t('The PDF uses the Times fonts built into every PDF reader, which cover the Latin alphabet (accents, ñ, « », dashes); other alphabets are not supported yet.', 'El PDF usa las fuentes Times que trae todo lector de PDF, que cubren el alfabeto latino (tildes, ñ, « », rayas); otros alfabetos todavía no.')}</p>
+      </section>
+
+      <section class="tema" id={atajos.id} data-nombre={atajos.nombre}>
+        <p class="etiqueta">08</p>
         <h2>{t('All shortcuts', 'Todos los atajos')}</h2>
         <dl class="atajos dos">
           <dt><kbd>⌘</kbd> <kbd>N</kbd></dt><dd>{t('New note', 'Nueva nota')}</dd>
@@ -187,6 +217,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
           <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd></dt><dd>{t('Previous note', 'Nota anterior')}</dd>
           <dt><kbd>⌘</kbd> <kbd>\</kbd></dt><dd>{t('Show or hide the sidebar', 'Mostrar u ocultar la barra')}</dd>
           <dt><kbd>⌘</kbd> <kbd>,</kbd></dt><dd>{t('Settings', 'Ajustes')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>E</kbd></dt><dd>{t('Compile and export', 'Compilar y exportar')}</dd>
           <dt><kbd>⌘</kbd> <kbd>F</kbd></dt><dd>{t('Find and replace', 'Buscar y reemplazar')}</dd>
           <dt><kbd>⌘</kbd> <kbd>Z</kbd></dt><dd>{t('Undo', 'Deshacer')}</dd>
           <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>Z</kbd></dt><dd>{t('Redo', 'Rehacer')}</dd>
@@ -196,21 +227,31 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
       </section>
 
       <section class="tema" id={ajustes.id} data-nombre={ajustes.nombre}>
-        <p class="etiqueta">08</p>
+        <p class="etiqueta">09</p>
         <h2>{t('A window of its own', 'Una ventana aparte')}</h2>
         <p><kbd>⌘</kbd> <kbd>,</kbd> {t('opens Settings in its own window: areas on the left and their options on the right. Changes apply right away, with no save button.', 'abre los Ajustes en su propia ventana: las áreas a la izquierda y sus opciones a la derecha. Los cambios se aplican al instante, sin botón de guardar.')} <kbd>⌘</kbd> <kbd>W</kbd> {t('closes it.', 'la cierra.')}</p>
+        <ul>
+          <li><b>General</b>{t(': the language (English by default, or Spanish) and the working folder.', ': el idioma (inglés por defecto, o español) y la carpeta de trabajo.')}</li>
+          <li><b>Editor</b>{t(': at the top, ', ': arriba de todo, el ')}<b>{t('Writer mode', 'Modo escritor')}</b>{t(', on by default. It adapts the editor to prose: smart quotes (“ ” or « », depending on the language) and', ', activado por defecto. Adapta el editor a la prosa: comillas tipográficas (“ ” o « », según el idioma) y')} <code>--</code> → <code>—</code>, <code>...</code> → <code>…</code>, <code>&lt;&lt; &gt;&gt;</code> → <code>« »</code>, <code>-&gt;</code> → <code>→</code> {t('as you type (Backspace right after undoes the change; nothing changes inside code), a serif book font in a narrower column, and spell checking. Each part can be turned off.', 'al escribir (Backspace justo después deshace el cambio; nada cambia dentro del código), letra de libro con serifa en una columna más angosta y corrector ortográfico. Cada parte se puede apagar.')}</li>
+          <li><b>{t('Diary', 'Diario')}</b>{t(': shows a calendar at the top of the sidebar. Click a day to open its note,', ': muestra un calendario arriba de la barra lateral. Al hacer clic en un día se abre su nota,')} <code>Daily/2026-11-20.md</code>{t(', inside your working folder. If the note or the Daily folder do not exist yet, Ant creates them; if your folder already has a Daily folder, Ant uses it. Days that already have a note show a dot. In this mode the Daily folder is hidden from the tree: you reach daily notes through the calendar, and the open ones are listed below it.', ', dentro de tu carpeta de trabajo. Si la nota o la carpeta Daily aún no existen, Ant las crea; si tu carpeta ya tiene una carpeta Daily, Ant usa esa. Los días que ya tienen nota llevan un punto. En este modo la carpeta Daily no aparece en el árbol: a las notas diarias se llega desde el calendario, y las abiertas se listan bajo él.')}</li>
+          <li><b>{t('Appearance', 'Apariencia')}</b>{t(': ready-made themes (Dark, Ant, Night, Paper, Sepia) and every color one by one.', ': temas listos (Oscuro, Hormiga, Noche, Papel, Sepia) y cada color por separado.')}</li>
+        </ul>
         <h3>{t('Where they are stored', 'Dónde se guardan')}</h3>
         <p>{t('In a JSON file, in the app’s configuration folder:', 'En un archivo JSON, en la carpeta de configuración de la app:')}</p>
 <pre><code>~/Library/Application Support/cl.agus.ant/ajustes.json</code></pre>
 <pre><code>{"{"}
   "carpeta": "{t('/Users/you/writing', '/Users/tu/escritos')}",
-  "fijados": ["{t('/Users/you/writing/novel', '/Users/tu/escritos/novela')}"]
+  "fijados": ["{t('/Users/you/writing/novel', '/Users/tu/escritos/novela')}"],
+  "diario": true,
+  "colores": {"{"} "acento": "#e5ea15" {"}"},
+  "idioma": "{t('en', 'es')}",
+  "escritor": true
 {"}"}</code></pre>
         <p class="tenue">{t('On Windows it lives in', 'En Windows queda en')} <code>%APPDATA%\cl.agus.ant\</code> {t('and on Linux in', 'y en Linux en')} <code>~/.config/cl.agus.ant/</code>.</p>
       </section>
 
       <section class="tema" id={desarrollo.id} data-nombre={desarrollo.nombre}>
-        <p class="etiqueta">09</p>
+        <p class="etiqueta">10</p>
         <h2>{t('How it is built', 'Cómo está hecha')}</h2>
         <ul>
           <li><b>Tauri 2</b> {t('(Rust,', '(Rust,')} <code>src-tauri/</code>){t(': the window, the menus, reading and writing notes, listing the folder and the settings.', ': la ventana, los menús, leer y escribir notas, listar la carpeta y los ajustes.')}</li>
@@ -236,7 +277,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, atajos, ajustes, 
       </section>
 
       <section class="tema" id={icono.id} data-nombre={icono.nombre}>
-        <p class="etiqueta">10</p>
+        <p class="etiqueta">11</p>
         <h2>{t('The ant’s face', 'La cara de la hormiga')}</h2>
         <p>{t('Flat and one color: bent antennae, eyes and mandibles, in yellow', 'Plano y de un color: antenas acodadas, ojos y mandíbulas, en amarillo')} <code>#e5ea15</code> {t('on', 'sobre')} <code>#1d1d20</code>. {t('The source is', 'La fuente es')} <code>marca/ant-icono.svg</code>{t('; this site copies it when it is built.', '; este sitio la copia al compilar.')}</p>
 <pre><code><span class="pr">$ </span>swift marca/generar-icono.swift \
