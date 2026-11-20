@@ -33,7 +33,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   cursor al seleccionar con el mouse): va en una ref, y solo se actualiza el estado cuando cambia
   algo visible. El editor tampoco copia el texto en cada tecla: solo avisa que cambió, y lo que
   recorre la nota entera (conteo, títulos) se recalcula tras una pausa
-  (`PAUSA_PARA_CONTAR_Y_BUSCAR_TITULOS`), con `useMemo` sobre ese texto. Nada de lo que pasa en
+  (`PAUSA_ANTES_DE_CONTAR`), con `useMemo` sobre ese texto. Nada de lo que pasa en
   cada tecla debe crecer con el largo de la nota (una novela entera puede estar en una sola).
 - En Rust, lo que toca el disco y puede tardar (leer notas, listar el hormiguero) va en comandos
   `async` con `en_segundo_plano` (`lib.rs`): los comandos sin `async` corren en el hilo principal
@@ -60,21 +60,24 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/main.tsx` — punto de entrada: lee los ajustes y monta `App` (la app tiene una sola
   ventana; Ajustes, la bienvenida y los diálogos se abren dentro). Aplica colores e idioma
   antes de montar y cada vez que cambian los ajustes.
-- `src/App.tsx` — ventana principal: lista de notas abiertas (`NotaResumen`: ruta, texto,
-  cambios sin guardar), nota activa, hormiguero abierto (`Ajustes.carpeta`) y su árbol (se relee
-  al cambiar de hormiguero, al guardar y al volver el foco a la ventana), barra de estado,
-  título de la ventana y atajos (Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [, `Cmd+\`).
-  Una sola nota con archivo abierta a la vez (`dejarSola`): abrir otra guarda y cierra la
-  anterior; solo quedan abiertas las notas nuevas con algo escrito. Guardado automático
-  (`guardarYa`): tras `PAUSA_GUARDADO` sin escribir, al cambiar de nota, al perder el foco, al
-  cerrar la ventana y al salir (Rust avisa con `antes-de-salir` y espera a `salir`, ver `lib.rs`).
-  Cada nota recuerda `textoQueHayEnDisco`: antes de guardar se relee el archivo y, si cambió
-  fuera de Ant, no se pisa (avisa; Cmd+S fuerza). Al volver el foco, las notas cuyo archivo
-  cambió fuera se recargan (`recargarNotasCambiadasFueraDeAnt`). Las notas con archivo tienen
-  id fijo por ruta (`idDeNotaConArchivo`), así el editor las reconoce al volver a abrirlas.
-  Encima abre la bienvenida (sin hormigueros, o con el evento `abrir-bienvenida`), los Ajustes
-  (`abrir-ajustes`), «Hormiguero nuevo» (`nuevo-hormiguero`) y «Compilar y exportar»
-  (`abrir-compilar`): eventos que manda Rust desde el menú.
+- `src/App.tsx` — ventana principal. Solo junta las piezas: barra lateral, editor, barra de
+  estado y, encima, la bienvenida (sin hormigueros, o con el evento `abrir-bienvenida`), los
+  Ajustes, «Hormiguero nuevo» y «Compilar y exportar» (eventos que manda Rust desde el menú,
+  `EVENTOS_DE_RUST` en `src/useEventoDeRust.ts`). La lógica vive en hooks:
+  - `src/ajustes/useAjustesGuardados.ts` — los ajustes vigentes y `cambiarAjustes` (aplica y guarda).
+  - `src/hormigueros/useArbolDelHormiguero.ts` — árbol del hormiguero abierto; se relee al
+    cambiar de hormiguero y al volver el foco a la ventana.
+  - `src/notasAbiertas/useNotasAbiertas.ts` — las notas abiertas (`NotaAbierta`, en
+    `notaAbierta.ts`): una sola con archivo a la vez (`dejarComoUnicaNotaAbierta`), guardado
+    automático (`guardarNotaEnDiscoAhora`, tras `PAUSA_ANTES_DE_GUARDAR`, al cambiar de nota, al
+    perder el foco, al cerrar la ventana y al salir: Rust avisa con `antes-de-salir` y espera a
+    `salir`), no pisar cambios hechos fuera de Ant (cada nota recuerda `textoQueHayEnDisco`; al
+    volver el foco se recargan las que cambiaron) y el último texto conocido para contar
+    (`ultimoTextoConocido`, al día tras `PAUSA_ANTES_DE_CONTAR`). Las notas con archivo tienen
+    id fijo por ruta (`idDeNotaConArchivo`), así el editor las reconoce al volver a abrirlas.
+  - `src/useAtajosDeTeclado.ts` — Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [ y `Cmd+\`.
+- `src/BarraDeEstado.tsx` — nombre de la nota visible y conteo de palabras, líneas y caracteres
+  (o el último error).
 - **Hormigueros** (los «vaults»): cada uno es una carpeta del usuario; puede tener todos los que
   quiera (`Ajustes.hormigueros`) y la barra muestra el abierto (`Ajustes.carpeta`). Se cambia
   de uno a otro en Ajustes → General y se cava uno nuevo con File → New Anthill… o desde ahí. Los ajustes
@@ -89,26 +92,28 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   primero), la hormiga y los hoyos abajo, y EN / ES arriba. Reusa del sitio
   `website/src/lib/cavar.ts` (bordes cavados) y `website/src/assets/tierra.svg`: si se cambian
   allá, revisar también la bienvenida. `prueba/bienvenida.html` la muestra fuera de Tauri.
-- `src/BarraLateral.tsx` — barra lateral, minimalista a propósito (cambiar de hormiguero va en
-  Ajustes, no aquí), de arriba abajo: el calendario si hay modo diario, los fijados, «Abiertas»
-  (notas fuera del hormiguero o sin guardar) y el hormiguero abierto, con su nombre y su árbol
-  (carpetas plegables, notas abiertas con botón para cerrar). Bajo la nota activa, sus títulos.
-  Los fijados (clic derecho → Fijar arriba en una carpeta, nota o título) son una grilla de
-  iconos sin texto, al estilo de Zen/Arc, con el nombre en un globo (`Globo.tsx`) al pasar el
-  mouse; clic derecho → Cambiar icono… (`ElegirIcono.tsx`). Una carpeta fijada se despliega
-  bajo la grilla (sola, si contiene la nota activa); lo fijado no se repite en el árbol. Se
-  guardan en `Ajustes.fijados` (ver `src/fijados.ts`) con su icono en `Ajustes.iconos`, y solo
-  se muestran los del hormiguero abierto. El ancho se cambia arrastrando el borde derecho
-  (`.barra-tirador`, invisible, puntero `col-resize`); se guarda en `Ajustes.ancho_barra` al soltar.
+- `src/barraLateral/` — la barra lateral, minimalista a propósito (cambiar de hormiguero va en
+  Ajustes, no aquí) y sin líneas separadoras. De arriba abajo: el calendario si hay modo
+  diario, los fijados, «Abiertas» (notas fuera del hormiguero o nuevas ya con algo escrito) y el
+  hormiguero abierto con su nombre y su árbol. Bajo la nota visible, sus títulos.
+  - `BarraLateral.tsx` — junta las secciones y provee `ContextoDeLaBarraLateral`
+    (`contextoDeLaBarraLateral.ts`): nota visible, carpetas desplegadas, qué está fijado, menú de
+    clic derecho… que leen las filas con `useBarraLateral()`.
+  - `FilasDelArbol.tsx` — `FilaDeNota` (con sus títulos si es la visible), las carpetas y
+    `EntradasDelArbol` (recursivo, se salta lo fijado).
+  - `Fijados.tsx` — grilla de iconos sin texto, al estilo de Zen/Arc, con el nombre en un globo
+    (`src/Globo.tsx`); clic derecho → Cambiar icono… (`ElegirIconoDeFijado.tsx`). Una carpeta
+    fijada se despliega bajo la grilla (sola, si contiene la nota visible). Se guardan en
+    `Ajustes.fijados` (claves: ruta, o `ruta#título` para un capítulo, ver `clavesDeFijados.ts`)
+    con su icono en `Ajustes.iconos`, y solo se muestran los del hormiguero abierto.
+  - `Calendario.tsx` — calendario del modo diario: un mes, semana desde el lunes, punto en los
+    días con nota. Con el modo diario activo, `Daily/` no aparece en el árbol y la nota diaria
+    abierta va bajo el calendario.
+  - `useArrastreDelBorde.ts` — el ancho se cambia arrastrando el borde derecho (`.barra-tirador`,
+    invisible, puntero `col-resize`); se guarda en `Ajustes.ancho_barra` al soltar.
   `prueba/barra.html` la muestra con fijados de ejemplo (y los Ajustes, `?ajustes`).
-- `src/fijados.ts` — clave de cada fijado (ruta, o `ruta#título` para un capítulo) e icono por
-  defecto de cada tipo.
 - `src/iconos.ts` — iconos que se pueden elegir para los fijados: una selección de Lucide
   (ISC) copiada aquí, por grupos; `src/Icono.tsx` los dibuja.
-- `src/Calendario.tsx` — calendario del modo diario (arriba de la barra lateral, si
-  `Ajustes.diario`): un mes, semana desde el lunes, punto en los días con nota. Con el modo
-  diario activo, `BarraLateral` esconde `Daily/` del árbol y muestra bajo el calendario la
-  nota diaria abierta.
 - `src/diario.ts` — fechas `AAAA-MM-DD`, título inicial de cada nota diaria, días con nota
   (desde el árbol) y llamada a `abrir_dia`. Las notas diarias van en `Daily/` del hormiguero abierto.
 - `src/idioma.tsx` — textos de la interfaz en inglés (por defecto) y español. Los componentes
@@ -118,8 +123,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   `aplicarColores`, que `main.tsx` llama al abrir la app y al cambiar los ajustes.
 - `src/MenuContextual.tsx` — menú de clic derecho propio (se cierra con clic fuera, scroll o Escape).
 - `src/marcadores.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de código).
-- `src/carpeta.ts` — tipo `Entrada` y llamada a `listar_carpeta`; utilidades de rutas
-  (`estaDentro`, `carpetasPadre`, `ltr` para mostrar rutas cortadas por el principio).
+- `src/carpeta.ts` — tipo `Entrada` y llamada a `listar_carpeta`; utilidades de rutas y del
+  árbol (`estaDentro`, `carpetasPadre`, `buscarEntradaPorRuta`, `ltr` para mostrar rutas cortadas
+  por el principio).
 - `src/ajustes.ts` — tipo `Ajustes` (igual al de Rust), leer, guardar y escuchar cambios.
 - `src/ajustes/ModalAjustes.tsx` y `.css` — Ajustes como ventanita sobre la principal (no es
   otra ventana), en dos columnas: áreas a la izquierda (`AREAS`: General —idioma y

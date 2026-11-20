@@ -41,3 +41,15 @@ export function carpetasPadre(ruta: string, carpeta: string): string[] {
  * la `/` del principio aparecería al final.
  */
 export const ltr = (ruta: string) => `\u200e${ruta}\u200e`;
+
+/** Busca en el árbol la entrada (carpeta o nota) de `rutaBuscada`, a cualquier profundidad. */
+export function buscarEntradaPorRuta(entradas: Entrada[], rutaBuscada: string): Entrada | undefined {
+  for (const entrada of entradas) {
+    if (entrada.ruta === rutaBuscada) return entrada;
+    if (entrada.es_carpeta && estaDentro(rutaBuscada, entrada.ruta)) {
+      const encontrada = buscarEntradaPorRuta(entrada.hijos, rutaBuscada);
+      if (encontrada) return encontrada;
+    }
+  }
+  return undefined;
+}

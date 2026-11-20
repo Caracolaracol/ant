@@ -6,26 +6,28 @@
 export interface Fijado {
   clave: string;
   ruta: string;
-  titulo: string | null;
+  tituloDelCapitulo: string | null;
 }
 
 /** `ruta-de-una-nota.md#Título`: lo que sigue al primer `#` después de la extensión es el título. */
-const CAPITULO = /^(.*?\.(?:md|markdown|txt))#(.+)$/i;
+const FORMA_DE_LA_CLAVE_DE_UN_CAPITULO = /^(.*?\.(?:md|markdown|txt))#(.+)$/i;
 
 /** Interpreta la clave de un fijado. */
-export function leerFijado(clave: string): Fijado {
-  const m = CAPITULO.exec(clave);
-  return m ? { clave, ruta: m[1], titulo: m[2] } : { clave, ruta: clave, titulo: null };
+export function interpretarClaveDeFijado(clave: string): Fijado {
+  const partesDelCapitulo = FORMA_DE_LA_CLAVE_DE_UN_CAPITULO.exec(clave);
+  return partesDelCapitulo
+    ? { clave, ruta: partesDelCapitulo[1], tituloDelCapitulo: partesDelCapitulo[2] }
+    : { clave, ruta: clave, tituloDelCapitulo: null };
 }
 
 /** Clave con la que se fija un capítulo de una nota. */
-export const claveCapitulo = (ruta: string, titulo: string) => `${ruta}#${titulo}`;
+export const claveDeCapitulo = (rutaDeLaNota: string, tituloDelCapitulo: string) => `${rutaDeLaNota}#${tituloDelCapitulo}`;
 
 /** Tipo de un fijado, que decide su icono por defecto. */
-export type TipoFijado = "carpeta" | "nota" | "capitulo";
+export type TipoDeFijado = "carpeta" | "nota" | "capitulo";
 
 /** Icono de cada tipo de fijado mientras el usuario no elija otro (nombres de `iconos.ts`). */
-export const ICONO_POR_DEFECTO: Record<TipoFijado, string> = {
+export const ICONO_POR_DEFECTO_DE_CADA_TIPO: Record<TipoDeFijado, string> = {
   carpeta: "folder",
   nota: "file-text",
   capitulo: "bookmark",

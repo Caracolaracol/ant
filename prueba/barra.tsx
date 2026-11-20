@@ -8,9 +8,9 @@ import ReactDOM from "react-dom/client";
 import "../src/App.css";
 import { AJUSTES_INICIALES, type Ajustes } from "../src/ajustes";
 import { ModalAjustes } from "../src/ajustes/ModalAjustes";
-import { BarraLateral } from "../src/BarraLateral";
+import { BarraLateral } from "../src/barraLateral/BarraLateral";
 import type { Entrada } from "../src/carpeta";
-import { ElegirIcono } from "../src/ElegirIcono";
+import { ElegirIconoDeFijado } from "../src/barraLateral/ElegirIconoDeFijado";
 import { NuevoHormiguero } from "../src/hormigueros/NuevoHormiguero";
 import { ContextoTextos, textosDe } from "../src/idioma";
 import { extraerMarcadores } from "../src/marcadores";
@@ -34,7 +34,9 @@ const ajustes: Ajustes = {
   fijados: [`${base}/Libro I`, `${base}/Ideas.md`, `${base}/Libro I/02 - La lluvia.md#La cueva`, `${base}/Personajes`, `${base}/Borrado.md`],
   iconos: { [`${base}/Personajes`]: "drama", [`${base}/Ideas.md`]: "lightbulb" },
 };
-const notas = [{ id: "a", ruta: `${base}/Libro I/02 - La lluvia.md`, texto, sucio: false, textoQueHayEnDisco: texto }];
+const notasAbiertas = [
+  { id: "a", rutaDelArchivo: `${base}/Libro I/02 - La lluvia.md`, ultimoTextoConocido: texto, tieneCambiosSinGuardar: false, textoQueHayEnDisco: texto },
+];
 const nada = () => {};
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -43,26 +45,26 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <div className="arrastre" />
       <div className="cuerpo">
         <BarraLateral
-          carpeta={base}
-          arbol={arbol}
-          fijados={ajustes.fijados}
-          iconos={ajustes.iconos}
-          diario={p.has("diario")}
-          notas={notas}
-          activa="a"
-          marcadores={extraerMarcadores(texto)}
-          tituloActual={1}
-          onElegir={nada}
-          onAbrirRuta={nada}
-          onAbrirCapitulo={nada}
-          onCerrar={nada}
-          onSaltar={nada}
-          onFijar={nada}
-          onDesfijar={nada}
-          onCambiarIcono={nada}
-          onAbrirDia={nada}
-          ancho={240}
-          onCambiarAncho={nada}
+          carpetaDelHormiguero={base}
+          arbolDelHormiguero={arbol}
+          clavesDeFijados={ajustes.fijados}
+          iconosElegidosPorFijado={ajustes.iconos}
+          modoDiarioActivo={p.has("diario")}
+          notasAbiertas={notasAbiertas}
+          idNotaVisible="a"
+          titulosDeLaNotaVisible={extraerMarcadores(texto)}
+          indiceDelTituloConElCursor={1}
+          anchoEnPixeles={240}
+          alCambiarAncho={nada}
+          alMostrarNotaAbierta={nada}
+          alAbrirNotaDeArchivo={nada}
+          alAbrirCapitulo={nada}
+          alAbrirNotaDelDia={nada}
+          alCerrarNota={nada}
+          alSaltarATitulo={nada}
+          alFijar={nada}
+          alQuitarFijado={nada}
+          alCambiarIconoDeFijado={nada}
         />
         <div className="editor" />
       </div>
@@ -70,7 +72,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </main>
     {p.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiar={nada} onNuevoHormiguero={nada} onCerrar={nada} />}
     {p.has("nuevo") && <NuevoHormiguero onListo={nada} onCerrar={nada} />}
-    {p.has("iconos") && <ElegirIcono x={120} y={90} actual="drama" onElegir={nada} onCerrar={nada} />}
+    {p.has("iconos") && <ElegirIconoDeFijado x={120} y={90} iconoActual="drama" alElegirIcono={nada} alCerrar={nada} />}
   </ContextoTextos.Provider>,
 );
 
