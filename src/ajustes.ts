@@ -4,7 +4,7 @@
 // tiene que seguir leyendo el nombre anterior (`#[serde(alias = …)]`).
 
 import { invoke } from "@tauri-apps/api/core";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { Idioma } from "./idioma";
 import type { EstiloDelLibro, TamanoDePagina } from "./compilar/formato.ts";
 import type { OrigenDelTituloDeCadaCapitulo } from "./compilar/modelo.ts";

@@ -87,6 +87,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Las pruebas automáticas (lógica de la interfaz y Rust) corren una vez, en Linux: si
+      # fallan, no se publica la versión.
+      - name: Pruebas
+        if: runner.os == 'Linux'
+        run: |
+          pnpm test
+          cd src-tauri && cargo test
+
       - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
           GITHUB_TOKEN: ${{ github.token }}

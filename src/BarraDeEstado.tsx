@@ -3,17 +3,8 @@
 // último error si lo hay (permisos, disco lleno, un archivo cambiado fuera de Ant…).
 
 import { useMemo } from "react";
+import { contarPalabrasLineasYCaracteres } from "./conteoDelTexto";
 import { useTextos } from "./idioma";
-
-/** Cuenta palabras, líneas y caracteres de un texto. */
-export function contarPalabrasLineasYCaracteres(texto: string) {
-  const textoSinEspaciosEnLosBordes = texto.trim();
-  return {
-    cantidadDePalabras: textoSinEspaciosEnLosBordes ? textoSinEspaciosEnLosBordes.split(/\s+/).length : 0,
-    cantidadDeLineas: texto.split("\n").length,
-    cantidadDeCaracteres: texto.length,
-  };
-}
 
 interface Props {
   nombreDeLaNota: string;

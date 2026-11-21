@@ -46,6 +46,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `pnpm tauri dev` — abre la app en desarrollo, con recarga en caliente de la interfaz.
 - `pnpm build` — revisa los tipos y compila solo la interfaz (rápido para verificar cambios).
 - `cd src-tauri && cargo check` — verifica que compile el lado Rust.
+- `pnpm test` — pruebas automáticas de la lógica de la interfaz (`prueba/automaticas/`, con
+  `node --test`, sin dependencias). `cd src-tauri && cargo test` — las de Rust. Las dos corren en
+  el workflow de publicación antes de compilar: si fallan, no se publica.
 - `pnpm tauri build` — genera la app final (`.app` y `.dmg`) en `src-tauri/target/release/bundle/`.
 - Publicar una versión: subir la versión en `package.json`, `src-tauri/tauri.conf.json` y
   `src-tauri/Cargo.toml`, mover lo de «Unreleased» a una sección nueva en `CHANGELOG.md`,
@@ -77,7 +80,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     id fijo por ruta (`idDeNotaConArchivo`), así el editor las reconoce al volver a abrirlas.
   - `src/useAtajosDeTeclado.ts` — Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [ y `Cmd+\`.
 - `src/BarraDeEstado.tsx` — nombre de la nota visible y conteo de palabras, líneas y caracteres
-  (o el último error).
+  (o el último error); el conteo está en `src/conteoDelTexto.ts`.
 - **Hormigueros** (los «vaults»): cada uno es una carpeta del usuario; puede tener todos los que
   quiera (`Ajustes.hormigueros`) y la barra muestra el abierto (`Ajustes.hormiguero_abierto`). Se cambia
   de uno a otro en Ajustes → General y se cava uno nuevo con File → New Anthill… o desde ahí. Los ajustes
@@ -206,6 +209,14 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `prueba/editor.html` — página de prueba fuera de Tauri (`pnpm dev`, luego
   `http://localhost:1420/prueba/editor.html`): el mismo editor con una nota larga, medidor de
   fps y casillas para apagar extensiones. Sirve para comparar motores (Safari/Chrome/Firefox).
+- `prueba/automaticas/*.prueba.ts` — pruebas automáticas (`pnpm test`) de la lógica que no
+  depende de la ventana: títulos y conteo de una nota, claves de fijados, notas abiertas,
+  hormigueros, árbol de carpetas, diario, colores, modo escritor y «Compilar y exportar» (del
+  Markdown al libro, ZIP, PDF y Word). Al cambiar esa lógica, agregar o ajustar su prueba. Node
+  las corre sin compilar (`--experimental-strip-types`), así que los módulos que prueban deben
+  importar los tipos con `import type` / `type …` y los otros módulos de `src/` con su `.ts`
+  explícito; la lógica que se quiera probar va en un `.ts`, no dentro de un componente `.tsx`
+  (por eso existe `src/conteoDelTexto.ts`).
 - `prueba/compilar.html` — el diálogo «Compilar y exportar» con una carpeta de ejemplo (`?es` en
   español, `?libro` con opciones guardadas). Para revisar su diseño; exportar no funciona fuera de Tauri.
 
