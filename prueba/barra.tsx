@@ -1,19 +1,18 @@
-// Página de prueba de la franja de arriba con sus botones, la barra lateral con el selector de
-// cámaras y los fijados (iconos), y de las ventanitas de Ajustes, «Cámara nueva», «Nota nueva» y
-// el selector de iconos, fuera de Tauri (`pnpm dev`, luego http://localhost:1420/prueba/barra.html).
-// Parámetros: `?es` en español, `?ajustes` abre los Ajustes, `?nueva` la ventanita «Cámara
-// nueva», `?nota` la de «Nota nueva», `?iconos` el selector de iconos, `?globo` muestra el globo
-// del primer fijado, `?camaras` despliega el selector de cámaras, `?entrada` abre la «Entrada» y
-// `?diario` el calendario del modo diario.
+// Página de prueba de la barra lateral con el selector de cámaras y los fijados (iconos), el menú de clic derecho y las ventanitas de Ajustes, «Cámara
+// nueva», «Nota nueva», «Carpeta nueva» y el selector de iconos, fuera de Tauri (`pnpm dev`, luego
+// http://localhost:1420/prueba/barra.html). Parámetros: `?es` en español, `?ajustes` abre los
+// Ajustes, `?nueva` la ventanita «Cámara nueva», `?nota` la de «Nota nueva», `?carpeta` la de
+// «Carpeta nueva», `?menu` el clic derecho de una nota, `?iconos` el selector de iconos,
+// `?globo` muestra el globo del primer fijado, `?camaras` despliega el selector de cámaras,
+// `?entrada` abre la «Entrada» y `?diario` el calendario del modo diario.
 
 import ReactDOM from "react-dom/client";
 import "../src/App.css";
 import { AJUSTES_POR_DEFECTO, type Ajustes } from "../src/ajustes";
 import { ModalAjustes } from "../src/ajustes/ModalAjustes";
 import { BarraLateral } from "../src/barraLateral/BarraLateral";
-import { BarraSuperior } from "../src/BarraSuperior";
 import { CAMARA_DE_ENTRADA } from "../src/hormigueros/hormigueros";
-import { NuevaNota } from "../src/notasAbiertas/NuevaNota";
+import { NuevaNotaOCarpeta } from "../src/hormigueros/NuevaNotaOCarpeta";
 import type { EntradaDelArbol } from "../src/arbolDeCarpetas";
 import { ElegirIconoDeFijado } from "../src/barraLateral/ElegirIconoDeFijado";
 import { NuevaCamara } from "../src/hormigueros/NuevaCamara";
@@ -53,7 +52,7 @@ const nada = () => {};
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <ContextoDeTextos.Provider value={textosDelIdioma(ajustes.idioma)}>
     <main className="app">
-      <BarraSuperior barraLateralVisible alMostrarUOcultarBarraLateral={nada} alPedirNotaNueva={nada} alPedirCamaraNueva={nada} />
+      <div className="arrastre" />
       <div className="cuerpo">
         <BarraLateral
           carpetaDeLaCamara={base}
@@ -81,6 +80,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           alCambiarIconoDeFijado={nada}
           alAbrirCamara={nada}
           alPedirCamaraNueva={nada}
+          alPedirCrear={nada}
+          carpetaRecienCreada={null}
         />
         <div className="editor" />
       </div>
@@ -88,7 +89,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </main>
     {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} camarasDelHormiguero={camaras} alPedirCamaraNueva={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("nueva") && <NuevaCamara carpetaDelHormiguero={hormiguero} camarasDelHormiguero={camaras} alCavarCamara={nada} alCerrar={nada} />}
-    {parametrosDeLaDireccion.has("nota") && <NuevaNota carpetaDondeCrearla={`${base}/Libro I`} lugarVisible="Novela / Libro I" alCrearNota={nada} alCerrar={nada} />}
+    {parametrosDeLaDireccion.has("nota") && <NuevaNotaOCarpeta queSeCrea="nota" carpetaDondeCrearla={`${base}/Libro I`} lugarVisible="Novela / Libro I" alCrear={nada} alCerrar={nada} />}
+    {parametrosDeLaDireccion.has("carpeta") && <NuevaNotaOCarpeta queSeCrea="carpeta" carpetaDondeCrearla={base} lugarVisible="Novela" alCrear={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("iconos") && <ElegirIconoDeFijado x={120} y={90} iconoActual="drama" alElegirIcono={nada} alCerrar={nada} />}
   </ContextoDeTextos.Provider>,
 );
@@ -96,6 +98,20 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 // Simula pasar el mouse por el primer fijado, para ver su globo.
 if (parametrosDeLaDireccion.has("globo")) {
   setTimeout(() => document.querySelectorAll(".fijado")[2]?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })), 100);
+}
+
+// En las capturas sin ventana la animación de los menús no avanza: se apaga para verlos enteros.
+if (parametrosDeLaDireccion.has("menu") || parametrosDeLaDireccion.has("camaras")) {
+  document.head.insertAdjacentHTML("beforeend", "<style>.menu-contextual { animation: none; }</style>");
+}
+
+// Abre el clic derecho de la última nota del árbol, para ver el menú.
+if (parametrosDeLaDireccion.has("menu")) {
+  setTimeout(() => {
+    const filaDeLaCarpeta = [...document.querySelectorAll<HTMLElement>(".barra-nota")].pop();
+    const rectangulo = filaDeLaCarpeta?.getBoundingClientRect();
+    filaDeLaCarpeta?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: (rectangulo?.left ?? 0) + 40, clientY: (rectangulo?.top ?? 0) + 10 }));
+  }, 100);
 }
 
 // Despliega el selector de cámaras, para ver la lista.

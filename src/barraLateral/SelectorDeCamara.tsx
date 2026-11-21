@@ -38,8 +38,7 @@ export function SelectorDeCamara(props: Props) {
       estaMarcada: nombreDeLaCamara === nombreDeLaCamaraAbierta,
       alElegir: () => nombreDeLaCamara !== nombreDeLaCamaraAbierta && props.alAbrirCamara(nombreDeLaCamara),
     })),
-    // Sin marca, pero con su lugar (`estaMarcada: false`), para que quede alineada con las cámaras.
-    { texto: textosDeLaInterfaz.camaraNuevaBoton, estaMarcada: false, vaSeparadaDeLaAnterior: true, alElegir: props.alPedirCamaraNueva },
+    { texto: textosDeLaInterfaz.camaraNuevaBoton, icono: "folder-plus", vaSeparadaDeLaAnterior: true, alElegir: props.alPedirCamaraNueva },
   ];
 
   return (

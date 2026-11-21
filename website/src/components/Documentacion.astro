@@ -95,7 +95,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
         </ol>
         <h3>{t('More chambers', 'Más cámaras')}</h3>
         <ul>
-          <li>{t('Dig as many as you want with the folder button at the top of the window, next to the window buttons, with', 'Cava todas las que quieras con el botón de la carpeta arriba de la ventana, junto a los botones de la ventana, con')} <b>{t('File → New Chamber…', 'Archivo → Cámara nueva…')}</b> {t('or with', 'o con')} <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>N</kbd>.</li>
+          <li>{t('Dig as many as you want from the chamber list at the top of the sidebar (', 'Cava todas las que quieras desde la lista de cámaras arriba de la barra lateral (')} <b>{t('New chamber…', 'Cámara nueva…')}</b>{t('), with', '), con')} <b>{t('File → New Chamber…', 'Archivo → Cámara nueva…')}</b> {t('or with', 'o con')} <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>N</kbd>.</li>
           <li>{t('To switch chambers, click the name of the open one at the top of the sidebar: the list of chambers unfolds. You also see them all in', 'Para cambiar de cámara, haz clic en el nombre de la abierta arriba de la barra lateral: se despliega la lista de cámaras. También las ves todas en')} <b>{t('Settings → General', 'Ajustes → General')}</b>{t('. Every top-level folder of the anthill is a chamber, so a folder you create in Finder shows up there too.', '. Cada carpeta de primer nivel del hormiguero es una cámara, así que una carpeta que crees en Finder también aparece ahí.')}</li>
           <li>{t('Loose notes at the root of the anthill are the', 'Las notas sueltas en la raíz del hormiguero son la')} <b>{t('Entrance', 'Entrada')}</b>{t(', the first chamber in the list. It only shows up while there are loose notes, and it has no diary.', ', la primera cámara de la lista. Solo aparece mientras haya notas sueltas, y no tiene diario.')}</li>
           <li>{t('There you can also change the anthill for another folder; nothing is moved or deleted.', 'Ahí también puedes cambiar el hormiguero por otra carpeta; nada se mueve ni se borra.')}</li>
@@ -104,7 +104,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
         <h3>{t('What it shows', 'Qué muestra')}</h3>
         <ul>
           <li>{t('Notes ending in', 'Notas')} <code>.md</code>, <code>.markdown</code> {t('and', 'y')} <code>.txt</code>{t(', with their subfolders.', ', con sus subcarpetas.')}</li>
-          <li>{t('Hidden folders,', 'Se saltan las carpetas ocultas,')} <code>node_modules</code>, <code>target</code> {t('and folders without notes are skipped.', 'y las carpetas sin notas.')}</li>
+          <li>{t('Hidden folders,', 'Se saltan las carpetas ocultas,')} <code>node_modules</code>, <code>target</code> {t('and folders without notes are skipped (empty ones do show, so you can fill them).', 'y las carpetas sin notas (las vacías sí se ven, para poder llenarlas).')}</li>
           <li>{t('It is read again when you save and every time you come back to the window, in case you moved something from Finder or another app.', 'Se vuelve a leer al guardar y cada vez que vuelves a la ventana, por si moviste algo desde Finder u otra app.')}</li>
         </ul>
         <p class="tenue">{t('Notes outside the anthill open too: use', 'También se abren notas fuera del hormiguero: usa')} <kbd>⌘</kbd> <kbd>O</kbd>.</p>
@@ -118,7 +118,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
           'Las notas se guardan exactamente como las escribes, en Markdown. Ant colorea los títulos, el énfasis, los enlaces y los bloques de código, pero nunca cambia el archivo.',
         )}</p>
         <ul>
-          <li><kbd>⌘</kbd> <kbd>N</kbd> {t('or the pencil button at the top of the window creates a new note: give it a name (or keep “Untitled”) and press Enter. It is created next to the note you are reading, or in the chamber, and Ant saves it for you from the first word. It never overwrites a note with the same name.', 'o el botón del lápiz arriba de la ventana crea una nota nueva: ponle nombre (o deja «Sin título») y pulsa Enter. Se crea junto a la nota que estás leyendo, o en la cámara, y Ant la guarda sola desde la primera palabra. Nunca pisa una nota con el mismo nombre.')}</li>
+          <li><kbd>⌘</kbd> <kbd>N</kbd> {t('(or right-click → New note…) creates a new note: give it a name (or keep “Untitled”) and press Enter. It is created next to the note you are reading, or in the chamber, and Ant saves it for you from the first word. It never overwrites a note with the same name.', '(o clic derecho → Nota nueva…) crea una nota nueva: ponle nombre (o deja «Sin título») y pulsa Enter. Se crea junto a la nota que estás leyendo, o en la cámara, y Ant la guarda sola desde la primera palabra. Nunca pisa una nota con el mismo nombre.')}</li>
           <li><kbd>⌘</kbd> <kbd>S</kbd> {t('saves right away (Ant already saves on its own).', 'guarda al instante (Ant ya guarda sola).')}</li>
           <li><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd> {t('saves it under another name.', 'la guarda con otro nombre.')}</li>
         </ul>
@@ -142,13 +142,13 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
       <section class="tema" id={lateral.id} data-nombre={lateral.nombre}>
         <p class="etiqueta">04</p>
         <h2>{t('From top to bottom', 'De arriba hacia abajo')}</h2>
-        <p>{t('At the very top, next to the window buttons, three small icons: hide or show the sidebar, new note and new chamber. Hover over one to see its name and shortcut.', 'Arriba de todo, junto a los botones de la ventana, tres iconos chicos: ocultar o mostrar la barra lateral, nota nueva y cámara nueva. Al pasar el mouse se ve su nombre y su atajo.')}</p>
         <ol>
           <li><b>{t('The chamber', 'La cámara')}</b>{t(': the name of the open chamber. Click it to switch to another or dig a new one.', ': el nombre de la cámara abierta. Haz clic para pasar a otra o cavar una nueva.')}</li>
           <li><b>{t('Pinned', 'Fijados')}</b>{t(': a row of icons with what you pinned (see the next section).', ': una fila de iconos con lo que fijaste (ver la siguiente sección).')}</li>
           <li><b>{t('Open', 'Abiertas')}</b>{t(': open notes that are not in the chamber, such as a new unsaved one.', ': notas abiertas que no están en la cámara, como una nueva sin guardar.')}</li>
           <li><b>{t('Its notes', 'Sus notas')}</b>{t(': the tree of the chamber’s subfolders and notes. Folders fold and unfold with a click.', ': el árbol de subcarpetas y notas de la cámara. Las carpetas se pliegan con un clic.')}</li>
         </ol>
+        <p>{t('Right-click a note or folder to create a new note or folder next to it (or inside the folder), pin it or show it in its folder. Right-click the empty space to create one in the chamber.', 'Clic derecho en una nota o carpeta para crear una nota o carpeta nueva junto a ella (o dentro de la carpeta), fijarla o mostrarla en su carpeta. Clic derecho en el espacio libre para crear una en la cámara.')}</p>
         <p><kbd>⌘</kbd> <kbd>\</kbd> {t('shows or hides it. To make it wider or narrower, drag its right edge: the pointer changes to ↔ when you are over it. Double-click the edge to go back to the default width.', 'la muestra u oculta. Para ensancharla o achicarla, arrastra su borde derecho: el puntero cambia a ↔ al pasar por encima. Doble clic en el borde la deja con el ancho de siempre.')}</p>
         <div class="columnas">
           <div>

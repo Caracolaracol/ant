@@ -61,10 +61,7 @@ const en = {
   usarCarpeta: "Use a folder you already have…",
   bordeBarra: "Drag to resize · double-click to reset",
 
-  // Botones de arriba (junto a los de la ventana), selector de cámaras y «Nota nueva».
-  ocultarPanel: "Hide sidebar",
-  mostrarPanel: "Show sidebar",
-  notaNuevaBoton: "New note",
+  // Selector de cámaras y «Nota nueva».
   cambiarDeCamara: "Switch chamber",
   entrada: "Entrance",
   entradaAyuda: "Loose notes at the root of your anthill",
@@ -73,6 +70,12 @@ const en = {
   nombrePropuestoDeLaNota: "Untitled",
   seCrearaEn: "It will be created in",
   crearNota: "Create note",
+  carpetaNuevaTitulo: "New folder",
+  nombrePropuestoDeLaCarpeta: "New folder",
+  crearCarpeta: "Create folder",
+  // Clic derecho en la barra lateral.
+  notaNuevaMenu: "New note…",
+  carpetaNuevaMenu: "New folder…",
 
   // Calendario del modo diario.
   diasSemana: ["M", "T", "W", "T", "F", "S", "S"],
@@ -234,9 +237,6 @@ const es: TextosDeLaInterfaz = {
   usarCarpeta: "Usar una carpeta que ya tengo…",
   bordeBarra: "Arrastra para cambiar el ancho · doble clic para restablecerlo",
 
-  ocultarPanel: "Ocultar el panel",
-  mostrarPanel: "Mostrar el panel",
-  notaNuevaBoton: "Nota nueva",
   cambiarDeCamara: "Cambiar de cámara",
   entrada: "Entrada",
   entradaAyuda: "Las notas sueltas en la raíz de tu hormiguero",
@@ -245,6 +245,11 @@ const es: TextosDeLaInterfaz = {
   nombrePropuestoDeLaNota: "Sin título",
   seCrearaEn: "Se creará en",
   crearNota: "Crear la nota",
+  carpetaNuevaTitulo: "Carpeta nueva",
+  nombrePropuestoDeLaCarpeta: "Carpeta nueva",
+  crearCarpeta: "Crear la carpeta",
+  notaNuevaMenu: "Nota nueva…",
+  carpetaNuevaMenu: "Carpeta nueva…",
 
   diasSemana: ["L", "M", "M", "J", "V", "S", "D"],
   mesAnterior: "Mes anterior",

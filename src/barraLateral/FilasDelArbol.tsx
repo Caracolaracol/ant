@@ -47,7 +47,7 @@ interface PropsDeFilaDeNota {
   /** La nota, si está abierta. */
   notaAbierta: NotaAbierta | undefined;
   alHacerClic(): void;
-  /** Ruta con la que se puede fijar la nota (clic derecho); sin ella, la fila no tiene menú. */
+  /** Ruta de la nota en el árbol de la cámara, para su clic derecho (crear, fijar…); sin ella, la fila no tiene menú. */
   rutaParaFijar?: string;
 }
 
@@ -62,7 +62,7 @@ export function FilaDeNota({ nombreVisible, nivelDeProfundidad, notaAbierta, alH
         className={`barra-nota${esLaNotaVisible ? " activa" : ""}${notaAbierta ? " abierta" : ""}`}
         style={{ paddingLeft: sangriaEnPixeles(nivelDeProfundidad) }}
         onClick={alHacerClic}
-        onContextMenu={rutaParaFijar ? (evento) => barra.abrirMenuContextual(evento, barra.opcionesParaFijarOQuitar(rutaParaFijar)) : undefined}
+        onContextMenu={rutaParaFijar ? (evento) => barra.abrirMenuContextual(evento, barra.opcionesDeUnaEntrada(rutaParaFijar, false)) : undefined}
       >
         <span className="barra-nombre">
           {nombreVisible}
@@ -97,7 +97,7 @@ function FilaDeCarpeta({ carpeta, nivelDeProfundidad }: { carpeta: EntradaDelArb
         className="barra-carpeta"
         style={{ paddingLeft: sangriaEnPixeles(nivelDeProfundidad) }}
         onClick={() => barra.desplegarOPlegarCarpeta(carpeta.ruta)}
-        onContextMenu={(evento) => barra.abrirMenuContextual(evento, barra.opcionesParaFijarOQuitar(carpeta.ruta))}
+        onContextMenu={(evento) => barra.abrirMenuContextual(evento, barra.opcionesDeUnaEntrada(carpeta.ruta, true))}
       >
         <span className="barra-flecha">{estaDesplegada ? "▾" : "▸"}</span>
         <span className="barra-nombre">{carpeta.nombre}</span>

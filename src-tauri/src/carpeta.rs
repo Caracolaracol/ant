@@ -30,7 +30,9 @@ pub struct EntradaDelArbol {
 }
 
 /// Lee recursivamente una carpeta. Las carpetas sin ninguna nota dentro se omiten para que el árbol
-/// muestre solo lo útil. Los errores de lectura de una subcarpeta (permisos) se saltan en silencio.
+/// muestre solo lo útil (por ejemplo, una de imágenes), salvo las que están del todo vacías: una
+/// recién creada (clic derecho → Carpeta nueva…) tiene que verse para poder llenarla. Los errores
+/// de lectura de una subcarpeta (permisos) se saltan en silencio.
 fn leer_arbol(carpeta: &Path, profundidad: usize) -> Vec<EntradaDelArbol> {
     let Ok(contenido_de_la_carpeta) = fs::read_dir(carpeta) else { return Vec::new() };
     let mut entradas: Vec<EntradaDelArbol> = contenido_de_la_carpeta
@@ -46,7 +48,7 @@ fn leer_arbol(carpeta: &Path, profundidad: usize) -> Vec<EntradaDelArbol> {
                     return None;
                 }
                 let hijos = leer_arbol(&ruta, profundidad + 1);
-                if hijos.is_empty() {
+                if hijos.is_empty() && !esta_vacia(&ruta) {
                     return None;
                 }
                 Some(EntradaDelArbol { nombre, ruta: ruta.to_string_lossy().into_owned(), es_carpeta: true, hijos })
@@ -72,6 +74,13 @@ fn leer_arbol(carpeta: &Path, profundidad: usize) -> Vec<EntradaDelArbol> {
 /// dependencias de proyectos.
 fn es_carpeta_ignorada(nombre: &str) -> bool {
     nombre.starts_with('.') || CARPETAS_IGNORADAS.contains(&nombre)
+}
+
+/// Si una carpeta no tiene nada visible adentro (ignora lo oculto, como `.DS_Store`).
+fn esta_vacia(carpeta: &Path) -> bool {
+    fs::read_dir(carpeta).is_ok_and(|mut contenido| {
+        !contenido.any(|elemento| elemento.is_ok_and(|elemento| !elemento.file_name().to_string_lossy().starts_with('.')))
+    })
 }
 
 /// Si el archivo es una nota (por su extensión, sin distinguir mayúsculas) y no está oculto.
@@ -248,6 +257,20 @@ mod pruebas {
         assert!(crear_nota_nueva(carpeta.clone(), "a/b".into()).is_err());
         assert!(crear_nota_nueva(carpeta, "".into()).is_err());
         fs::remove_dir_all(carpeta_de_prueba).unwrap();
+    }
+
+    #[test]
+    fn el_arbol_muestra_las_carpetas_vacias_pero_no_las_que_solo_tienen_otros_archivos() {
+        let camara = std::env::temp_dir().join(format!("ant-arbol-{}", std::process::id()));
+        for carpeta in ["Vacia", "Imagenes", "Libro"] {
+            fs::create_dir_all(camara.join(carpeta)).unwrap();
+        }
+        fs::write(camara.join("Vacia/.DS_Store"), "").unwrap();
+        fs::write(camara.join("Imagenes/mapa.png"), "").unwrap();
+        fs::write(camara.join("Libro/01.md"), "").unwrap();
+        let nombres: Vec<String> = leer_arbol(&camara, 0).into_iter().map(|entrada| entrada.nombre).collect();
+        assert_eq!(nombres, vec!["Libro", "Vacia"]);
+        fs::remove_dir_all(&camara).unwrap();
     }
 
     #[test]

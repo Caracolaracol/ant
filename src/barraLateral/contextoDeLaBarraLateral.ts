@@ -1,6 +1,6 @@
 // Lo que comparten las piezas de la barra lateral (`FilasDelArbol`, `Fijados`): la nota visible y
 // sus títulos, las notas abiertas, qué carpetas están desplegadas, qué está fijado, el menú de clic
-// derecho y lo que se hace al elegir algo. `BarraLateral` lo provee y cada fila lo lee con
+// derecho (y sus opciones) y lo que se hace al elegir algo. `BarraLateral` lo provee y cada fila lo lee con
 // `useBarraLateral()`, así no hay que pasarlo de componente en componente.
 
 import { createContext, useContext } from "react";
@@ -27,6 +27,8 @@ export interface DatosDeLaBarraLateral {
   abrirMenuContextual(evento: React.MouseEvent, opciones: OpcionDelMenu[]): void;
   /** Opciones del clic derecho para fijar algo, o para quitarlo si ya está fijado. */
   opcionesParaFijarOQuitar(clave: string): OpcionDelMenu[];
+  /** Opciones del clic derecho de una nota o carpeta del árbol: crear junto a ella o dentro, fijar y mostrarla en su carpeta. */
+  opcionesDeUnaEntrada(ruta: string, esCarpeta: boolean): OpcionDelMenu[];
   alAbrirNotaDeArchivo(rutaDelArchivo: string): void;
   alCerrarNota(idNota: string): void;
   alSaltarATitulo(posicionDelTitulo: number): void;

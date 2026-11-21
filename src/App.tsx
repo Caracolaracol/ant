@@ -6,10 +6,10 @@
 //     compilaciones): `hormigueros/useDatosDeLaCamara.ts`
 //   · notas abiertas, guardado automático y cambios hechos fuera de Ant: `notasAbiertas/useNotasAbiertas.ts`
 //   · atajos de teclado: `useAtajosDeTeclado.ts`
-//   · franja de arriba con sus botones (panel, nota nueva, cámara nueva): `BarraSuperior.tsx`
 //   · barra lateral: `barraLateral/` · barra de estado: `BarraDeEstado.tsx`
 // Encima se abren, cuando toca: la bienvenida (sin hormiguero o sin cámara, o desde el menú), los
-// Ajustes (Cmd+,), «Nota nueva» (Cmd+N), «Cámara nueva» (Cmd+Shift+N) y «Compilar y exportar»
+// Ajustes (Cmd+,), «Nota nueva» (Cmd+N) o «Carpeta nueva» (clic derecho en la barra lateral),
+// «Cámara nueva» (Cmd+Shift+N) y «Compilar y exportar»
 // (Cmd+Shift+E). Los ítems del menú los maneja
 // Rust, que avisa con un evento (`EVENTOS_DE_RUST`) y aquí se abre lo que corresponda.
 
@@ -20,7 +20,6 @@ import { crearConfiguracionModoEscritor } from "./editor/escritor";
 import { BarraLateral } from "./barraLateral/BarraLateral";
 import { ANCHO_DE_LA_BARRA_POR_DEFECTO } from "./barraLateral/useArrastreDelBorde";
 import { BarraDeEstado } from "./BarraDeEstado";
-import { BarraSuperior } from "./BarraSuperior";
 import type { Ajustes } from "./ajustes";
 import { ModalAjustes } from "./ajustes/ModalAjustes";
 import { useAjustesGuardados } from "./ajustes/useAjustesGuardados";
@@ -36,7 +35,7 @@ import { idiomaValido, useTextos } from "./idioma";
 import { extraerTitulosDeLaNota, indiceDelTituloEnLaPosicion } from "./titulosDeLaNota";
 import { nombreDelArchivo } from "./archivosDeNotas";
 import { esperaQueLaGuarden } from "./notasAbiertas/notaAbierta";
-import { NuevaNota } from "./notasAbiertas/NuevaNota";
+import { NuevaNotaOCarpeta, type QueSeCrea } from "./hormigueros/NuevaNotaOCarpeta";
 import { useNotasAbiertas } from "./notasAbiertas/useNotasAbiertas";
 import { useAtajosDeTeclado } from "./useAtajosDeTeclado";
 import { EVENTOS_DE_RUST, useEventoDeRust } from "./useEventoDeRust";
@@ -80,15 +79,22 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   });
   const { notaVisible } = notas;
 
-  // «Nota nueva» (botón de arriba o Cmd+N): la carpeta donde se creará, o null si está cerrada.
-  // Se crea junto a la nota visible si es de la cámara (así los capítulos de «Libro I» quedan
-  // juntos) o, si no, en la cámara misma.
-  const [carpetaParaLaNotaNueva, setCarpetaParaLaNotaNueva] = useState<string | null>(null);
+  // Ventanita «Nota nueva» o «Carpeta nueva»: qué se crea y dónde, o null si está cerrada. Se
+  // pide con clic derecho en la barra lateral (en una carpeta, junto a una nota o en la cámara), o
+  // con Cmd+N (la nota).
+  const [creacionPedida, setCreacionPedida] = useState<{ queSeCrea: QueSeCrea; carpetaDondeCrearla: string } | null>(null);
+  // La última carpeta creada, para que la barra lateral la despliegue.
+  const [carpetaRecienCreada, setCarpetaRecienCreada] = useState<string | null>(null);
+
+  /**
+   * «Nota nueva» de Cmd+N: junto a la nota visible si es de la cámara (así los
+   * capítulos de «Libro I» quedan juntos) o, si no, en la cámara misma.
+   */
   const pedirNotaNueva = () => {
     if (!carpetaDeLaCamara) return notas.abrirNotaEnBlanco();
     const rutaDeLaNotaVisible = notaVisible.rutaDelArchivo;
     const laNotaVisibleEsDeLaCamara = rutaDeLaNotaVisible && estaEnLaCamara(rutaDeLaNotaVisible, carpetaDeLaCamara, laCamaraEsLaEntrada);
-    setCarpetaParaLaNotaNueva(laNotaVisibleEsDeLaCamara ? carpetaQueContieneA(rutaDeLaNotaVisible) : carpetaDeLaCamara);
+    setCreacionPedida({ queSeCrea: "nota", carpetaDondeCrearla: laNotaVisibleEsDeLaCamara ? carpetaQueContieneA(rutaDeLaNotaVisible) : carpetaDeLaCamara });
   };
 
   useAtajosDeTeclado(
@@ -180,10 +186,25 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   const nombreDeLaNotaVisible = notaVisible.rutaDelArchivo ? nombreDelArchivo(notaVisible.rutaDelArchivo) : textosDeLaInterfaz.sinTitulo;
   const notaVisibleEsperaQueLaGuarden = esperaQueLaGuarden(notaVisible);
 
+  // Sin el menú de clic derecho del sistema (que en la ventana solo ofrece «Recargar» o
+  // «Inspeccionar»): la barra lateral tiene el suyo (`MenuContextual`). Se deja en el editor y en
+  // los campos de texto, donde trae cortar, copiar, pegar y las sugerencias del corrector.
+  useEffect(() => {
+    const alPedirMenuDelSistema = (evento: MouseEvent) => {
+      const dondeSeHizoClic = evento.target instanceof Element ? evento.target : null;
+      if (!dondeSeHizoClic?.closest(".cm-editor, input, textarea")) evento.preventDefault();
+    };
+    window.addEventListener("contextmenu", alPedirMenuDelSistema);
+    return () => window.removeEventListener("contextmenu", alPedirMenuDelSistema);
+  }, []);
+
   // El título de la ventana (visible en Mission Control y el Dock) muestra la nota y si está sin guardar.
   useEffect(() => {
     getCurrentWindow().setTitle(`${notaVisibleEsperaQueLaGuarden ? "• " : ""}${nombreDeLaNotaVisible}`).catch(() => {});
   }, [nombreDeLaNotaVisible, notaVisibleEsperaQueLaGuarden]);
+
+  /** Ancho de la barra lateral (el panel) en píxeles. */
+  const anchoDelPanel = ajustes.ancho_de_la_barra_lateral ?? ANCHO_DE_LA_BARRA_POR_DEFECTO;
 
   /** Devuelve el foco al editor al cerrar una ventanita. */
   const enfocarElEditor = () => controlDelEditor.current?.enfocar();
@@ -197,12 +218,9 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
 
   return (
     <main className="app">
-      <BarraSuperior
-        barraLateralVisible={barraLateralVisible}
-        alMostrarUOcultarBarraLateral={() => setBarraLateralVisible((visible) => !visible)}
-        alPedirNotaNueva={pedirNotaNueva}
-        alPedirCamaraNueva={() => setCavandoCamaraNueva(true)}
-      />
+      {/* Franja superior que reemplaza la barra de título nativa (oculta en tauri.conf.json):
+          deja espacio a los botones de la ventana y permite arrastrarla. */}
+      <div className="arrastre" data-tauri-drag-region />
       <div className="cuerpo">
         {barraLateralVisible && (
           <BarraLateral
@@ -218,7 +236,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
             idNotaVisible={notaVisible.id}
             titulosDeLaNotaVisible={titulosDeLaNotaVisible}
             indiceDelTituloConElCursor={indiceDelTituloEnLaPosicion(titulosDeLaNotaVisible, posicionDelCursor.current)}
-            anchoEnPixeles={ajustes.ancho_de_la_barra_lateral ?? ANCHO_DE_LA_BARRA_POR_DEFECTO}
+            anchoEnPixeles={anchoDelPanel}
             alCambiarAncho={(anchoEnPixeles) => cambiarAjustes({ ancho_de_la_barra_lateral: anchoEnPixeles })}
             alMostrarNotaAbierta={notas.mostrarNotaAbierta}
             alAbrirNotaDeArchivo={(rutaDelArchivo) => ejecutarMostrandoErrores(notas.abrirNotaDeArchivo(rutaDelArchivo))}
@@ -231,6 +249,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
             alCambiarIconoDeFijado={cambiarIconoDeFijado}
             alAbrirCamara={(nombreDeLaCamara) => ejecutarMostrandoErrores(abrirCamara(nombreDeLaCamara))}
             alPedirCamaraNueva={() => setCavandoCamaraNueva(true)}
+            alPedirCrear={(queSeCrea, carpetaDondeCrearla) => setCreacionPedida({ queSeCrea, carpetaDondeCrearla })}
+            carpetaRecienCreada={carpetaRecienCreada}
           />
         )}
         <Editor
@@ -284,20 +304,22 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           alCerrar={faltaElegirLaCamara ? undefined : () => setBienvenidaPedida(false)}
         />
       )}
-      {carpetaParaLaNotaNueva && carpetaDeLaCamara && !bienvenidaVisible && (
-        <NuevaNota
-          carpetaDondeCrearla={carpetaParaLaNotaNueva}
-          lugarVisible={lugarVisibleDentroDeLaCamara(carpetaParaLaNotaNueva)}
-          alCrearNota={async (rutaDeLaNota) => {
-            setCarpetaParaLaNotaNueva(null);
-            await notas.abrirNotaDeArchivo(rutaDeLaNota).catch(mostrarError);
-            // La nota nueva aparece en el árbol; si es la primera suelta en la raíz, también la «Entrada».
+      {creacionPedida && carpetaDeLaCamara && !bienvenidaVisible && (
+        <NuevaNotaOCarpeta
+          queSeCrea={creacionPedida.queSeCrea}
+          carpetaDondeCrearla={creacionPedida.carpetaDondeCrearla}
+          lugarVisible={lugarVisibleDentroDeLaCamara(creacionPedida.carpetaDondeCrearla)}
+          alCrear={async (rutaCreada) => {
+            setCreacionPedida(null);
+            if (creacionPedida.queSeCrea === "carpeta") setCarpetaRecienCreada(rutaCreada);
+            else await notas.abrirNotaDeArchivo(rutaCreada).catch(mostrarError);
+            // Lo nuevo aparece en el árbol; una nota suelta en la raíz también hace aparecer la «Entrada».
             releerArbolDeLaCamara();
             void releerCamarasDelHormiguero();
             enfocarElEditor();
           }}
           alCerrar={() => {
-            setCarpetaParaLaNotaNueva(null);
+            setCreacionPedida(null);
             enfocarElEditor();
           }}
         />

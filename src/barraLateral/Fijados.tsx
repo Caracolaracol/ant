@@ -114,8 +114,8 @@ export function Fijados({
           globoConElNombre.ocultarGlobo();
           const { clientX: x, clientY: y } = evento;
           barra.abrirMenuContextual(evento, [
-            { texto: textosDeLaInterfaz.cambiarIcono, alElegir: () => setEleccionDeIcono({ x, y, clave: fijado.clave, iconoActual: iconoDelFijado }) },
-            { texto: textosDeLaInterfaz.quitarFijado, alElegir: () => alQuitarFijado(fijado.clave) },
+            { texto: textosDeLaInterfaz.cambiarIcono, icono: "palette", alElegir: () => setEleccionDeIcono({ x, y, clave: fijado.clave, iconoActual: iconoDelFijado }) },
+            { texto: textosDeLaInterfaz.quitarFijado, icono: "pin-off", alElegir: () => alQuitarFijado(fijado.clave) },
           ]);
         }}
       >

@@ -85,11 +85,10 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     id fijo por ruta (`idDeNotaConArchivo`), así el editor las reconoce al volver a abrirlas.
   - `src/useAtajosDeTeclado.ts` — Cmd+N (ventanita «Nota nueva»), Cmd+O, Cmd+S, Cmd+Shift+S,
     Cmd+Shift+] / [ y `Cmd+\`.
-- `src/BarraSuperior.tsx` — franja de arriba (reemplaza la barra de título; arrastra la ventana)
-  con tres botones de icono a la altura de los de la ventana: mostrar u ocultar el panel, nota
-  nueva y cámara nueva. En macOS deja 78 px a la izquierda para cerrar/minimizar/maximizar.
-- `src/notasAbiertas/NuevaNota.tsx` — ventanita «Nota nueva»: pide el nombre y crea el archivo
-  vacío (`crear_nota_nueva`) junto a la nota visible si es de la cámara, o en la cámara.
+- `src/hormigueros/NuevaNotaOCarpeta.tsx` — ventanita «Nota nueva» o «Carpeta nueva»: pide el
+  nombre y crea la nota vacía (`crear_nota_nueva`) o la carpeta (`crear_carpeta_nueva`), sin pisar
+  nada. La nota de Cmd+N va junto a la nota visible si es de la cámara, o en la
+  cámara; con clic derecho, donde se pidió.
 - `src/BarraDeEstado.tsx` — nombre de la nota visible y conteo de palabras, líneas y caracteres
   (o el último error); el conteo está en `src/conteoDelTexto.ts`.
 - **Hormiguero y cámaras**: el hormiguero es una sola carpeta con todas las notas del usuario (lo
@@ -98,7 +97,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   barra lateral, los fijados, el diario (`Daily/`) y «Compilar y exportar» trabajan sobre la cámara
   abierta (`Ajustes.camara_abierta`, guardada por nombre, no por ruta). Se cambia de cámara con el
   selector de arriba de la barra lateral (o en Ajustes → General, donde también se cambia de
-  hormiguero) y se cava una con el botón de arriba, File → New Chamber… (Cmd+Shift+N) o desde
+  hormiguero) y se cava una desde el selector, File → New Chamber… (Cmd+Shift+N) o desde
   ahí. Las notas sueltas en la raíz del hormiguero son la **Entrada** (`CAMARA_DE_ENTRADA = "."`,
   la primera de la lista): una cámara más que solo aparece mientras haya notas sueltas; su árbol
   son solo esas notas, sin diario, y lo de las subcarpetas es de las otras cámaras
@@ -132,7 +131,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   separadoras. De arriba abajo: el selector de cámaras (`SelectorDeCamara.tsx`, el nombre de la
   abierta; al tocarlo, la lista para cambiar y «Cámara nueva…», con `MenuContextual`), el
   calendario si hay modo diario, los fijados, «Abiertas» (notas fuera de la cámara o nuevas ya con
-  algo escrito) y el árbol de la cámara. Bajo la nota visible, sus títulos.
+  algo escrito) y el árbol de la cámara. Bajo la nota visible, sus títulos. Clic derecho en una
+  nota o carpeta: nota nueva y carpeta nueva (junto a ella o dentro), fijar y mostrar en su
+  carpeta; en el espacio libre, crear en la cámara (en la Entrada no hay carpeta nueva).
   - `BarraLateral.tsx` — junta las secciones y provee `ContextoDeLaBarraLateral`
     (`contextoDeLaBarraLateral.ts`): nota visible, carpetas desplegadas, qué está fijado, menú de
     clic derecho… que leen las filas con `useBarraLateral()`.
@@ -150,8 +151,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     invisible, puntero `col-resize`); se guarda en `Ajustes.ancho_de_la_barra_lateral` al soltar.
   `prueba/barra.html` la muestra con fijados de ejemplo (y los Ajustes, `?ajustes`).
 - `src/iconos.ts` — iconos que se pueden elegir para los fijados: una selección de Lucide
-  (ISC) copiada aquí, por grupos, más los de los botones (fuera de los grupos); `src/Icono.tsx`
-  los dibuja.
+  (ISC) copiada aquí, por grupos, más los de los menús (fuera de los grupos);
+  `src/Icono.tsx` los dibuja.
 - `src/diario.ts` — fechas `AAAA-MM-DD`, título inicial de cada nota diaria, días con nota
   (desde el árbol) y llamada a `abrir_o_crear_nota_del_dia`. Las notas diarias van en `Daily/` de la cámara abierta.
 - `src/idioma.tsx` — textos de la interfaz en inglés (por defecto) y español. Los componentes
@@ -160,8 +161,10 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/colores.ts` — variables de color que se pueden cambiar, temas listos (`TEMAS`; el primero,
   «Ant», es el de por defecto y el de `App.css`) y
   `aplicarColores`, que `main.tsx` llama al abrir la app y al cambiar los ajustes.
-- `src/MenuContextual.tsx` — menú de clic derecho propio (se cierra con clic fuera, scroll o
-  Escape); también la lista del selector de cámaras (opciones con ✓ y separadas).
+- `src/MenuContextual.tsx` — menú de clic derecho propio, con diseño de Ant: opciones con icono o
+  ✓, separadas en grupos, ↑ ↓ y Enter, sin salirse de la ventana; se cierra con clic fuera,
+  scroll o Escape. También es la lista del selector de cámaras. `App` bloquea el menú del sistema
+  salvo en el editor y los campos de texto (ahí trae cortar, copiar, pegar y el corrector).
 - `src/titulosDeLaNota.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de
   código) y dice en qué título está el cursor.
 - `src/arbolDeCarpetas.ts` — tipo `EntradaDelArbol` y llamada a `leer_arbol_de_carpeta`;
@@ -233,7 +236,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   `guardar_datos_de_la_camara`: el archivo de cada cámara en `.ant/camaras/` del hormiguero (ver
   «Carpeta `.ant/`» arriba), con tests.
 - `src-tauri/src/carpeta.rs` — `leer_arbol_de_carpeta`: árbol de notas (.md, .markdown, .txt),
-  sin ocultas, `node_modules` ni `target`, omitiendo carpetas sin notas (`EntradaDelArbol`, en
+  sin ocultas, `node_modules` ni `target`, omitiendo carpetas sin notas salvo las del todo vacías
+  (una recién creada tiene que verse) (`EntradaDelArbol`, en
   camelCase hacia la interfaz), o solo las notas sueltas (`solo_notas_sueltas`, la «Entrada»).
   `listar_camaras`: las carpetas de primer nivel del hormiguero, aunque estén vacías, y antes
   «.» si hay notas sueltas en la raíz. `crear_carpeta_nueva`: crea la carpeta del hormiguero o de
@@ -297,9 +301,9 @@ Mantener esta sección al día cuando se agreguen carpetas o módulos.
 - Simple y minimalista: la ventana principal es para escribir. Lo que no es escribir (cambiar
   de hormiguero, opciones, modos) va en Ajustes o en el menú, no como botones en la barra
   lateral, el editor o la barra de estado. No agregar barras de herramientas.
-- Excepciones pedidas a propósito: los tres botones chicos de la franja de arriba, junto a los de
-  la ventana (panel, nota nueva, cámara nueva; `BarraSuperior.tsx`), y el selector de cámaras
-  arriba de la barra lateral. No sumar más sin pedirlo.
+- Excepción pedida a propósito: el selector de cámaras arriba de la barra lateral. Los botones
+  que se probaron en la franja de arriba se quitaron a pedido: crear notas y carpetas va con
+  Cmd+N y el clic derecho. No sumar botones sin pedirlo.
 
 ## Nombres en el código
 

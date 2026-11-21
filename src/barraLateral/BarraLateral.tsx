@@ -15,16 +15,19 @@
 // Bajo la nota visible aparecen sus títulos (`#`, `##`, …) para saltar a ellos, como en Left.
 // El borde derecho no se ve, pero al pasar el mouse el puntero cambia a ↔ y arrastrándolo se
 // ensancha o achica la barra (`useArrastreDelBorde`; doble clic vuelve al ancho por defecto).
+// Clic derecho (menú propio, `MenuContextual`): en una nota o carpeta, crear una nota o carpeta
+// junto a ella o dentro, fijarla y mostrarla en su carpeta; en el espacio libre, crear en la cámara.
 // Lo que comparten las filas (nota visible, carpetas desplegadas, menú…) va por
 // `ContextoDeLaBarraLateral`.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EntradaDelArbol, carpetasQueContienenA, estaDentroDe, estaEnLaCamara } from "../arbolDeCarpetas";
+import { EntradaDelArbol, carpetaQueContieneA, carpetasQueContienenA, estaDentroDe, estaEnLaCamara } from "../arbolDeCarpetas";
 import { diaDeLaNotaDiaria, diasQueTienenNota, buscarCarpetaDelDiario, rutaDeLaCarpetaDelDiario } from "../diario";
 import { useTextos } from "../idioma";
 import type { TituloDeLaNota } from "../titulosDeLaNota";
 import { MenuContextual, OpcionDelMenu } from "../MenuContextual";
-import { nombreDelArchivo } from "../archivosDeNotas";
+import { mostrarArchivoEnSuCarpeta, nombreDelArchivo } from "../archivosDeNotas";
+import type { QueSeCrea } from "../hormigueros/NuevaNotaOCarpeta";
 import type { NotaAbierta } from "../notasAbiertas/notaAbierta";
 import { Calendario } from "./Calendario";
 import { ContextoDeLaBarraLateral, DatosDeLaBarraLateral } from "./contextoDeLaBarraLateral";
@@ -74,6 +77,10 @@ interface Props {
   alCambiarIconoDeFijado(clave: string, icono: string | null): void;
   alAbrirCamara(nombreDeLaCamara: string): void;
   alPedirCamaraNueva(): void;
+  /** Pide crear una nota o carpeta dentro de `carpetaDondeCrearla` (abre la ventanita del nombre). */
+  alPedirCrear(queSeCrea: QueSeCrea, carpetaDondeCrearla: string): void;
+  /** Carpeta recién creada: se despliega (y las que la contienen) para que se vea. */
+  carpetaRecienCreada: string | null;
 }
 
 export function BarraLateral(props: Props) {
@@ -99,6 +106,14 @@ export function BarraLateral(props: Props) {
       carpetasQueLaContienen.every((carpeta) => desplegadas.has(carpeta)) ? desplegadas : new Set([...desplegadas, ...carpetasQueLaContienen]),
     );
   }, [carpetaDeLaCamara, rutaDeLaNotaVisible]);
+
+  // Al crear una carpeta, se despliegan ella y las que la contienen, para que se vea en el árbol.
+  const { carpetaRecienCreada } = props;
+  useEffect(() => {
+    if (!carpetaDeLaCamara || !carpetaRecienCreada) return;
+    const carpetasParaDesplegar = [carpetaRecienCreada, ...carpetasQueContienenA(carpetaRecienCreada, carpetaDeLaCamara)];
+    setCarpetasDesplegadas((desplegadas) => new Set([...desplegadas, ...carpetasParaDesplegar]));
+  }, [carpetaDeLaCamara, carpetaRecienCreada]);
 
   /** Despliega o pliega una carpeta. */
   const desplegarOPlegarCarpeta = useCallback((rutaDeLaCarpeta: string) => {
@@ -137,6 +152,27 @@ export function BarraLateral(props: Props) {
     nota.rutaDelArchivo ? !esDeLaCamara(nota.rutaDelArchivo) : nota.ultimoTextoConocido || nota.tieneCambiosSinGuardar,
   );
 
+  /** Opciones del clic derecho para fijar algo, o para quitarlo si ya está fijado. */
+  function opcionesParaFijarOQuitar(clave: string): OpcionDelMenu[] {
+    return props.clavesDeFijados.includes(clave)
+      ? [{ texto: textosDeLaInterfaz.quitarFijado, icono: "pin-off", alElegir: () => props.alQuitarFijado(clave) }]
+      : [{ texto: textosDeLaInterfaz.fijarArriba, icono: "pin", alElegir: () => props.alFijar(clave) }];
+  }
+
+  /**
+   * Opciones del clic derecho para crear una nota o carpeta en `carpetaDondeCrear`. En la
+   * «Entrada» no se crean carpetas: una carpeta en la raíz del hormiguero sería otra cámara.
+   */
+  function opcionesParaCrearEn(carpetaDondeCrear: string): OpcionDelMenu[] {
+    const opciones: OpcionDelMenu[] = [
+      { texto: textosDeLaInterfaz.notaNuevaMenu, icono: "file-plus", alElegir: () => props.alPedirCrear("nota", carpetaDondeCrear) },
+    ];
+    if (!laCamaraEsLaEntrada) {
+      opciones.push({ texto: textosDeLaInterfaz.carpetaNuevaMenu, icono: "folder-plus", alElegir: () => props.alPedirCrear("carpeta", carpetaDondeCrear) });
+    }
+    return opciones;
+  }
+
   // Lo que comparten las filas del árbol y los fijados.
   const datosCompartidos: DatosDeLaBarraLateral = {
     idNotaVisible,
@@ -156,10 +192,13 @@ export function BarraLateral(props: Props) {
       evento.stopPropagation();
       setMenuContextual({ x: evento.clientX, y: evento.clientY, opciones });
     },
-    opcionesParaFijarOQuitar: (clave) =>
-      props.clavesDeFijados.includes(clave)
-        ? [{ texto: textosDeLaInterfaz.quitarFijado, alElegir: () => props.alQuitarFijado(clave) }]
-        : [{ texto: textosDeLaInterfaz.fijarArriba, alElegir: () => props.alFijar(clave) }],
+    opcionesParaFijarOQuitar,
+    opcionesDeUnaEntrada: (ruta, esCarpeta) => [
+      // Dentro de la carpeta, o junto a la nota.
+      ...opcionesParaCrearEn(esCarpeta ? ruta : carpetaQueContieneA(ruta)),
+      ...opcionesParaFijarOQuitar(ruta).map((opcion, i) => (i === 0 ? { ...opcion, vaSeparadaDeLaAnterior: true } : opcion)),
+      { texto: textosDeLaInterfaz.mostrarEnFinder, icono: "folder-open", alElegir: () => void mostrarArchivoEnSuCarpeta(ruta).catch(() => {}) },
+    ],
     alAbrirNotaDeArchivo: props.alAbrirNotaDeArchivo,
     alCerrarNota: props.alCerrarNota,
     alSaltarATitulo: props.alSaltarATitulo,
@@ -168,7 +207,12 @@ export function BarraLateral(props: Props) {
   return (
     <ContextoDeLaBarraLateral.Provider value={datosCompartidos}>
       <nav className="barra" ref={elementoDeLaBarra} style={{ width: props.anchoEnPixeles }}>
-        <div className="barra-contenido">
+        {/* Clic derecho en el espacio libre: crear una nota o carpeta en la cámara. Las filas
+            tienen su propio menú (y detienen el evento). */}
+        <div
+          className="barra-contenido"
+          onContextMenu={(evento) => carpetaDeLaCamara && datosCompartidos.abrirMenuContextual(evento, opcionesParaCrearEn(carpetaDeLaCamara))}
+        >
           {carpetaDeLaCamara && props.nombreDeLaCamaraAbierta && (
             <SelectorDeCamara
               nombreDeLaCamaraAbierta={props.nombreDeLaCamaraAbierta}

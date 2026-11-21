@@ -42,35 +42,6 @@ body,
 .arrastre {
   height: 28px;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding-left: 8px;
-}
-
-/* En macOS los botones cerrar/minimizar/maximizar ocupan los primeros ~70 px de la franja. */
-.arrastre.con-botones-de-mac {
-  padding-left: 78px;
-}
-
-/* Botones de la franja (panel, nota nueva, cámara nueva): solo el icono, tenue hasta pasar el mouse. */
-.barra-superior-boton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 5px;
-  background: none;
-  color: var(--tenue);
-  cursor: pointer;
-}
-
-.barra-superior-boton:hover {
-  color: var(--texto);
-  background: var(--coincidencia);
 }
 
 /* Fila central: barra lateral a la izquierda y editor ocupando el resto. */
@@ -459,36 +430,59 @@ body,
   border-color: var(--acento);
 }
 
-/* Menú de clic derecho de la barra lateral. */
+/* Menú de clic derecho propio de Ant (MenuContextual.tsx), también la lista del selector de cámaras. */
 .menu-contextual {
   position: fixed;
-  z-index: 10;
-  min-width: 150px;
-  padding: 4px;
+  z-index: 50;
+  min-width: 196px;
+  padding: 5px;
   border: 1px solid var(--seleccion);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--fondo-bajo);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.03) inset;
   font-family: var(--fuente);
   font-size: 12px;
+  line-height: 1;
   color: var(--texto);
+  user-select: none;
+  animation: menu-aparece 90ms ease-out;
 }
 
+/* Aparece con un leve desplazamiento hacia abajo, sin demorar el uso. */
+@keyframes menu-aparece {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+/* Cada opción: icono tenue a la izquierda y el texto. La activa (mouse o flechas) se marca con el
+   fondo de la selección y el icono en el color de acento. */
 .menu-opcion {
-  padding: 4px 10px;
-  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 28px;
+  padding: 0 12px 0 9px;
+  border-radius: 6px;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.menu-opcion:hover {
+.menu-opcion.activa {
   background: var(--seleccion);
+  color: var(--titulo);
 }
 
-/* Opción con lugar para la marca ✓ (las cámaras del selector), y la línea que separa un grupo. */
-.menu-opcion-marca {
+.menu-opcion-icono {
   display: inline-flex;
-  width: 18px;
-  vertical-align: -1px;
+  flex-shrink: 0;
+  width: 14px;
+  color: var(--tenue);
+}
+
+.menu-opcion.activa .menu-opcion-icono,
+.menu-opcion.marcada .menu-opcion-icono {
   color: var(--acento);
 }
 
@@ -496,6 +490,7 @@ body,
   font-weight: 700;
 }
 
+/* Línea fina que separa un grupo de opciones del anterior. */
 .menu-opcion.separada {
   position: relative;
   margin-top: 9px;
@@ -505,8 +500,8 @@ body,
   content: "";
   position: absolute;
   top: -5px;
-  left: 6px;
-  right: 6px;
+  left: 4px;
+  right: 4px;
   border-top: 1px solid var(--seleccion);
 }
 
