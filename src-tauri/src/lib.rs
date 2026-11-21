@@ -1,6 +1,6 @@
 // Núcleo nativo de la app: arma la aplicación Tauri, registra los plugins, el menú y los
-// comandos que la interfaz (React) llama para leer y guardar notas, ajustes, hormigueros
-// (carpetas), notas diarias y los archivos que genera «Compilar y exportar» (Word y PDF).
+// comandos que la interfaz (React) llama para leer y guardar notas, ajustes, el hormiguero
+// y sus cámaras (carpetas), notas diarias y los archivos que genera «Compilar y exportar» (Word y PDF).
 
 mod ajustes;
 mod carpeta;
@@ -140,7 +140,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         // El menú nace en el idioma guardado; `guardar_ajustes` lo rehace si después cambia.
         .menu(|app| menu::crear(app, &ajustes::leer_ajustes(app.clone()).idioma))
-        // Ajustes, bienvenida, hormiguero nuevo y compilar viven en la ventana principal: se la
+        // Ajustes, bienvenida, cámara nueva y compilar viven en la ventana principal: se la
         // trae al frente y se le avisa con el evento del ítem.
         .on_menu_event(|app, evento_del_menu| {
             if let Some((_, nombre_del_evento)) = menu::EVENTOS.iter().find(|(id_del_item, _)| evento_del_menu.id() == *id_del_item) {
@@ -158,7 +158,8 @@ pub fn run() {
             ajustes::leer_ajustes,
             ajustes::guardar_ajustes,
             carpeta::leer_arbol_de_carpeta,
-            carpeta::crear_carpeta_de_hormiguero,
+            carpeta::crear_carpeta_nueva,
+            carpeta::listar_camaras,
             salir,
             diario::abrir_o_crear_nota_del_dia
         ])

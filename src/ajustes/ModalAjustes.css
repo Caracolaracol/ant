@@ -59,16 +59,16 @@
   color: var(--tenue);
 }
 
-/* Lista de hormigueros: nombre y ruta (cortada con «…» si es larga) y sus botones. El abierto
-   lleva el borde del color de acento. */
-.ajuste-hormigueros {
+/* El hormiguero y la lista de cámaras: nombre, ruta (cortada con «…» si es larga) y botones. La
+   cámara abierta lleva el borde del color de acento. */
+.ajuste-camaras {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-bottom: 12px;
 }
 
-.ajuste-hormiguero {
+.ajuste-camara {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -78,22 +78,22 @@
   background: var(--fondo-bajo);
 }
 
-.ajuste-hormiguero.actual {
+.ajuste-camara.actual {
   border-color: var(--acento);
 }
 
-.ajuste-hormiguero-nombre {
+.ajuste-camara-nombre {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
-.ajuste-hormiguero-nombre b {
+.ajuste-camara-nombre b {
   color: var(--titulo);
 }
 
-.ajuste-hormiguero-nombre code {
+.ajuste-camara-nombre code {
   font-size: 11px;
   overflow: hidden;
   white-space: nowrap;
@@ -102,13 +102,13 @@
   text-align: left;
 }
 
-.ajuste-hormiguero-abierto {
-  padding: 0 6px;
+.ajuste-camara-abierta {
+  padding: 7px 6px; /* del alto de los botones, así todas las filas miden lo mismo */
   font-size: 12px;
   color: var(--acento);
 }
 
-.ajuste-hormiguero button,
+.ajuste-camara button,
 .ajuste-boton,
 .ajuste-select {
   padding: 6px 12px;
@@ -120,7 +120,7 @@
   cursor: pointer;
 }
 
-.ajuste-hormiguero button:hover,
+.ajuste-camara button:hover,
 .ajuste-boton:hover,
 .ajuste-select:hover {
   border-color: var(--acento);

@@ -1,4 +1,5 @@
-/* Formulario para cavar un hormiguero (ElegirHormiguero) y la ventanita «Hormiguero nuevo».
+/* Formularios para cavar el hormiguero (ElegirHormiguero) y una cámara (ElegirCamara), y la
+   ventanita «Cámara nueva». Los dos formularios comparten las clases `elegir-hormiguero-…`.
    Toma los colores de las variables que lo rodean: las de App.css en la ventana principal, y
    las de la tierra en la bienvenida (Bienvenida.css las redefine). */
 
@@ -60,7 +61,8 @@
 }
 
 .elegir-hormiguero-donde button,
-.elegir-hormiguero-existente {
+.elegir-hormiguero-existente,
+.elegir-camara-existentes button {
   padding: 8px 12px;
   border: 1px solid var(--seleccion);
   border-radius: 7px;
@@ -71,7 +73,8 @@
 }
 
 .elegir-hormiguero-donde button:hover,
-.elegir-hormiguero-existente:hover:not(:disabled) {
+.elegir-hormiguero-existente:hover:not(:disabled),
+.elegir-camara-existentes button:hover:not(:disabled) {
   border-color: var(--acento);
 }
 
@@ -87,9 +90,41 @@
 }
 
 .elegir-hormiguero-cavar:disabled,
-.elegir-hormiguero-existente:disabled {
+.elegir-hormiguero-existente:disabled,
+.elegir-camara-existentes button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Ejemplos de nombres de cámaras: al tocar uno, pasa al campo del nombre. */
+.elegir-camara-ejemplos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -4px;
+}
+
+.elegir-camara-ejemplos button {
+  padding: 3px 10px;
+  border: 1px dashed var(--seleccion);
+  border-radius: 999px;
+  background: none;
+  color: var(--tenue);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.elegir-camara-ejemplos button:hover {
+  border-color: var(--acento);
+  color: var(--texto);
+}
+
+/* Cámaras que ya tiene el hormiguero, para abrir una. */
+.elegir-camara-existentes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 /* «o», entre dos líneas. */
@@ -114,7 +149,7 @@
   color: var(--acento);
 }
 
-/* Ventanita «Hormiguero nuevo». */
+/* Ventanita «Cámara nueva». */
 .nuevo-hormiguero {
   width: min(420px, 100%);
 }

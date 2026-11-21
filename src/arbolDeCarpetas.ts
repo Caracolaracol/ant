@@ -1,5 +1,5 @@
 // Árbol de carpetas y notas desde la interfaz: le pide a Rust (`src-tauri/src/carpeta.rs`) el
-// árbol de subcarpetas y notas del hormiguero abierto, que muestra la barra lateral, y tiene las
+// árbol de subcarpetas y notas de la cámara abierta, que muestra la barra lateral, y tiene las
 // utilidades de rutas que usa el resto de la app.
 
 import { invoke } from "@tauri-apps/api/core";
@@ -27,17 +27,17 @@ export function estaDentroDe(ruta: string, rutaDeLaCarpeta: string): boolean {
 }
 
 /**
- * Devuelve las carpetas que contienen a `ruta` dentro de `carpetaDelHormiguero`, de la más honda
+ * Devuelve las carpetas que contienen a `ruta` dentro de `carpetaDeLaCamara`, de la más honda
  * a la más alta (para desplegarlas en el árbol al abrir una nota).
  */
-export function carpetasQueContienenA(ruta: string, carpetaDelHormiguero: string): string[] {
+export function carpetasQueContienenA(ruta: string, carpetaDeLaCamara: string): string[] {
   const carpetasQueLaContienen: string[] = [];
   let rutaActual = ruta;
   for (;;) {
     const posicionDeLaUltimaBarra = Math.max(rutaActual.lastIndexOf("/"), rutaActual.lastIndexOf("\\"));
     if (posicionDeLaUltimaBarra <= 0) break;
     rutaActual = rutaActual.slice(0, posicionDeLaUltimaBarra);
-    if (!estaDentroDe(rutaActual, carpetaDelHormiguero) || rutaActual === sinBarraFinal(carpetaDelHormiguero)) break;
+    if (!estaDentroDe(rutaActual, carpetaDeLaCamara) || rutaActual === sinBarraFinal(carpetaDeLaCamara)) break;
     carpetasQueLaContienen.push(rutaActual);
   }
   return carpetasQueLaContienen;

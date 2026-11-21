@@ -22,9 +22,9 @@ import { crearPdf } from "./pdf";
 import "./Compilar.css";
 
 interface Props {
-  /** Carpeta del hormiguero abierto, o `null` si no hay ninguno. */
-  carpetaDelHormiguero: string | null;
-  arbolDelHormiguero: EntradaDelArbol[];
+  /** Carpeta de la cámara abierta, o `null` si no hay ninguna. */
+  carpetaDeLaCamara: string | null;
+  arbolDeLaCamara: EntradaDelArbol[];
   /** Ruta de la nota visible: su carpeta es la que se propone compilar. */
   rutaDeLaNotaVisible: string | null;
   ajustes: Ajustes;
@@ -64,15 +64,15 @@ function notasDeLasEntradas(entradas: EntradaDelArbol[], rutaQueSeOmite?: string
   );
 }
 
-/** Carpetas que se pueden compilar: la del hormiguero y todas sus subcarpetas (menos `Daily`). */
-function carpetasCompilables(carpetaDelHormiguero: string, arbolDelHormiguero: EntradaDelArbol[]): CarpetaCompilable[] {
-  const rutaDelDiario = buscarCarpetaDelDiario(arbolDelHormiguero)?.ruta;
+/** Carpetas que se pueden compilar: la de la cámara y todas sus subcarpetas (menos `Daily`). */
+function carpetasCompilables(carpetaDeLaCamara: string, arbolDeLaCamara: EntradaDelArbol[]): CarpetaCompilable[] {
+  const rutaDelDiario = buscarCarpetaDelDiario(arbolDeLaCamara)?.ruta;
   const carpetas: CarpetaCompilable[] = [
     {
-      ruta: carpetaDelHormiguero,
-      nombre: nombreDelArchivo(carpetaDelHormiguero),
+      ruta: carpetaDeLaCamara,
+      nombre: nombreDelArchivo(carpetaDeLaCamara),
       nivelDeProfundidad: 0,
-      notas: notasDeLasEntradas(arbolDelHormiguero, rutaDelDiario),
+      notas: notasDeLasEntradas(arbolDeLaCamara, rutaDelDiario),
     },
   ];
   const recorrerSubcarpetas = (entradas: EntradaDelArbol[], nivelDeProfundidad: number) => {
@@ -82,7 +82,7 @@ function carpetasCompilables(carpetaDelHormiguero: string, arbolDelHormiguero: E
       recorrerSubcarpetas(entrada.hijos, nivelDeProfundidad + 1);
     }
   };
-  recorrerSubcarpetas(arbolDelHormiguero, 1);
+  recorrerSubcarpetas(arbolDeLaCamara, 1);
   return carpetas;
 }
 
@@ -97,8 +97,8 @@ const unirCarpetaYNombre = (carpeta: string, nombreDelArchivo: string) =>
 const nombreDeArchivoSeguro = (titulo: string) => titulo.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Ant";
 
 export function Compilar({
-  carpetaDelHormiguero,
-  arbolDelHormiguero,
+  carpetaDeLaCamara,
+  arbolDeLaCamara,
   rutaDeLaNotaVisible,
   ajustes,
   textoDeNotaAbiertaPorRuta,
@@ -109,12 +109,12 @@ export function Compilar({
   const idioma = idiomaValido(ajustes.idioma);
   const opcionesGuardadasPorCarpeta = ajustes.opciones_de_compilacion_por_carpeta;
   const carpetas = useMemo(
-    () => (carpetaDelHormiguero ? carpetasCompilables(carpetaDelHormiguero, arbolDelHormiguero) : []),
-    [carpetaDelHormiguero, arbolDelHormiguero],
+    () => (carpetaDeLaCamara ? carpetasCompilables(carpetaDeLaCamara, arbolDeLaCamara) : []),
+    [carpetaDeLaCamara, arbolDeLaCamara],
   );
 
   // Carpeta propuesta: la de la nota visible (si es una de las que se pueden compilar), si no,
-  // la última que se compiló, y si no, la del hormiguero.
+  // la última que se compiló, y si no, la de la cámara.
   const [rutaDeLaCarpetaElegida, setRutaDeLaCarpetaElegida] = useState(() => {
     const carpetaDeLaNotaVisible = rutaDeLaNotaVisible
       ? carpetas.find((carpeta) => carpeta.ruta === carpetaQueContiene(rutaDeLaNotaVisible))
@@ -282,7 +282,7 @@ export function Compilar({
     <div className="compilar-fondo" onMouseDown={(evento) => evento.target === evento.currentTarget && !estaExportando && alCerrar()}>
       <div className="compilar" role="dialog" aria-label={textosDeLaInterfaz.compilarTitulo}>
         <h1>{textosDeLaInterfaz.compilarTitulo}</h1>
-        {!carpetaDelHormiguero ? (
+        {!carpetaDeLaCamara ? (
           <p className="compilar-ayuda">{textosDeLaInterfaz.compilarSinCarpeta}</p>
         ) : (
           <div className="compilar-columnas">
@@ -391,7 +391,7 @@ export function Compilar({
           <button
             className="principal"
             onClick={exportarLibro}
-            disabled={!carpetaDelHormiguero || !capitulosQueVanEnElLibro.length || estaExportando || textoPorRuta.size === 0}
+            disabled={!carpetaDeLaCamara || !capitulosQueVanEnElLibro.length || estaExportando || textoPorRuta.size === 0}
           >
             {textosDeLaInterfaz.exportar}
           </button>

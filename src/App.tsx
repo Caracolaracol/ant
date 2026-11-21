@@ -1,12 +1,13 @@
 // Ventana principal: la barra lateral, el editor y la barra de estado abajo, como en Left. Este
 // archivo solo junta las piezas; cada una vive en su lugar:
 //   · ajustes: `ajustes/useAjustesGuardados.ts`
-//   · árbol del hormiguero abierto: `hormigueros/useArbolDelHormiguero.ts`
+//   · cámaras del hormiguero: `hormigueros/useCamarasDelHormiguero.ts`; árbol de la cámara
+//     abierta: `hormigueros/useArbolDeLaCamara.ts`
 //   · notas abiertas, guardado automático y cambios hechos fuera de Ant: `notasAbiertas/useNotasAbiertas.ts`
 //   · atajos de teclado: `useAtajosDeTeclado.ts`
 //   · barra lateral: `barraLateral/` · barra de estado: `BarraDeEstado.tsx`
-// Encima se abren, cuando toca: la bienvenida (sin hormigueros, o desde el menú), los Ajustes
-// (Cmd+,), «Hormiguero nuevo» y «Compilar y exportar» (Cmd+Shift+E). Los ítems del menú los maneja
+// Encima se abren, cuando toca: la bienvenida (sin hormiguero o sin cámara, o desde el menú), los
+// Ajustes (Cmd+,), «Cámara nueva» y «Compilar y exportar» (Cmd+Shift+E). Los ítems del menú los maneja
 // Rust, que avisa con un evento (`EVENTOS_DE_RUST`) y aquí se abre lo que corresponda.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,9 +22,10 @@ import { ModalAjustes } from "./ajustes/ModalAjustes";
 import { useAjustesGuardados } from "./ajustes/useAjustesGuardados";
 import { Bienvenida } from "./bienvenida/Bienvenida";
 import { Compilar } from "./compilar/Compilar";
-import { cambiosParaAbrirHormiguero } from "./hormigueros/hormigueros";
-import { NuevoHormiguero } from "./hormigueros/NuevoHormiguero";
-import { useArbolDelHormiguero } from "./hormigueros/useArbolDelHormiguero";
+import { cambiosParaElegirHormiguero, carpetaDeLaCamaraAbierta } from "./hormigueros/hormigueros";
+import { NuevaCamara } from "./hormigueros/NuevaCamara";
+import { useArbolDeLaCamara } from "./hormigueros/useArbolDeLaCamara";
+import { useCamarasDelHormiguero } from "./hormigueros/useCamarasDelHormiguero";
 import { idiomaValido, useTextos } from "./idioma";
 import { extraerTitulosDeLaNota, indiceDelTituloEnLaPosicion } from "./titulosDeLaNota";
 import { nombreDelArchivo } from "./archivosDeNotas";
@@ -48,12 +50,14 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   );
 
   const { ajustes, ajustesVigentes, cambiarAjustes } = useAjustesGuardados(ajustesIniciales, mostrarError);
-  const carpetaDelHormiguero = ajustes.hormiguero_abierto;
-  const { arbolDelHormiguero, releerArbolDelHormiguero } = useArbolDelHormiguero(carpetaDelHormiguero, mostrarError);
+  const carpetaDelHormiguero = ajustes.hormiguero;
+  const { camarasDelHormiguero, releerCamarasDelHormiguero } = useCamarasDelHormiguero(carpetaDelHormiguero);
+  const carpetaDeLaCamara = carpetaDeLaCamaraAbierta(ajustes, camarasDelHormiguero);
+  const { arbolDeLaCamara, releerArbolDeLaCamara } = useArbolDeLaCamara(carpetaDeLaCamara, mostrarError);
   const notas = useNotasAbiertas({
     controlDelEditor,
-    carpetaDelHormigueroAbierto: carpetaDelHormiguero,
-    releerArbolDelHormiguero,
+    carpetaDeLaCamaraAbierta: carpetaDeLaCamara,
+    releerArbolDeLaCamara,
     mostrarError,
   });
   const { notaVisible } = notas;
@@ -70,25 +74,34 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     mostrarError,
   );
 
-  // Lo que se abre encima del editor desde el menú: «Compilar y exportar», Ajustes, «Hormiguero
-  // nuevo» y la bienvenida (que también aparece sola mientras no haya ningún hormiguero).
+  // Lo que se abre encima del editor desde el menú: «Compilar y exportar», Ajustes, «Cámara
+  // nueva» y la bienvenida (que también aparece sola mientras falte el hormiguero o la cámara).
   const [compilarAbierto, setCompilarAbierto] = useState(false);
   const [ajustesAbiertos, setAjustesAbiertos] = useState(false);
-  const [cavandoHormigueroNuevo, setCavandoHormigueroNuevo] = useState(false);
+  const [cavandoCamaraNueva, setCavandoCamaraNueva] = useState(false);
   const [bienvenidaPedida, setBienvenidaPedida] = useState(false);
   useEventoDeRust(EVENTOS_DE_RUST.abrirCompilar, useCallback(() => setCompilarAbierto(true), []));
   useEventoDeRust(EVENTOS_DE_RUST.abrirAjustes, useCallback(() => setAjustesAbiertos(true), []));
-  useEventoDeRust(EVENTOS_DE_RUST.cavarHormigueroNuevo, useCallback(() => setCavandoHormigueroNuevo(true), []));
+  useEventoDeRust(EVENTOS_DE_RUST.cavarCamaraNueva, useCallback(() => setCavandoCamaraNueva(true), []));
   useEventoDeRust(EVENTOS_DE_RUST.abrirBienvenida, useCallback(() => setBienvenidaPedida(true), []));
-  const hayHormigueros = ajustes.hormigueros.length > 0;
-  const bienvenidaVisible = bienvenidaPedida || !hayHormigueros;
+  const faltaElegirLaCamara = !carpetaDeLaCamara;
+  const bienvenidaVisible = bienvenidaPedida || faltaElegirLaCamara;
 
-  /** Abre un hormiguero (y lo suma a la lista si es nuevo); cierra lo que se abrió para cavarlo. */
-  const abrirHormiguero = useCallback((carpetaDelHormigueroElegido: string) => {
-    cambiarAjustes(cambiosParaAbrirHormiguero(ajustesVigentes.current, carpetaDelHormigueroElegido));
-    setCavandoHormigueroNuevo(false);
-    setBienvenidaPedida(false);
+  /** Usa la carpeta elegida en la bienvenida como hormiguero; la cámara se elige en la página siguiente. */
+  const elegirHormiguero = useCallback((carpetaDelHormigueroElegido: string) => {
+    if (carpetaDelHormigueroElegido !== ajustesVigentes.current.hormiguero) cambiarAjustes(cambiosParaElegirHormiguero(carpetaDelHormigueroElegido));
   }, [cambiarAjustes, ajustesVigentes]);
+
+  /**
+   * Abre una cámara (recién cavada o que ya existía) y cierra lo que se abrió para elegirla. Antes
+   * relee la lista de cámaras, así una recién cavada ya está en ella y no parece que falta.
+   */
+  const abrirCamara = useCallback(async (nombreDeLaCamara: string) => {
+    await releerCamarasDelHormiguero();
+    cambiarAjustes({ camara_abierta: nombreDeLaCamara });
+    setCavandoCamaraNueva(false);
+    setBienvenidaPedida(false);
+  }, [cambiarAjustes, releerCamarasDelHormiguero]);
 
   /** Fija una carpeta, nota o capítulo arriba de la barra lateral. */
   const fijar = useCallback((clave: string) => {
@@ -149,8 +162,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
       <div className="cuerpo">
         {barraLateralVisible && (
           <BarraLateral
-            carpetaDelHormiguero={carpetaDelHormiguero}
-            arbolDelHormiguero={arbolDelHormiguero}
+            carpetaDeLaCamara={carpetaDeLaCamara}
+            arbolDeLaCamara={arbolDeLaCamara}
             clavesDeFijados={ajustes.fijados}
             iconosElegidosPorFijado={ajustes.iconos_de_fijados}
             modoDiarioActivo={ajustes.modo_diario}
@@ -180,8 +193,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
       </div>
       {compilarAbierto && !bienvenidaVisible && (
         <Compilar
-          carpetaDelHormiguero={carpetaDelHormiguero}
-          arbolDelHormiguero={arbolDelHormiguero}
+          carpetaDeLaCamara={carpetaDeLaCamara}
+          arbolDeLaCamara={arbolDeLaCamara}
           rutaDeLaNotaVisible={notaVisible.rutaDelArchivo}
           ajustes={ajustes}
           textoDeNotaAbiertaPorRuta={notas.textoDeNotaAbiertaPorRuta}
@@ -196,7 +209,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
         <ModalAjustes
           ajustes={ajustes}
           cambiarAjustes={cambiarAjustes}
-          alPedirHormigueroNuevo={() => setCavandoHormigueroNuevo(true)}
+          camarasDelHormiguero={camarasDelHormiguero ?? []}
+          alPedirCamaraNueva={() => setCavandoCamaraNueva(true)}
           alCerrar={() => {
             setAjustesAbiertos(false);
             enfocarElEditor();
@@ -207,11 +221,20 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
         <Bienvenida
           idioma={idiomaValido(ajustes.idioma)}
           alCambiarIdioma={(idiomaElegido) => cambiarAjustes({ idioma: idiomaElegido })}
-          alElegirCarpeta={abrirHormiguero}
-          alCerrar={hayHormigueros ? () => setBienvenidaPedida(false) : undefined}
+          carpetaDelHormiguero={carpetaDelHormiguero}
+          camarasDelHormiguero={camarasDelHormiguero ?? []}
+          alElegirHormiguero={elegirHormiguero}
+          alElegirCamara={abrirCamara}
+          empezarEnLasCamaras={Boolean(carpetaDelHormiguero) && faltaElegirLaCamara}
+          alCerrar={faltaElegirLaCamara ? undefined : () => setBienvenidaPedida(false)}
         />
       )}
-      {cavandoHormigueroNuevo && <NuevoHormiguero alElegirCarpeta={abrirHormiguero} alCerrar={() => setCavandoHormigueroNuevo(false)} />}
+      {cavandoCamaraNueva && carpetaDelHormiguero && !bienvenidaVisible && (
+        <NuevaCamara
+          carpetaDelHormiguero={carpetaDelHormiguero}
+          camarasDelHormiguero={camarasDelHormiguero ?? []}
+          alCavarCamara={abrirCamara} alCerrar={() => setCavandoCamaraNueva(false)} />
+      )}
       <BarraDeEstado
         nombreDeLaNota={nombreDeLaNotaVisible}
         esperaQueLaGuarden={notaVisibleEsperaQueLaGuarden}

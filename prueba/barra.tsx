@@ -1,7 +1,7 @@
 // Página de prueba de la barra lateral con fijados (iconos), y de las ventanitas de Ajustes,
-// «Hormiguero nuevo» y el selector de iconos, fuera de Tauri (`pnpm dev`, luego
+// «Cámara nueva» y el selector de iconos, fuera de Tauri (`pnpm dev`, luego
 // http://localhost:1420/prueba/barra.html). Parámetros: `?es` en español, `?ajustes` abre los
-// Ajustes, `?nuevo` la ventanita «Hormiguero nuevo», `?iconos` el selector de iconos, `?globo`
+// Ajustes, `?nueva` la ventanita «Cámara nueva», `?iconos` el selector de iconos, `?globo`
 // muestra el globo del primer fijado y `?diario` el calendario del modo diario.
 
 import ReactDOM from "react-dom/client";
@@ -11,12 +11,14 @@ import { ModalAjustes } from "../src/ajustes/ModalAjustes";
 import { BarraLateral } from "../src/barraLateral/BarraLateral";
 import type { EntradaDelArbol } from "../src/arbolDeCarpetas";
 import { ElegirIconoDeFijado } from "../src/barraLateral/ElegirIconoDeFijado";
-import { NuevoHormiguero } from "../src/hormigueros/NuevoHormiguero";
+import { NuevaCamara } from "../src/hormigueros/NuevaCamara";
 import { ContextoDeTextos, textosDelIdioma } from "../src/idioma";
 import { extraerTitulosDeLaNota } from "../src/titulosDeLaNota";
 
 const parametrosDeLaDireccion = new URLSearchParams(location.search);
-const base = "/Users/yo/Documents/Novela";
+const hormiguero = "/Users/yo/Documents/Hormiguero";
+const base = `${hormiguero}/Novela`;
+const camaras = ["Novela", "Personal", "Trabajo"];
 const nota = (ruta: string): EntradaDelArbol => ({ nombre: ruta.split("/").pop()!, ruta: `${base}/${ruta}`, esCarpeta: false, hijos: [] });
 const carpeta = (nombre: string, hijos: EntradaDelArbol[]): EntradaDelArbol => ({ nombre, ruta: `${base}/${nombre}`, esCarpeta: true, hijos });
 const arbol: EntradaDelArbol[] = [
@@ -29,8 +31,8 @@ const texto = "# La lluvia\n\nTexto.\n\n## La cueva\n\nMás texto.\n\n## La sali
 const ajustes: Ajustes = {
   ...AJUSTES_POR_DEFECTO,
   idioma: parametrosDeLaDireccion.has("es") ? "es" : "en",
-  hormiguero_abierto: base,
-  hormigueros: [base, "/Users/yo/Documents/Diario", "/Users/yo/Trabajo/Notas"],
+  hormiguero,
+  camara_abierta: "Novela",
   fijados: [`${base}/Libro I`, `${base}/Ideas.md`, `${base}/Libro I/02 - La lluvia.md#La cueva`, `${base}/Personajes`, `${base}/Borrado.md`],
   iconos_de_fijados: { [`${base}/Personajes`]: "drama", [`${base}/Ideas.md`]: "lightbulb" },
 };
@@ -45,8 +47,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <div className="arrastre" />
       <div className="cuerpo">
         <BarraLateral
-          carpetaDelHormiguero={base}
-          arbolDelHormiguero={arbol}
+          carpetaDeLaCamara={base}
+          arbolDeLaCamara={arbol}
           clavesDeFijados={ajustes.fijados}
           iconosElegidosPorFijado={ajustes.iconos_de_fijados}
           modoDiarioActivo={parametrosDeLaDireccion.has("diario")}
@@ -70,8 +72,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       </div>
       <footer className="estado"><span>02 - La lluvia.md</span><span /></footer>
     </main>
-    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} alPedirHormigueroNuevo={nada} alCerrar={nada} />}
-    {parametrosDeLaDireccion.has("nuevo") && <NuevoHormiguero alElegirCarpeta={nada} alCerrar={nada} />}
+    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} camarasDelHormiguero={camaras} alPedirCamaraNueva={nada} alCerrar={nada} />}
+    {parametrosDeLaDireccion.has("nueva") && <NuevaCamara carpetaDelHormiguero={hormiguero} camarasDelHormiguero={camaras} alCavarCamara={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("iconos") && <ElegirIconoDeFijado x={120} y={90} iconoActual="drama" alElegirIcono={nada} alCerrar={nada} />}
   </ContextoDeTextos.Provider>,
 );

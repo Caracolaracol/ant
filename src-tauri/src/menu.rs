@@ -1,7 +1,7 @@
 // Menú de la app (barra de menús de macOS). Reemplaza el menú por defecto de Tauri: así los
 // textos siguen el idioma elegido en Ajustes (inglés por defecto, o español) y Cmd+W ya no
 // cierra la ventana principal (antes se perdía una nota sin guardar sin aviso).
-// Los ítems propios (Ajustes, bienvenida, hormiguero nuevo, compilar) no hacen nada aquí: avisan
+// Los ítems propios (Ajustes, bienvenida, cámara nueva, compilar) no hacen nada aquí: avisan
 // a la ventana principal con un evento (`EVENTOS`) y la interfaz abre lo que corresponda.
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -11,8 +11,8 @@ use tauri::{AppHandle, Runtime};
 pub const ID_AJUSTES: &str = "ajustes";
 /// Identificador del ítem «Bienvenida…» del menú.
 pub const ID_BIENVENIDA: &str = "bienvenida";
-/// Identificador del ítem «Hormiguero nuevo…» del menú.
-pub const ID_HORMIGUERO: &str = "hormiguero";
+/// Identificador del ítem «Cámara nueva…» del menú.
+pub const ID_CAMARA_NUEVA: &str = "camara-nueva";
 /// Identificador del ítem «Compilar y exportar…» del menú.
 pub const ID_COMPILAR: &str = "compilar";
 
@@ -20,7 +20,7 @@ pub const ID_COMPILAR: &str = "compilar";
 pub const EVENTOS: [(&str, &str); 4] = [
     (ID_AJUSTES, "abrir-ajustes"),
     (ID_BIENVENIDA, "abrir-bienvenida"),
-    (ID_HORMIGUERO, "nuevo-hormiguero"),
+    (ID_CAMARA_NUEVA, "nueva-camara"),
     (ID_COMPILAR, "abrir-compilar"),
 ];
 
@@ -34,7 +34,7 @@ fn texto<'a>(idioma: &str, en_ingles: &'a str, en_espanol: &'a str) -> &'a str {
 }
 
 /// Arma el menú en `idioma`: «Ant» (acerca de, bienvenida, ajustes, ocultar, salir), «File»
-/// (hormiguero nuevo, compilar y exportar), «Edit» y «Window».
+/// (cámara nueva, compilar y exportar), «Edit» y «Window».
 /// El menú de edición es necesario en macOS para que copiar, pegar y deshacer funcionen.
 pub fn crear<R: Runtime>(app: &AppHandle<R>, idioma: &str) -> tauri::Result<Menu<R>> {
     // Texto de un ítem predefinido en el idioma elegido (esos ítems lo piden como `Option`).
@@ -63,10 +63,10 @@ pub fn crear<R: Runtime>(app: &AppHandle<R>, idioma: &str) -> tauri::Result<Menu
         ],
     )?;
 
-    let hormiguero = MenuItem::with_id(
+    let camara_nueva = MenuItem::with_id(
         app,
-        ID_HORMIGUERO,
-        texto(idioma, "New Anthill…", "Hormiguero nuevo…"),
+        ID_CAMARA_NUEVA,
+        texto(idioma, "New Chamber…", "Cámara nueva…"),
         true,
         None::<&str>,
     )?;
@@ -77,7 +77,7 @@ pub fn crear<R: Runtime>(app: &AppHandle<R>, idioma: &str) -> tauri::Result<Menu
         true,
         Some("CmdOrCtrl+Shift+E"),
     )?;
-    let menu_archivo = Submenu::with_items(app, texto(idioma, "File", "Archivo"), true, &[&hormiguero, &separador()?, &compilar])?;
+    let menu_archivo = Submenu::with_items(app, texto(idioma, "File", "Archivo"), true, &[&camara_nueva, &separador()?, &compilar])?;
 
     let menu_edicion = Submenu::with_items(
         app,

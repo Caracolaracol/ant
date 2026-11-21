@@ -9,7 +9,7 @@ import { listen } from "@tauri-apps/api/event";
 export const EVENTOS_DE_RUST = {
   abrirAjustes: "abrir-ajustes",
   abrirBienvenida: "abrir-bienvenida",
-  cavarHormigueroNuevo: "nuevo-hormiguero",
+  cavarCamaraNueva: "nueva-camara",
   abrirCompilar: "abrir-compilar",
   antesDeSalir: "antes-de-salir",
 } as const;

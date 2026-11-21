@@ -1,14 +1,14 @@
-// Barra lateral de la ventana principal. Simple a propósito: cambiar de hormiguero o cavar uno
-// nuevo se hace en Ajustes o en el menú, no aquí; y no tiene líneas separadoras, las secciones se
+// Barra lateral de la ventana principal. Simple a propósito: cambiar de cámara o cavar una
+// nueva se hace en Ajustes o en el menú, no aquí; y no tiene líneas separadoras, las secciones se
 // separan solo con espacio. De arriba hacia abajo:
 //   1. El calendario del modo diario si está activo en Ajustes (`Calendario.tsx`), con la nota
 //      diaria abierta debajo. En ese modo la carpeta `Daily` no aparece en el árbol: a las notas
 //      diarias se llega desde el calendario.
 //   2. Los fijados (`Fijados.tsx`): carpetas, notas y capítulos fijados con clic derecho → Fijar
 //      arriba, como una grilla de iconos.
-//   3. «Abiertas»: notas abiertas que no están en el hormiguero (nuevas sin guardar ya con algo
+//   3. «Abiertas»: notas abiertas que no están en la cámara (nuevas sin guardar ya con algo
 //      escrito, o de otro lugar).
-//   4. El hormiguero abierto, con su nombre, como árbol de subcarpetas y notas (`FilasDelArbol.tsx`).
+//   4. La cámara abierta, con su nombre, como árbol de subcarpetas y notas (`FilasDelArbol.tsx`).
 // Bajo la nota visible aparecen sus títulos (`#`, `##`, …) para saltar a ellos, como en Left.
 // El borde derecho no se ve, pero al pasar el mouse el puntero cambia a ↔ y arrastrándolo se
 // ensancha o achica la barra (`useArrastreDelBorde`; doble clic vuelve al ancho por defecto).
@@ -31,10 +31,10 @@ import { interpretarClaveDeFijado } from "./clavesDeFijados";
 import { useArrastreDelBorde } from "./useArrastreDelBorde";
 
 interface Props {
-  /** Carpeta del hormiguero abierto, o `null` si no hay ninguno. */
-  carpetaDelHormiguero: string | null;
-  arbolDelHormiguero: EntradaDelArbol[];
-  /** Claves de todo lo fijado (de los ajustes); solo se muestran las del hormiguero abierto. */
+  /** Carpeta de la cámara abierta, o `null` si no hay ninguna. */
+  carpetaDeLaCamara: string | null;
+  arbolDeLaCamara: EntradaDelArbol[];
+  /** Claves de todo lo fijado (de los ajustes); solo se muestran las de la cámara abierta. */
   clavesDeFijados: string[];
   /** Icono elegido para cada fijado, por su clave. */
   iconosElegidosPorFijado: Record<string, string>;
@@ -65,7 +65,7 @@ interface Props {
 }
 
 export function BarraLateral(props: Props) {
-  const { carpetaDelHormiguero, arbolDelHormiguero, notasAbiertas, idNotaVisible } = props;
+  const { carpetaDeLaCamara, arbolDeLaCamara, notasAbiertas, idNotaVisible } = props;
   const textosDeLaInterfaz = useTextos();
   const notaVisible = notasAbiertas.find((nota) => nota.id === idNotaVisible);
   const rutaDeLaNotaVisible = notaVisible?.rutaDelArchivo ?? null;
@@ -74,17 +74,17 @@ export function BarraLateral(props: Props) {
   const alPresionarElBorde = useArrastreDelBorde(elementoDeLaBarra, props.alCambiarAncho);
 
   // Días con nota en `Daily/`, para marcarlos en el calendario (solo se recalcula si cambia el árbol).
-  const diasConNotaEnElHormiguero = useMemo(() => diasQueTienenNota(arbolDelHormiguero), [arbolDelHormiguero]);
+  const diasConNotaEnLaCamara = useMemo(() => diasQueTienenNota(arbolDeLaCamara), [arbolDeLaCamara]);
 
   // Carpetas desplegadas. Al abrir una nota se despliegan las que la contienen.
   const [carpetasDesplegadas, setCarpetasDesplegadas] = useState<Set<string>>(new Set());
   useEffect(() => {
-    if (!carpetaDelHormiguero || !rutaDeLaNotaVisible) return;
-    const carpetasQueLaContienen = carpetasQueContienenA(rutaDeLaNotaVisible, carpetaDelHormiguero);
+    if (!carpetaDeLaCamara || !rutaDeLaNotaVisible) return;
+    const carpetasQueLaContienen = carpetasQueContienenA(rutaDeLaNotaVisible, carpetaDeLaCamara);
     setCarpetasDesplegadas((desplegadas) =>
       carpetasQueLaContienen.every((carpeta) => desplegadas.has(carpeta)) ? desplegadas : new Set([...desplegadas, ...carpetasQueLaContienen]),
     );
-  }, [carpetaDelHormiguero, rutaDeLaNotaVisible]);
+  }, [carpetaDeLaCamara, rutaDeLaNotaVisible]);
 
   /** Despliega o pliega una carpeta. */
   const desplegarOPlegarCarpeta = useCallback((rutaDeLaCarpeta: string) => {
@@ -99,29 +99,29 @@ export function BarraLateral(props: Props) {
   const [menuContextual, setMenuContextual] = useState<{ x: number; y: number; opciones: OpcionDelMenu[] } | null>(null);
   const cerrarMenuContextual = useCallback(() => setMenuContextual(null), []);
 
-  // Solo cuentan los fijados que están dentro del hormiguero abierto: al cambiar de hormiguero,
+  // Solo cuentan los fijados que están dentro de la cámara abierta: al cambiar de cámara,
   // cada uno muestra los suyos.
-  const fijadosVisibles = carpetaDelHormiguero
-    ? props.clavesDeFijados.map(interpretarClaveDeFijado).filter((fijado) => estaDentroDe(fijado.ruta, carpetaDelHormiguero))
+  const fijadosVisibles = carpetaDeLaCamara
+    ? props.clavesDeFijados.map(interpretarClaveDeFijado).filter((fijado) => estaDentroDe(fijado.ruta, carpetaDeLaCamara))
     : [];
 
   // Con el modo diario activo, la carpeta `Daily` se esconde del árbol y su nota abierta se muestra
   // bajo el calendario. Se usa la carpeta `Daily` que ya exista (aunque esté en minúsculas) o, si
   // no, donde se creará.
   const carpetaDelDiario =
-    props.modoDiarioActivo && carpetaDelHormiguero
-      ? (buscarCarpetaDelDiario(arbolDelHormiguero)?.ruta ?? rutaDeLaCarpetaDelDiario(carpetaDelHormiguero))
+    props.modoDiarioActivo && carpetaDeLaCamara
+      ? (buscarCarpetaDelDiario(arbolDeLaCamara)?.ruta ?? rutaDeLaCarpetaDelDiario(carpetaDeLaCamara))
       : null;
-  const arbolSinElDiario = carpetaDelDiario ? arbolDelHormiguero.filter((entrada) => entrada.ruta !== carpetaDelDiario) : arbolDelHormiguero;
+  const arbolSinElDiario = carpetaDelDiario ? arbolDeLaCamara.filter((entrada) => entrada.ruta !== carpetaDelDiario) : arbolDeLaCamara;
   const notasDiariasAbiertas = carpetaDelDiario
     ? notasAbiertas.filter((nota) => nota.rutaDelArchivo && estaDentroDe(nota.rutaDelArchivo, carpetaDelDiario))
     : [];
 
-  // «Abiertas»: notas fuera del hormiguero. La nota en blanco con que arranca la app no se lista:
+  // «Abiertas»: notas fuera de la cámara. La nota en blanco con que arranca la app no se lista:
   // solo aparece cuando se empieza a escribir en ella.
-  const notasFueraDelHormiguero = notasAbiertas.filter((nota) =>
+  const notasFueraDeLaCamara = notasAbiertas.filter((nota) =>
     nota.rutaDelArchivo
-      ? !carpetaDelHormiguero || !estaDentroDe(nota.rutaDelArchivo, carpetaDelHormiguero)
+      ? !carpetaDeLaCamara || !estaDentroDe(nota.rutaDelArchivo, carpetaDeLaCamara)
       : nota.ultimoTextoConocido || nota.tieneCambiosSinGuardar,
   );
 
@@ -133,9 +133,9 @@ export function BarraLateral(props: Props) {
     ),
     titulosDeLaNotaVisible: props.titulosDeLaNotaVisible,
     indiceDelTituloConElCursor: props.indiceDelTituloConElCursor,
-    // Los títulos de la nota visible se pueden fijar como capítulos si la nota está en el hormiguero.
+    // Los títulos de la nota visible se pueden fijar como capítulos si la nota está en la cámara.
     rutaDeLaNotaVisibleQueSePuedeFijar:
-      rutaDeLaNotaVisible && carpetaDelHormiguero && estaDentroDe(rutaDeLaNotaVisible, carpetaDelHormiguero) ? rutaDeLaNotaVisible : null,
+      rutaDeLaNotaVisible && carpetaDeLaCamara && estaDentroDe(rutaDeLaNotaVisible, carpetaDeLaCamara) ? rutaDeLaNotaVisible : null,
     carpetasDesplegadas,
     desplegarOPlegarCarpeta,
     clavesFijadasVisibles: new Set(fijadosVisibles.map((fijado) => fijado.clave)),
@@ -160,7 +160,7 @@ export function BarraLateral(props: Props) {
           {carpetaDelDiario && (
             <section className="barra-seccion barra-diario">
               <Calendario
-                diasQueTienenNota={diasConNotaEnElHormiguero}
+                diasQueTienenNota={diasConNotaEnLaCamara}
                 diaDeLaNotaVisible={diaDeLaNotaDiaria(rutaDeLaNotaVisible)}
                 alElegirDia={props.alAbrirNotaDelDia}
               />
@@ -178,7 +178,7 @@ export function BarraLateral(props: Props) {
           {fijadosVisibles.length > 0 && (
             <Fijados
               fijadosVisibles={fijadosVisibles}
-              arbolDelHormiguero={arbolDelHormiguero}
+              arbolDeLaCamara={arbolDeLaCamara}
               iconosElegidosPorFijado={props.iconosElegidosPorFijado}
               notaVisible={notaVisible}
               alAbrirCapitulo={props.alAbrirCapitulo}
@@ -186,10 +186,10 @@ export function BarraLateral(props: Props) {
               alCambiarIconoDeFijado={props.alCambiarIconoDeFijado}
             />
           )}
-          {notasFueraDelHormiguero.length > 0 && (
+          {notasFueraDeLaCamara.length > 0 && (
             <section className="barra-seccion">
               <div className="barra-encabezado">{textosDeLaInterfaz.abiertas}</div>
-              {notasFueraDelHormiguero.map((nota) => (
+              {notasFueraDeLaCamara.map((nota) => (
                 <FilaDeNota
                   key={nota.id}
                   nombreVisible={nota.rutaDelArchivo ? nombreDelArchivo(nota.rutaDelArchivo) : textosDeLaInterfaz.sinTitulo}
@@ -200,9 +200,9 @@ export function BarraLateral(props: Props) {
               ))}
             </section>
           )}
-          {carpetaDelHormiguero && (
+          {carpetaDeLaCamara && (
             <section className="barra-seccion">
-              <div className="barra-encabezado" title={carpetaDelHormiguero}>{nombreDelArchivo(carpetaDelHormiguero)}</div>
+              <div className="barra-encabezado" title={carpetaDeLaCamara}>{nombreDelArchivo(carpetaDeLaCamara)}</div>
               {arbolSinElDiario.length ? (
                 <EntradasDelArbol entradas={arbolSinElDiario} nivelDeProfundidad={0} />
               ) : (

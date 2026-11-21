@@ -5,7 +5,7 @@
 //   · Una carpeta fijada se despliega bajo la grilla (una a la vez). Se despliega sola si contiene
 //     la nota visible, porque lo fijado no está en el árbol y la nota no se vería en otro lado.
 //   · Si la nota visible está fijada, su fila y sus títulos van bajo la grilla, por lo mismo.
-//   · Lo que ya no existe en el hormiguero (se borró o movió) se ve atenuado y no hace nada.
+//   · Lo que ya no existe en la cámara (se borró o movió) se ve atenuado y no hace nada.
 
 import { useCallback, useEffect, useState } from "react";
 import { EntradaDelArbol, buscarEntradaPorRuta, estaDentroDe } from "../arbolDeCarpetas";
@@ -20,9 +20,9 @@ import { EntradasDelArbol, FilaDeNota, nombreSinExtension } from "./FilasDelArbo
 import { Fijado, ICONO_POR_DEFECTO_DE_CADA_TIPO } from "./clavesDeFijados";
 
 interface Props {
-  /** Fijados del hormiguero abierto, ya interpretados. */
+  /** Fijados de la cámara abierta, ya interpretados. */
   fijadosVisibles: Fijado[];
-  arbolDelHormiguero: EntradaDelArbol[];
+  arbolDeLaCamara: EntradaDelArbol[];
   /** Icono elegido para cada fijado, por su clave. */
   iconosElegidosPorFijado: Record<string, string>;
   notaVisible: NotaAbierta | undefined;
@@ -34,7 +34,7 @@ interface Props {
 
 export function Fijados({
   fijadosVisibles,
-  arbolDelHormiguero,
+  arbolDeLaCamara,
   iconosElegidosPorFijado,
   notaVisible,
   alAbrirCapitulo,
@@ -68,7 +68,7 @@ export function Fijados({
    * (perdería el estado del mouse encima).
    */
   function dibujarBotonDeFijado(fijado: Fijado) {
-    const entradaEnElArbol = buscarEntradaPorRuta(arbolDelHormiguero, fijado.ruta);
+    const entradaEnElArbol = buscarEntradaPorRuta(arbolDeLaCamara, fijado.ruta);
     const tipo = fijado.tituloDelCapitulo ? "capitulo" : entradaEnElArbol?.esCarpeta ? "carpeta" : "nota";
     const iconoDelFijado = iconosElegidosPorFijado[fijado.clave] ?? ICONO_POR_DEFECTO_DE_CADA_TIPO[tipo];
     const nombreDeLaNota = nombreSinExtension(nombreDelArchivo(fijado.ruta));
@@ -126,7 +126,7 @@ export function Fijados({
 
   const carpetaDesplegada =
     carpetaFijadaDesplegada && barra.clavesFijadasVisibles.has(carpetaFijadaDesplegada)
-      ? buscarEntradaPorRuta(arbolDelHormiguero, carpetaFijadaDesplegada)
+      ? buscarEntradaPorRuta(arbolDeLaCamara, carpetaFijadaDesplegada)
       : undefined;
   const notaVisibleEstaFijada = !!rutaDeLaNotaVisible && barra.clavesFijadasVisibles.has(rutaDeLaNotaVisible);
 

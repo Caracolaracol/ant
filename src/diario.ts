@@ -5,12 +5,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { EntradaDelArbol } from "./arbolDeCarpetas";
 
-/** Nombre de la carpeta de notas diarias dentro del hormiguero abierto (igual que en Rust). */
+/** Nombre de la carpeta de notas diarias dentro de la cámara abierta (igual que en Rust). */
 export const NOMBRE_DE_LA_CARPETA_DEL_DIARIO = "Daily";
 
-/** Ruta donde se crearía la carpeta `Daily` dentro del hormiguero, con el mismo separador que use su ruta. */
-export const rutaDeLaCarpetaDelDiario = (carpetaDelHormiguero: string) =>
-  `${carpetaDelHormiguero.replace(/[\\/]+$/, "")}${carpetaDelHormiguero.includes("\\") ? "\\" : "/"}${NOMBRE_DE_LA_CARPETA_DEL_DIARIO}`;
+/** Ruta donde se crearía la carpeta `Daily` dentro de la cámara, con el mismo separador que use su ruta. */
+export const rutaDeLaCarpetaDelDiario = (carpetaDeLaCamara: string) =>
+  `${carpetaDeLaCamara.replace(/[\\/]+$/, "")}${carpetaDeLaCamara.includes("\\") ? "\\" : "/"}${NOMBRE_DE_LA_CARPETA_DEL_DIARIO}`;
 
 /** Fecha local como `AAAA-MM-DD` (no se usa `toISOString`, que pasa a UTC y puede cambiar el día). */
 export function claveDelDia(dia: Date): string {
@@ -30,25 +30,25 @@ function tituloDeLaNotaDelDia(dia: Date, codigoDeIdioma: string): string {
 }
 
 /**
- * Devuelve la ruta de la nota de `dia` en la carpeta `Daily` del hormiguero, creándola si no
+ * Devuelve la ruta de la nota de `dia` en la carpeta `Daily` de la cámara, creándola si no
  * existe (Rust usa la carpeta `Daily` que ya haya, aunque esté escrita `daily` o `DAILY`).
  */
-export const abrirOCrearNotaDelDia = (carpetaDelHormiguero: string, dia: Date, codigoDeIdioma: string) =>
+export const abrirOCrearNotaDelDia = (carpetaDeLaCamara: string, dia: Date, codigoDeIdioma: string) =>
   invoke<string>("abrir_o_crear_nota_del_dia", {
-    carpetaDelHormiguero,
+    carpetaDeLaCamara,
     claveDelDia: claveDelDia(dia),
     textoInicial: tituloDeLaNotaDelDia(dia, codigoDeIdioma),
   });
 
 /** Carpeta `Daily` del primer nivel del árbol, sin importar mayúsculas (`Daily`, `daily`…). */
-export const buscarCarpetaDelDiario = (arbolDelHormiguero: EntradaDelArbol[]) =>
-  arbolDelHormiguero.find(
+export const buscarCarpetaDelDiario = (arbolDeLaCamara: EntradaDelArbol[]) =>
+  arbolDeLaCamara.find(
     (entrada) => entrada.esCarpeta && entrada.nombre.toLowerCase() === NOMBRE_DE_LA_CARPETA_DEL_DIARIO.toLowerCase(),
   );
 
-/** Días que ya tienen nota, según el árbol del hormiguero abierto (`Daily/AAAA-MM-DD.md`). */
-export function diasQueTienenNota(arbolDelHormiguero: EntradaDelArbol[]): Set<string> {
-  const carpetaDelDiario = buscarCarpetaDelDiario(arbolDelHormiguero);
+/** Días que ya tienen nota, según el árbol de la cámara abierta (`Daily/AAAA-MM-DD.md`). */
+export function diasQueTienenNota(arbolDeLaCamara: EntradaDelArbol[]): Set<string> {
+  const carpetaDelDiario = buscarCarpetaDelDiario(arbolDeLaCamara);
   const dias = new Set<string>();
   for (const entrada of carpetaDelDiario?.hijos ?? []) {
     const nombreConFecha = /^(\d{4}-\d{2}-\d{2})\.md$/.exec(entrada.nombre);

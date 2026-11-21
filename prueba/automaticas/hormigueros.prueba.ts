@@ -1,4 +1,4 @@
-// Pruebas automáticas de los hormigueros, el árbol de carpetas, el modo diario y los colores. Se
+// Pruebas automáticas del hormiguero y sus cámaras, el árbol de carpetas, el modo diario y los colores. Se
 // corren con `pnpm test`.
 
 import { test } from "node:test";
@@ -17,7 +17,12 @@ import {
   diasQueTienenNota,
   rutaDeLaCarpetaDelDiario,
 } from "../../src/diario.ts";
-import { cambiosParaAbrirHormiguero, cambiosParaQuitarHormigueroDeLaLista } from "../../src/hormigueros/hormigueros.ts";
+import {
+  cambiosParaElegirHormiguero,
+  carpetaDeLaCamaraAbierta,
+  laCamaraAbiertaExiste,
+  rutaDeLaCamara,
+} from "../../src/hormigueros/hormigueros.ts";
 import { AJUSTES_POR_DEFECTO } from "../../src/ajustes.ts";
 import { esColorClaro } from "../../src/colores.ts";
 
@@ -59,24 +64,23 @@ test("modo diario: claves de días, la carpeta Daily y los días con nota", () =
   assert.equal(diaDeLaNotaDiaria(null), null);
 });
 
-test("abrir un hormiguero lo suma a la lista una sola vez", () => {
-  const conUno = { ...AJUSTES_POR_DEFECTO, ...cambiosParaAbrirHormiguero(AJUSTES_POR_DEFECTO, "/novela") };
-  assert.equal(conUno.hormiguero_abierto, "/novela");
-  assert.deepEqual(conUno.hormigueros, ["/novela"]);
-  const otraVez = { ...conUno, ...cambiosParaAbrirHormiguero(conUno, "/novela") };
-  assert.deepEqual(otraVez.hormigueros, ["/novela"]);
+test("la ruta de una cámara usa el separador del hormiguero", () => {
+  assert.equal(rutaDeLaCamara("/Users/yo/Hormiguero", "Novela"), "/Users/yo/Hormiguero/Novela");
+  assert.equal(rutaDeLaCamara("/Users/yo/Hormiguero/", "Novela"), "/Users/yo/Hormiguero/Novela");
+  assert.equal(rutaDeLaCamara("C:\\Hormiguero", "Novela"), "C:\\Hormiguero\\Novela");
 });
 
-test("quitar el hormiguero abierto abre el siguiente; quitar el último deja ninguno", () => {
-  const conDos = { ...AJUSTES_POR_DEFECTO, hormigueros: ["/novela", "/diario"], hormiguero_abierto: "/novela" };
-  const sinNovela = { ...conDos, ...cambiosParaQuitarHormigueroDeLaLista(conDos, "/novela") };
-  assert.deepEqual(sinNovela.hormigueros, ["/diario"]);
-  assert.equal(sinNovela.hormiguero_abierto, "/diario");
-  const sinNinguno = { ...sinNovela, ...cambiosParaQuitarHormigueroDeLaLista(sinNovela, "/diario") };
-  assert.deepEqual(sinNinguno.hormigueros, []);
-  assert.equal(sinNinguno.hormiguero_abierto, null);
-  // Quitar uno que no está abierto no cambia el abierto.
-  assert.equal(cambiosParaQuitarHormigueroDeLaLista(conDos, "/diario").hormiguero_abierto, "/novela");
+test("la cámara abierta: se da por buena mientras se leen las cámaras, y falta si ya no está", () => {
+  const conCamara = { ...AJUSTES_POR_DEFECTO, hormiguero: "/h", camara_abierta: "Novela" };
+  assert.equal(carpetaDeLaCamaraAbierta(conCamara, null), "/h/Novela");
+  assert.equal(carpetaDeLaCamaraAbierta(conCamara, ["Novela", "Trabajo"]), "/h/Novela");
+  assert.equal(carpetaDeLaCamaraAbierta(conCamara, ["Trabajo"]), null, "se borró o renombró su carpeta");
+  assert.ok(!laCamaraAbiertaExiste({ ...conCamara, camara_abierta: null }, ["Novela"]));
+  assert.equal(carpetaDeLaCamaraAbierta({ ...conCamara, hormiguero: null }, null), null);
+});
+
+test("cambiar de hormiguero pide elegir otra vez la cámara", () => {
+  assert.deepEqual(cambiosParaElegirHormiguero("/otro"), { hormiguero: "/otro", camara_abierta: null });
 });
 
 test("distingue colores claros y oscuros", () => {

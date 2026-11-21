@@ -1,20 +1,25 @@
-// Bienvenida: lo primero que se ve al abrir Ant sin ningún hormiguero (y desde Ant → Welcome to
-// Ant…). Tiene el diseño del sitio: un hormiguero en corte, con cámaras unidas por un túnel que
-// se recorre hacia la derecha, y abajo una hormiga que avanza y un hoyo por cámara. Cada cámara
-// es una página:
+// Bienvenida: lo primero que se ve al abrir Ant sin hormiguero o sin cámara abierta (y desde
+// Ant → Welcome to Ant…). Tiene el diseño del sitio: un hormiguero en corte, con cámaras unidas
+// por un túnel que se recorre hacia la derecha, y abajo una hormiga que avanza y un hoyo por
+// cámara. Cada cámara del dibujo es una página:
 //   1. Ant, en pocas palabras.
 //   2. Tus textos son archivos en tu computador.
-//   3. Hormigueros: uno por proyecto, todos los que quieras.
-//   4. Cavar el primero: crear una carpeta o elegir una que ya existe (`ElegirHormiguero`).
+//   3. Tu hormiguero: la carpeta de todas tus notas; crearla o elegir una que existe
+//      (`ElegirHormiguero`). Al elegirla, sigue sola a la página 4.
+//   4. Las cámaras: cada una un contexto (personal, una novela, el trabajo); cavar la primera o
+//      abrir una que ya hay (`ElegirCamara`). Al elegirla, la bienvenida se cierra.
+// Si ya hay hormiguero pero falta la cámara (por ejemplo, se borró su carpeta), abre en la 4.
 // Se avanza con los botones, los hoyos de abajo, la rueda del mouse, el trackpad o las flechas.
 // Los bordes cavados y la tierra son los del sitio (`website/src/lib/cavar.ts` y
 // `website/src/assets/tierra.svg`), así la app y el sitio se ven iguales.
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cavar as cavarBordesDeLasCamaras } from "../../website/src/lib/cavar";
 import imagenDeLaTierra from "../../website/src/assets/tierra.svg";
 import iconoDeAnt from "../../marca/ant-icono.svg";
 import { ElegirHormiguero } from "../hormigueros/ElegirHormiguero";
+import { ElegirCamara } from "../hormigueros/ElegirCamara";
+import { marcarComoTextoDeIzquierdaADerecha } from "../arbolDeCarpetas";
 import { IDIOMAS, Idioma, useTextos } from "../idioma";
 import { Hormiga } from "./Hormiga";
 import "./Bienvenida.css";
@@ -22,19 +27,31 @@ import "./Bienvenida.css";
 interface Props {
   idioma: Idioma;
   alCambiarIdioma(idiomaElegido: Idioma): void;
-  /** Recibe la carpeta del hormiguero creado o elegido en la última cámara. */
-  alElegirCarpeta(carpetaDelHormiguero: string): void;
-  /** Si ya hay hormigueros, la bienvenida se puede cerrar sin crear otro. */
+  /** El hormiguero elegido, o `null` si todavía no hay. */
+  carpetaDelHormiguero: string | null;
+  /** Cámaras que ya tiene el hormiguero (para ofrecer abrir una). */
+  camarasDelHormiguero: string[];
+  /** Recibe la carpeta del hormiguero creado o elegido en la página 3. */
+  alElegirHormiguero(carpetaDelHormiguero: string): void;
+  /** Recibe el nombre de la cámara cavada o elegida en la página 4. */
+  alElegirCamara(nombreDeLaCamara: string): void | Promise<void>;
+  /** Abre directo en la página de las cámaras (ya hay hormiguero, falta la cámara). */
+  empezarEnLasCamaras?: boolean;
+  /** Si ya hay hormiguero y cámara, la bienvenida se puede cerrar sin cambiar nada. */
   alCerrar?: () => void;
 }
 
-/** Cuántas cámaras (páginas) tiene la bienvenida. */
-const CANTIDAD_DE_CAMARAS = 4;
+/** Cuántas páginas (cámaras del dibujo) tiene la bienvenida. */
+const CANTIDAD_DE_PAGINAS = 4;
+/** Número (desde 0) de las páginas del hormiguero y de las cámaras. */
+const PAGINA_DEL_HORMIGUERO = 2;
+const PAGINA_DE_LAS_CAMARAS = 3;
 
 /** Pausa tras un paso con la rueda del mouse, para que un giro largo no se salte todas las cámaras. */
 const PAUSA_ENTRE_PASOS_DE_LA_RUEDA = 650;
 
-export function Bienvenida({ idioma, alCambiarIdioma, alElegirCarpeta, alCerrar }: Props) {
+export function Bienvenida(props: Props) {
+  const { idioma, alCambiarIdioma, carpetaDelHormiguero, camarasDelHormiguero, alElegirCamara, empezarEnLasCamaras, alCerrar } = props;
   const textosDeLaInterfaz = useTextos();
   const nidoConScroll = useRef<HTMLDivElement>(null);
   const filaDeCamaras = useRef<HTMLDivElement>(null);
@@ -47,20 +64,36 @@ export function Bienvenida({ idioma, alCambiarIdioma, alElegirCarpeta, alCerrar 
     if (filaDeCamaras.current) cavarBordesDeLasCamaras(filaDeCamaras.current);
   }, []);
 
-  /** Cámara que se ve ahora (la más cercana al scroll). */
-  const camaraVisible = () => {
+  /** Página que se ve ahora (la más cercana al scroll). */
+  const paginaVisible = () => {
     const nido = nidoConScroll.current;
     return nido ? Math.round(nido.scrollLeft / (nido.clientWidth || 1)) : 0;
   };
 
-  /** Lleva el nido hasta la cámara `numeroDeCamara` (desde 0). */
-  const irACamara = useCallback((numeroDeCamara: number) => {
+  /** Lleva el nido hasta la página `numeroDePagina` (desde 0); sin animación si `deInmediato`. */
+  const irAPagina = useCallback((numeroDePagina: number, deInmediato = false) => {
     const nido = nidoConScroll.current;
     if (!nido) return;
-    const camaraDestino = Math.max(0, Math.min(CANTIDAD_DE_CAMARAS - 1, numeroDeCamara));
+    const paginaDestino = Math.max(0, Math.min(CANTIDAD_DE_PAGINAS - 1, numeroDePagina));
     const prefiereSinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    nido.scrollTo({ left: camaraDestino * nido.clientWidth, behavior: prefiereSinMovimiento ? "auto" : "smooth" });
+    nido.scrollTo({ left: paginaDestino * nido.clientWidth, behavior: deInmediato || prefiereSinMovimiento ? "auto" : "smooth" });
   }, []);
+
+  // Si falta solo la cámara, se abre directo en esa página (solo al aparecer, no cada vez que cambia).
+  const empezabaEnLasCamaras = useRef(empezarEnLasCamaras);
+  useEffect(() => {
+    if (empezabaEnLasCamaras.current) irAPagina(PAGINA_DE_LAS_CAMARAS, true);
+  }, [irAPagina]);
+
+  // Con un hormiguero ya elegido, la página 3 lo muestra con «Sigue el túnel», y el formulario para
+  // usar otra carpeta aparece solo si se pide (si no, no cabe en la cámara).
+  const [quiereOtroHormiguero, setQuiereOtroHormiguero] = useState(false);
+
+  /** Guarda el hormiguero elegido y sigue el túnel hasta las cámaras. */
+  const elegirHormigueroYSeguir = (carpetaElegida: string) => {
+    props.alElegirHormiguero(carpetaElegida);
+    irAPagina(PAGINA_DE_LAS_CAMARAS);
+  };
 
   // La rueda del mouse (vertical) pasa de cámara en cámara: un paso por gesto, con una pausa
   // para que un giro largo no se salte todas. El trackpad (horizontal) usa el scroll normal, que
@@ -75,31 +108,31 @@ export function Bienvenida({ idioma, alCambiarIdioma, alElegirCarpeta, alCerrar 
       if (estaEnPausa || Math.abs(evento.deltaY) < 4) return;
       estaEnPausa = true;
       setTimeout(() => (estaEnPausa = false), PAUSA_ENTRE_PASOS_DE_LA_RUEDA);
-      irACamara(camaraVisible() + Math.sign(evento.deltaY));
+      irAPagina(paginaVisible() + Math.sign(evento.deltaY));
     };
     nido.addEventListener("wheel", alGirarLaRueda, { passive: false });
     return () => nido.removeEventListener("wheel", alGirarLaRueda);
-  }, [irACamara]);
+  }, [irAPagina]);
 
   // Teclado: flechas, Re Pág/Av Pág, Inicio y Fin (salvo mientras se escribe el nombre), y
   // Escape para cerrar si se puede.
   useEffect(() => {
     const alPresionarTecla = (evento: KeyboardEvent) => {
       if (evento.metaKey || evento.ctrlKey || evento.altKey || (evento.target as Element).closest("input")) return;
-      if (["ArrowRight", "ArrowDown", "PageDown"].includes(evento.key)) irACamara(camaraVisible() + 1);
-      else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(evento.key)) irACamara(camaraVisible() - 1);
-      else if (evento.key === "Home") irACamara(0);
-      else if (evento.key === "End") irACamara(CANTIDAD_DE_CAMARAS - 1);
+      if (["ArrowRight", "ArrowDown", "PageDown"].includes(evento.key)) irAPagina(paginaVisible() + 1);
+      else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(evento.key)) irAPagina(paginaVisible() - 1);
+      else if (evento.key === "Home") irAPagina(0);
+      else if (evento.key === "End") irAPagina(CANTIDAD_DE_PAGINAS - 1);
       else if (evento.key === "Escape" && alCerrar) alCerrar();
       else return;
       evento.preventDefault();
     };
     window.addEventListener("keydown", alPresionarTecla);
     return () => window.removeEventListener("keydown", alPresionarTecla);
-  }, [irACamara, alCerrar]);
+  }, [irAPagina, alCerrar]);
 
   // La hormiga de abajo avanza según lo recorrido, mira hacia donde va y mueve las patas
-  // mientras hay scroll. El hoyo de la cámara visible se rellena. Todo directo en el DOM, como en
+  // mientras hay scroll. El hoyo de la página visible se rellena. Todo directo en el DOM, como en
   // el sitio: cambia en cada cuadro del scroll y no hace falta volver a dibujar con React.
   useEffect(() => {
     const nido = nidoConScroll.current;
@@ -119,9 +152,9 @@ export function Bienvenida({ idioma, alCambiarIdioma, alElegirCarpeta, alCerrar 
       hormiga.classList.add("caminando");
       clearTimeout(temporizadorDeQuietud);
       temporizadorDeQuietud = setTimeout(() => hormiga.classList.remove("caminando"), 160);
-      const numeroDeCamaraVisible = camaraVisible();
+      const numeroDePaginaVisible = paginaVisible();
       hoyosDelRecorrido.current?.querySelectorAll("button").forEach((hoyo, numeroDeHoyo) => {
-        hoyo.toggleAttribute("aria-current", numeroDeHoyo === numeroDeCamaraVisible);
+        hoyo.toggleAttribute("aria-current", numeroDeHoyo === numeroDePaginaVisible);
       });
     };
     nido.addEventListener("scroll", moverLaHormiga, { passive: true });
@@ -135,9 +168,9 @@ export function Bienvenida({ idioma, alCambiarIdioma, alElegirCarpeta, alCerrar 
     };
   }, []);
 
-  /** Botón para pasar de la cámara `numeroDeCamara` a la siguiente. */
-  const botonParaSeguirDesde = (numeroDeCamara: number) => (
-    <button className="bienvenida-boton" onClick={() => irACamara(numeroDeCamara + 1)}>
+  /** Botón para pasar de la página `numeroDePagina` a la siguiente. */
+  const botonParaSeguirDesde = (numeroDePagina: number) => (
+    <button className="bienvenida-boton" onClick={() => irAPagina(numeroDePagina + 1)}>
       {textosDeLaInterfaz.bienvenidaSeguir} <span aria-hidden="true">→</span>
     </button>
   );
@@ -196,26 +229,54 @@ export function Bienvenida({ idioma, alCambiarIdioma, alElegirCarpeta, alCerrar 
           </section>
 
           <section className="bienvenida-camara">
-            <div className="hueco">
-              <p className="bienvenida-etiqueta">{textosDeLaInterfaz.bienvenidaHormiguerosEtiqueta}</p>
-              <h2>{textosDeLaInterfaz.bienvenidaHormiguerosTitulo}</h2>
-              <p>{textosDeLaInterfaz.bienvenidaHormiguerosTexto}</p>
-              <ul className="bienvenida-ejemplos" aria-label={textosDeLaInterfaz.bienvenidaEjemplos}>
-                {textosDeLaInterfaz.bienvenidaEjemplosLista.map((ejemploDeHormiguero) => (
-                  <li key={ejemploDeHormiguero}>{ejemploDeHormiguero}</li>
-                ))}
-              </ul>
-              <p className="bienvenida-tenue">{textosDeLaInterfaz.bienvenidaHormiguerosNota}</p>
-              {botonParaSeguirDesde(2)}
+            <div className="hueco bienvenida-cavar">
+              <p className="bienvenida-etiqueta">{textosDeLaInterfaz.bienvenidaHormigueroEtiqueta}</p>
+              <h2>{textosDeLaInterfaz.bienvenidaHormigueroTitulo}</h2>
+              <p>{textosDeLaInterfaz.bienvenidaHormigueroTexto}</p>
+              {/* Si ya hay hormiguero (al volver a la bienvenida), se puede seguir con ese. */}
+              {carpetaDelHormiguero && !quiereOtroHormiguero ? (
+                <>
+                  <div className="bienvenida-elegido">
+                    <span>{textosDeLaInterfaz.bienvenidaHormigueroElegido}</span>
+                    <code title={carpetaDelHormiguero}>{marcarComoTextoDeIzquierdaADerecha(carpetaDelHormiguero)}</code>
+                  </div>
+                  {botonParaSeguirDesde(PAGINA_DEL_HORMIGUERO)}
+                  <button className="bienvenida-enlace" onClick={() => setQuiereOtroHormiguero(true)}>
+                    {textosDeLaInterfaz.bienvenidaUsarOtroHormiguero}
+                  </button>
+                </>
+              ) : (
+                <ElegirHormiguero
+                  alElegirCarpeta={(carpetaElegida) => {
+                    setQuiereOtroHormiguero(false);
+                    elegirHormigueroYSeguir(carpetaElegida);
+                  }}
+                />
+              )}
             </div>
           </section>
 
           <section className="bienvenida-camara">
             <div className="hueco bienvenida-cavar">
-              <p className="bienvenida-etiqueta">{textosDeLaInterfaz.bienvenidaCavarEtiqueta}</p>
-              <h2>{textosDeLaInterfaz.bienvenidaCavarTitulo}</h2>
-              <p>{textosDeLaInterfaz.bienvenidaCavarTexto}</p>
-              <ElegirHormiguero alElegirCarpeta={alElegirCarpeta} />
+              <p className="bienvenida-etiqueta">{textosDeLaInterfaz.bienvenidaCamarasEtiqueta}</p>
+              <h2>{textosDeLaInterfaz.bienvenidaCamarasTitulo}</h2>
+              <p>{textosDeLaInterfaz.bienvenidaCamarasTexto}</p>
+              {carpetaDelHormiguero ? (
+                <ElegirCamara
+                  carpetaDelHormiguero={carpetaDelHormiguero}
+                  camarasQueYaExisten={camarasDelHormiguero}
+                  ofrecerAbrirUnaQueYaExiste
+                  alElegirCamara={alElegirCamara}
+                />
+              ) : (
+                <>
+                  <p className="bienvenida-tenue">{textosDeLaInterfaz.bienvenidaFaltaHormiguero}</p>
+                  <button className="bienvenida-boton" onClick={() => irAPagina(PAGINA_DEL_HORMIGUERO)}>
+                    <span aria-hidden="true">←</span> {textosDeLaInterfaz.bienvenidaVolverAlHormiguero}
+                  </button>
+                </>
+              )}
+              <p className="bienvenida-tenue">{textosDeLaInterfaz.bienvenidaCamarasNota}</p>
             </div>
           </section>
         </div>
@@ -226,9 +287,9 @@ export function Bienvenida({ idioma, alCambiarIdioma, alElegirCarpeta, alCerrar 
           <Hormiga className="bienvenida-hormiga" ref={hormigaDelRecorrido} />
         </div>
         <ol className="bienvenida-hoyos" ref={hoyosDelRecorrido}>
-          {Array.from({ length: CANTIDAD_DE_CAMARAS }, (_, numeroDeCamara) => (
-            <li key={numeroDeCamara}>
-              <button aria-label={textosDeLaInterfaz.bienvenidaCamara(numeroDeCamara + 1)} onClick={() => irACamara(numeroDeCamara)} />
+          {Array.from({ length: CANTIDAD_DE_PAGINAS }, (_, numeroDePagina) => (
+            <li key={numeroDePagina}>
+              <button aria-label={textosDeLaInterfaz.bienvenidaPagina(numeroDePagina + 1)} onClick={() => irAPagina(numeroDePagina)} />
             </li>
           ))}
         </ol>

@@ -1,4 +1,4 @@
-// Ajustes de la app (idioma, modo escritor, hormigueros y el que está abierto, fijados con sus
+// Ajustes de la app (idioma, modo escritor, el hormiguero y la cámara abierta, fijados con sus
 // iconos, ancho de la barra lateral, modo diario y colores), guardados como JSON en la carpeta de
 // configuración de la app (en macOS, ~/Library/Application Support/cl.agus.ant/ajustes.json).
 // Cada vez que se guardan, se avisa a la interfaz con el evento `ajustes-cambiados`. Si cambió el
@@ -27,13 +27,16 @@ const COPIA_DE_AJUSTES_ILEGIBLES: &str = "ajustes-ilegibles.json";
 /// archivo de una versión anterior se siga leyendo. Debe coincidir con `Ajustes` de `src/ajustes.ts`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ajustes {
-    /// Hormiguero abierto: la carpeta donde el usuario trabaja ahora; la barra lateral muestra su contenido.
-    #[serde(default, alias = "carpeta")]
-    pub hormiguero_abierto: Option<String>,
-    /// Hormigueros del usuario (rutas de carpetas), en el orden en que se agregaron. Sin ninguno,
-    /// la interfaz muestra la bienvenida para crear el primero.
+    /// El hormiguero: la carpeta donde viven todas las notas del usuario (lo que en Obsidian es la
+    /// bóveda). Sin hormiguero, la interfaz muestra la bienvenida para elegirlo o crearlo. Antes se
+    /// llamó `hormiguero_abierto` (cuando podía haber varios) y `carpeta`.
+    #[serde(default, alias = "hormiguero_abierto", alias = "carpeta")]
+    pub hormiguero: Option<String>,
+    /// Cámara abierta: el nombre de una carpeta de primer nivel del hormiguero (un contexto: notas
+    /// personales, una novela, el trabajo). La barra lateral muestra su contenido. Se guarda el
+    /// nombre y no la ruta, así sigue sirviendo si el hormiguero se mueve.
     #[serde(default)]
-    pub hormigueros: Vec<String>,
+    pub camara_abierta: Option<String>,
     /// Notas, carpetas y capítulos fijados arriba en la barra lateral, en el orden en que se
     /// fijaron: la ruta, o `ruta#título` para un capítulo (un título `#` dentro de una nota).
     #[serde(default)]
@@ -129,8 +132,8 @@ fn idioma_por_defecto() -> String {
 impl Default for Ajustes {
     fn default() -> Self {
         Ajustes {
-            hormiguero_abierto: None,
-            hormigueros: Vec::new(),
+            hormiguero: None,
+            camara_abierta: None,
             fijados: Vec::new(),
             iconos_de_fijados: BTreeMap::new(),
             modo_diario: false,
@@ -162,11 +165,11 @@ pub fn leer_ajustes(app: AppHandle) -> Ajustes {
 
 /// Lee `ajustes.json`. Si existe pero no se puede entender (se dañó), antes de seguir con los
 /// valores por defecto guarda una copia (`ajustes-ilegibles.json`, junto al original), así los
-/// hormigueros y demás ajustes no se pierden para siempre al guardar los nuevos encima.
+/// el hormiguero y demás ajustes no se pierden para siempre al guardar los nuevos encima.
 fn leer_ajustes_del_archivo(ruta_del_archivo: &Path) -> Ajustes {
     let Ok(texto_del_archivo) = fs::read_to_string(ruta_del_archivo) else { return Ajustes::default() };
     match serde_json::from_str::<Ajustes>(&texto_del_archivo) {
-        Ok(ajustes) => con_el_hormiguero_abierto_en_la_lista(ajustes),
+        Ok(ajustes) => ajustes,
         Err(error) => {
             let ruta_de_la_copia = ruta_del_archivo.with_file_name(COPIA_DE_AJUSTES_ILEGIBLES);
             if !ruta_de_la_copia.exists() {
@@ -178,29 +181,20 @@ fn leer_ajustes_del_archivo(ruta_del_archivo: &Path) -> Ajustes {
     }
 }
 
-/// Los ajustes de antes de los hormigueros (0.2.0 y anteriores) solo tenían `carpeta`: esa
-/// carpeta pasa a ser el primer hormiguero, así quien actualiza no ve la bienvenida.
-fn con_el_hormiguero_abierto_en_la_lista(mut ajustes: Ajustes) -> Ajustes {
-    if let Some(hormiguero_abierto) = &ajustes.hormiguero_abierto {
-        if !ajustes.hormigueros.contains(hormiguero_abierto) {
-            ajustes.hormigueros.push(hormiguero_abierto.clone());
-        }
-    }
-    ajustes
-}
-
 #[cfg(test)]
 mod pruebas {
     use super::*;
 
     #[test]
-    fn la_carpeta_de_antes_pasa_a_ser_un_hormiguero() {
-        let ajustes_viejos: Ajustes = serde_json::from_str(r#"{"carpeta": "/notas", "fijados": ["/notas/a.md"]}"#).unwrap();
-        let ajustes = con_el_hormiguero_abierto_en_la_lista(ajustes_viejos);
-        assert_eq!(ajustes.hormiguero_abierto.as_deref(), Some("/notas"));
-        assert_eq!(ajustes.hormigueros, vec!["/notas".to_string()]);
-        assert_eq!(ajustes.fijados, vec!["/notas/a.md".to_string()]);
-        assert!(con_el_hormiguero_abierto_en_la_lista(Ajustes::default()).hormigueros.is_empty());
+    fn el_hormiguero_se_lee_con_sus_nombres_anteriores() {
+        let de_la_version_0_2: Ajustes = serde_json::from_str(r#"{"carpeta": "/notas", "fijados": ["/notas/a.md"]}"#).unwrap();
+        assert_eq!(de_la_version_0_2.hormiguero.as_deref(), Some("/notas"));
+        assert_eq!(de_la_version_0_2.fijados, vec!["/notas/a.md".to_string()]);
+        assert_eq!(de_la_version_0_2.camara_abierta, None);
+        // Con varios hormigueros, el abierto pasa a ser el hormiguero y la lista se ignora.
+        let con_varios: Ajustes =
+            serde_json::from_str(r#"{"hormiguero_abierto": "/novela", "hormigueros": ["/novela", "/diario"]}"#).unwrap();
+        assert_eq!(con_varios.hormiguero.as_deref(), Some("/novela"));
     }
 
     #[test]
@@ -213,7 +207,7 @@ mod pruebas {
             "autor": "Mira", "compilaciones": {"/notas": {"titulo": "La colonia"}}
         }"##;
         let ajustes: Ajustes = serde_json::from_str(ajustes_anteriores).unwrap();
-        assert_eq!(ajustes.hormiguero_abierto.as_deref(), Some("/notas"));
+        assert_eq!(ajustes.hormiguero.as_deref(), Some("/notas"));
         assert_eq!(ajustes.iconos_de_fijados.get("/notas/a.md").map(String::as_str), Some("star"));
         assert!(ajustes.modo_diario);
         assert_eq!(ajustes.colores_elegidos.get("acento").map(String::as_str), Some("#e5ea15"));
@@ -227,7 +221,7 @@ mod pruebas {
         assert_eq!(ajustes.nombre_del_autor, "Mira");
         assert!(ajustes.opciones_de_compilacion_por_carpeta.contains_key("/notas"));
         let ajustes_guardados = serde_json::to_string(&ajustes).unwrap();
-        assert!(ajustes_guardados.contains("\"hormiguero_abierto\"") && !ajustes_guardados.contains("\"carpeta\""));
+        assert!(ajustes_guardados.contains("\"hormiguero\"") && !ajustes_guardados.contains("\"carpeta\""));
     }
 
     #[test]
@@ -237,7 +231,7 @@ mod pruebas {
         let ruta_del_archivo = carpeta_de_prueba.join(NOMBRE_DEL_ARCHIVO_DE_AJUSTES);
         fs::write(&ruta_del_archivo, "{ esto no es JSON").unwrap();
         let ajustes = leer_ajustes_del_archivo(&ruta_del_archivo);
-        assert!(ajustes.hormigueros.is_empty());
+        assert!(ajustes.hormiguero.is_none());
         let copia = fs::read_to_string(carpeta_de_prueba.join(COPIA_DE_AJUSTES_ILEGIBLES)).unwrap();
         assert_eq!(copia, "{ esto no es JSON");
         fs::remove_dir_all(carpeta_de_prueba).unwrap();

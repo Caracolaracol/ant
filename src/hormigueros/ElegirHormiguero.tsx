@@ -1,22 +1,20 @@
-// Formulario para cavar un hormiguero: crear una carpeta nueva (nombre y dónde, por defecto en
-// Documentos) o usar una carpeta que ya existe. Lo usan la última cámara de la bienvenida y la
-// ventanita «Hormiguero nuevo» (menú File o Ajustes → General). Entrega la carpeta con
-// `alElegirCarpeta`; guardarla en los ajustes le toca a quien lo usa.
+// Formulario para cavar el hormiguero: crear una carpeta nueva (nombre y dónde, por defecto
+// «Hormiguero» en Documentos) o usar una carpeta que ya existe. Lo usa la cámara «Tu hormiguero»
+// de la bienvenida. Entrega la carpeta con `alElegirCarpeta`; guardarla en los ajustes le toca a
+// quien lo usa.
 
 import { FormEvent, useEffect, useState } from "react";
 import { useTextos } from "../idioma";
 import { marcarComoTextoDeIzquierdaADerecha } from "../arbolDeCarpetas";
-import { carpetaDondeProponerCrearHormigueros, crearCarpetaDeHormigueroNuevo, elegirCarpetaConElDialogo } from "./hormigueros";
+import { carpetaDondeProponerCrearElHormiguero, crearCarpetaNueva, elegirCarpetaConElDialogo } from "./hormigueros";
 import "./Hormigueros.css";
 
 interface Props {
   /** Recibe la carpeta del hormiguero, creada o elegida. */
   alElegirCarpeta(carpetaDelHormiguero: string): void;
-  /** Pone el foco en el nombre al aparecer (en la ventanita sí; en la bienvenida, no). */
-  enfocarElNombreAlAparecer?: boolean;
 }
 
-export function ElegirHormiguero({ alElegirCarpeta, enfocarElNombreAlAparecer }: Props) {
+export function ElegirHormiguero({ alElegirCarpeta }: Props) {
   const textosDeLaInterfaz = useTextos();
   const [nombreDelHormiguero, setNombreDelHormiguero] = useState(textosDeLaInterfaz.hormigueroPorDefecto);
   const [carpetaDondeCrearlo, setCarpetaDondeCrearlo] = useState<string | null>(null);
@@ -25,7 +23,7 @@ export function ElegirHormiguero({ alElegirCarpeta, enfocarElNombreAlAparecer }:
 
   // Propone crear el hormiguero en Documentos.
   useEffect(() => {
-    carpetaDondeProponerCrearHormigueros().then(setCarpetaDondeCrearlo, () => {});
+    carpetaDondeProponerCrearElHormiguero().then(setCarpetaDondeCrearlo, () => {});
   }, []);
 
   /** Corre una acción que entrega una carpeta, mostrando el error si falla y sin dejar pulsar dos veces. */
@@ -46,7 +44,7 @@ export function ElegirHormiguero({ alElegirCarpeta, enfocarElNombreAlAparecer }:
   const cavarHormigueroNuevo = (evento: FormEvent) => {
     evento.preventDefault();
     if (carpetaDondeCrearlo && nombreDelHormiguero.trim()) {
-      obtenerCarpetaYEntregarla(() => crearCarpetaDeHormigueroNuevo(carpetaDondeCrearlo, nombreDelHormiguero));
+      obtenerCarpetaYEntregarla(() => crearCarpetaNueva(carpetaDondeCrearlo, nombreDelHormiguero));
     }
   };
 
@@ -61,12 +59,11 @@ export function ElegirHormiguero({ alElegirCarpeta, enfocarElNombreAlAparecer }:
     <div className="elegir-hormiguero">
       <form className="elegir-hormiguero-nuevo" onSubmit={cavarHormigueroNuevo}>
         <label className="elegir-hormiguero-campo">
-          <span>{textosDeLaInterfaz.nombreHormiguero}</span>
+          <span>{textosDeLaInterfaz.nombreDeLaCarpeta}</span>
           <input
             value={nombreDelHormiguero}
-            autoFocus={enfocarElNombreAlAparecer}
             spellCheck={false}
-            placeholder={textosDeLaInterfaz.hormigueroEjemplo}
+            placeholder={textosDeLaInterfaz.hormigueroPorDefecto}
             onChange={(evento) => setNombreDelHormiguero(evento.target.value)}
           />
         </label>

@@ -27,7 +27,7 @@ function TitulosDeLaNotaVisible({ nivelDeProfundidad }: { nivelDeProfundidad: nu
           className={`barra-marcador${indice === barra.indiceDelTituloConElCursor ? " actual" : ""}`}
           style={{ paddingLeft: sangriaEnPixeles(nivelDeProfundidad) + (titulo.nivel - 1) * 10 }}
           onClick={() => barra.alSaltarATitulo(titulo.posicion)}
-          // Clic derecho: fijar el título como capítulo (si la nota está en el hormiguero).
+          // Clic derecho: fijar el título como capítulo (si la nota está en la cámara).
           onContextMenu={
             rutaFijable
               ? (evento) => barra.abrirMenuContextual(evento, barra.opcionesParaFijarOQuitar(claveDeCapitulo(rutaFijable, titulo.texto)))

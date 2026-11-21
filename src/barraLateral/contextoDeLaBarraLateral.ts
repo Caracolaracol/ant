@@ -16,12 +16,12 @@ export interface DatosDeLaBarraLateral {
   titulosDeLaNotaVisible: TituloDeLaNota[];
   /** Índice del título donde está el cursor, o -1. */
   indiceDelTituloConElCursor: number;
-  /** Ruta de la nota visible si está en el hormiguero (sus títulos se pueden fijar como capítulos), o `null`. */
+  /** Ruta de la nota visible si está en la cámara (sus títulos se pueden fijar como capítulos), o `null`. */
   rutaDeLaNotaVisibleQueSePuedeFijar: string | null;
   /** Carpetas desplegadas, en el árbol o bajo una carpeta fijada. */
   carpetasDesplegadas: Set<string>;
   desplegarOPlegarCarpeta(rutaDeLaCarpeta: string): void;
-  /** Claves de lo fijado en el hormiguero abierto (lo fijado no se repite en el árbol). */
+  /** Claves de lo fijado en la cámara abierta (lo fijado no se repite en el árbol). */
   clavesFijadasVisibles: Set<string>;
   /** Abre el menú de clic derecho con `opciones` donde se hizo el clic. */
   abrirMenuContextual(evento: React.MouseEvent, opciones: OpcionDelMenu[]): void;

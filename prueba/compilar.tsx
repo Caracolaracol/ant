@@ -10,7 +10,7 @@ import type { EntradaDelArbol } from "../src/arbolDeCarpetas";
 import { Compilar } from "../src/compilar/Compilar";
 import { ContextoDeTextos, textosDelIdioma } from "../src/idioma";
 
-const base = "/Users/yo/Baul/Novela";
+const base = "/Users/yo/Hormiguero/Novela";
 const nota = (ruta: string): EntradaDelArbol => ({ nombre: ruta.split("/").pop()!, ruta: `${base}/${ruta}`, esCarpeta: false, hijos: [] });
 const carpeta = (nombre: string, hijos: EntradaDelArbol[]): EntradaDelArbol => ({ nombre, ruta: `${base}/${nombre}`, esCarpeta: true, hijos });
 const arbol: EntradaDelArbol[] = [
@@ -20,7 +20,7 @@ const arbol: EntradaDelArbol[] = [
 ];
 const texto = "# Capítulo\n\n" + "La hormiga caminaba por el borde de la mesa pensando en la lluvia. ".repeat(60);
 const enEspanol = location.search.includes("es");
-const ajustes: Ajustes = { ...AJUSTES_POR_DEFECTO, idioma: enEspanol ? "es" : "en", nombre_del_autor: "Agustín Rojas", hormiguero_abierto: base };
+const ajustes: Ajustes = { ...AJUSTES_POR_DEFECTO, idioma: enEspanol ? "es" : "en", nombre_del_autor: "Agustín Rojas", hormiguero: "/Users/yo/Hormiguero", camara_abierta: "Novela" };
 if (location.search.includes("libro")) {
   ajustes.opciones_de_compilacion_por_carpeta = {
     [`${base}/Libro I`]: { orden: [], excluidas: [`${base}/Libro I/Notas de investigación.md`], titulo: "La colonia", formato: "pdf", estilo: "libro", pagina: "a4", origenTitulo: "titulo", tipografia: true },
@@ -31,8 +31,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <ContextoDeTextos.Provider value={textosDelIdioma(ajustes.idioma)}>
     <main className="app" />
     <Compilar
-      carpetaDelHormiguero={base}
-      arbolDelHormiguero={arbol}
+      carpetaDeLaCamara={base}
+      arbolDeLaCamara={arbol}
       rutaDeLaNotaVisible={`${base}/Libro I/02 - La lluvia.md`}
       ajustes={ajustes}
       textoDeNotaAbiertaPorRuta={() => texto}

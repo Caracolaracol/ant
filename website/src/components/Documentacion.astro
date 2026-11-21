@@ -33,8 +33,8 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
   modo="vertical"
   titulo={t('Documentation · Ant', 'Documentación · Ant')}
   descripcion={t(
-    'How to install and use Ant: anthills, pins, shortcuts, settings, and how to build it from source.',
-    'Cómo instalar y usar Ant: hormigueros, fijados, atajos, ajustes y cómo compilarla desde el código.',
+    'How to install and use Ant: the anthill and its chambers, pins, shortcuts, settings, and how to build it from source.',
+    'Cómo instalar y usar Ant: el hormiguero y sus cámaras, fijados, atajos, ajustes y cómo compilarla desde el código.',
   )}
 >
   <div class="hueco gigante">
@@ -83,20 +83,21 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
 
       <section class="tema" id={primeros.id} data-nombre={primeros.nombre}>
         <p class="etiqueta">02</p>
-        <h2>{t('Dig your first anthill', 'Cava tu primer hormiguero')}</h2>
+        <h2>{t('Your anthill and its chambers', 'Tu hormiguero y sus cámaras')}</h2>
         <p>{t(
-          'Ant keeps your notes in anthills: an anthill is a folder on your computer, one per project. It can be a new one or one you already have, such as your Obsidian vault or a folder full of chapters. You can have as many as you want: one for your novel, another for your diary, another for work.',
-          'Ant guarda tus notas en hormigueros: un hormiguero es una carpeta de tu computador, una por proyecto. Puede ser nueva o una que ya tengas, como tu bóveda de Obsidian o una carpeta llena de capítulos. Puedes tener todos los que quieras: uno para tu novela, otro para tu diario, otro para el trabajo.',
+          'Ant keeps all your notes in one anthill: a folder on your computer, new or one you already have, such as your Obsidian vault. Inside it, each chamber is a folder for one context of your life: your personal notes, everything about one novel, your work as a developer and its projects. The sidebar shows one chamber at a time.',
+          'Ant guarda todas tus notas en un hormiguero: una carpeta de tu computador, nueva o una que ya tengas, como tu bóveda de Obsidian. Dentro, cada cámara es una carpeta para un contexto de tu vida: tus notas personales, todo lo de una novela, tu trabajo de desarrollador y sus proyectos. La barra lateral muestra una cámara a la vez.',
         )}</p>
         <ol>
-          <li>{t('The first time you open Ant, a short welcome takes you through the tunnel to its last chamber.', 'La primera vez que abres Ant, una bienvenida corta te lleva por el túnel hasta su última cámara.')}</li>
-          <li>{t('There, give it a name and click', 'Ahí, ponle un nombre y pulsa')} <b>{t('Dig the anthill', 'Cavar el hormiguero')}</b> {t('(Ant creates the folder, in Documents unless you choose another place), or click', '(Ant crea la carpeta, en Documentos salvo que elijas otro lugar), o pulsa')} <b>{t('Use a folder you already have…', 'Usar una carpeta que ya tengo…')}</b>.</li>
-          <li>{t('The sidebar shows the anthill right away.', 'La barra lateral muestra el hormiguero al instante.')}</li>
+          <li>{t('The first time you open Ant, a short welcome takes you through the tunnel.', 'La primera vez que abres Ant, una bienvenida corta te lleva por el túnel.')}</li>
+          <li>{t('In its third chamber, choose your anthill: give it a name and click', 'En su tercera cámara, elige tu hormiguero: ponle un nombre y pulsa')} <b>{t('Dig the anthill', 'Cavar el hormiguero')}</b> {t('(Ant creates the folder, in Documents unless you choose another place), or click', '(Ant crea la carpeta, en Documentos salvo que elijas otro lugar), o pulsa')} <b>{t('Use a folder you already have…', 'Usar una carpeta que ya tengo…')}</b>.</li>
+          <li>{t('In the last one, dig your first chamber (or open one of the folders the anthill already has). The sidebar shows it right away.', 'En la última, cava tu primera cámara (o abre una de las carpetas que el hormiguero ya tiene). La barra lateral la muestra al instante.')}</li>
         </ol>
-        <h3>{t('More anthills', 'Más hormigueros')}</h3>
+        <h3>{t('More chambers', 'Más cámaras')}</h3>
         <ul>
-          <li>{t('Dig another one with', 'Cava otro con')} <b>{t('File → New Anthill…', 'Archivo → Hormiguero nuevo…')}</b>.</li>
-          <li>{t('In', 'En')} <b>{t('Settings → General', 'Ajustes → General')}</b> {t('you see them all and switch from one to another; removing one from the list never deletes its folder.', 'los ves todos y pasas de uno a otro; quitar uno de la lista nunca borra su carpeta.')}</li>
+          <li>{t('Dig as many as you want with', 'Cava todas las que quieras con')} <b>{t('File → New Chamber…', 'Archivo → Cámara nueva…')}</b>.</li>
+          <li>{t('In', 'En')} <b>{t('Settings → General', 'Ajustes → General')}</b> {t('you see them all and switch from one to another. Every top-level folder of the anthill is a chamber, so a folder you create in Finder shows up there too.', 'las ves todas y pasas de una a otra. Cada carpeta de primer nivel del hormiguero es una cámara, así que una carpeta que crees en Finder también aparece ahí.')}</li>
+          <li>{t('There you can also change the anthill for another folder; nothing is moved or deleted.', 'Ahí también puedes cambiar el hormiguero por otra carpeta; nada se mueve ni se borra.')}</li>
           <li>{t('The welcome can be seen again from', 'La bienvenida se puede ver de nuevo desde')} <b>{t('Ant → Welcome to Ant…', 'Ant → Bienvenida a Ant…')}</b>.</li>
         </ul>
         <h3>{t('What it shows', 'Qué muestra')}</h3>
@@ -105,7 +106,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
           <li>{t('Hidden folders,', 'Se saltan las carpetas ocultas,')} <code>node_modules</code>, <code>target</code> {t('and folders without notes are skipped.', 'y las carpetas sin notas.')}</li>
           <li>{t('It is read again when you save and every time you come back to the window, in case you moved something from Finder or another app.', 'Se vuelve a leer al guardar y cada vez que vuelves a la ventana, por si moviste algo desde Finder u otra app.')}</li>
         </ul>
-        <p class="tenue">{t('Notes outside your anthills open too: use', 'También se abren notas fuera de tus hormigueros: usa')} <kbd>⌘</kbd> <kbd>O</kbd>.</p>
+        <p class="tenue">{t('Notes outside the open chamber open too (for example, loose notes at the root of the anthill): use', 'También se abren notas fuera de la cámara abierta (por ejemplo, notas sueltas en la raíz del hormiguero): usa')} <kbd>⌘</kbd> <kbd>O</kbd>.</p>
       </section>
 
       <section class="tema" id={escribir.id} data-nombre={escribir.nombre}>
@@ -117,7 +118,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
         )}</p>
         <ul>
           <li><kbd>⌘</kbd> <kbd>N</kbd> {t('creates a new note.', 'crea una nota nueva.')}</li>
-          <li><kbd>⌘</kbd> <kbd>S</kbd> {t('saves a new note the first time, suggesting the open anthill. After that, Ant saves it for you.', 'guarda una nota nueva la primera vez, proponiendo el hormiguero abierto. Después, Ant la guarda sola.')}</li>
+          <li><kbd>⌘</kbd> <kbd>S</kbd> {t('saves a new note the first time, suggesting the open chamber. After that, Ant saves it for you.', 'guarda una nota nueva la primera vez, proponiendo la cámara abierta. Después, Ant la guarda sola.')}</li>
           <li><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd> {t('saves it under another name.', 'la guarda con otro nombre.')}</li>
         </ul>
         <div class="columnas">
@@ -142,8 +143,8 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
         <h2>{t('From top to bottom', 'De arriba hacia abajo')}</h2>
         <ol>
           <li><b>{t('Pinned', 'Fijados')}</b>{t(': a row of icons with what you pinned (see the next section).', ': una fila de iconos con lo que fijaste (ver la siguiente sección).')}</li>
-          <li><b>{t('Open', 'Abiertas')}</b>{t(': open notes that are not in the anthill, such as a new unsaved one.', ': notas abiertas que no están en el hormiguero, como una nueva sin guardar.')}</li>
-          <li><b>{t('The anthill', 'El hormiguero')}</b>{t(': its name and the tree of its subfolders and notes. Folders fold and unfold with a click.', ': su nombre y el árbol de sus subcarpetas y notas. Las carpetas se pliegan con un clic.')}</li>
+          <li><b>{t('Open', 'Abiertas')}</b>{t(': open notes that are not in the chamber, such as a new unsaved one.', ': notas abiertas que no están en la cámara, como una nueva sin guardar.')}</li>
+          <li><b>{t('The chamber', 'La cámara')}</b>{t(': its name and the tree of its subfolders and notes. Folders fold and unfold with a click.', ': su nombre y el árbol de sus subcarpetas y notas. Las carpetas se pliegan con un clic.')}</li>
         </ol>
         <p><kbd>⌘</kbd> <kbd>\</kbd> {t('shows or hides it. To make it wider or narrower, drag its right edge: the pointer changes to ↔ when you are over it. Double-click the edge to go back to the default width.', 'la muestra u oculta. Para ensancharla o achicarla, arrastra su borde derecho: el puntero cambia a ↔ al pasar por encima. Doble clic en el borde la deja con el ancho de siempre.')}</p>
         <div class="columnas">
@@ -167,7 +168,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
           <li>{t('A pinned note opens with a click. A pinned folder unfolds below the icons. A pinned heading (a chapter) opens its note right there.', 'Una nota fijada se abre con un clic. Una carpeta fijada se despliega bajo los iconos. Un título fijado (un capítulo) abre su nota justo ahí.')}</li>
           <li>{t('Each one starts with the icon of its kind. To choose another: right-click →', 'Cada uno empieza con el icono de su tipo. Para elegir otro: clic derecho →')} <b>{t('Change icon…', 'Cambiar icono…')}</b> {t('(about a hundred, from', '(cerca de cien, de')} <a href="https://lucide.dev">Lucide</a>).</li>
           <li>{t('To unpin it: right-click →', 'Para soltarlo: clic derecho →')} <b>{t('Unpin', 'Quitar de fijados')}</b>.</li>
-          <li>{t('Each anthill has its own pins: when you switch anthills, you see that anthill’s pins.', 'Cada hormiguero tiene sus propios fijados: si cambias de hormiguero, ves los de ese.')}</li>
+          <li>{t('Each chamber has its own pins: when you switch chambers, you see that chamber’s pins.', 'Cada cámara tiene sus propios fijados: si cambias de cámara, ves los de esa.')}</li>
           <li>{t('If something pinned is deleted or moved outside Ant, its icon stays, dimmed, until you remove it.', 'Si borras o mueves algo fijado fuera de Ant, su icono queda atenuado hasta que lo quites.')}</li>
         </ul>
       </section>
@@ -239,19 +240,19 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
         <h2>{t('Right over your notes', 'Sobre tus notas')}</h2>
         <p><kbd>⌘</kbd> <kbd>,</kbd> {t('opens Settings over the main window: areas on the left and their options on the right. Changes apply right away, with no save button.', 'abre los Ajustes sobre la ventana principal: las áreas a la izquierda y sus opciones a la derecha. Los cambios se aplican al instante, sin botón de guardar.')} <kbd>Esc</kbd>, <kbd>⌘</kbd> <kbd>W</kbd> {t('or a click outside closes them.', 'o un clic fuera los cierra.')}</p>
         <ul>
-          <li><b>General</b>{t(': the language (English by default, or Spanish) and your anthills: open one, remove it from the list (its folder stays on your disk) or dig a new one.', ': el idioma (inglés por defecto, o español) y tus hormigueros: abrir uno, quitarlo de la lista (su carpeta queda en tu disco) o cavar uno nuevo.')}</li>
+          <li><b>General</b>{t(': the language (English by default, or Spanish), your anthill (you can change it for another folder) and its chambers: open one or dig a new one.', ': el idioma (inglés por defecto, o español), tu hormiguero (puedes cambiarlo por otra carpeta) y sus cámaras: abrir una o cavar una nueva.')}</li>
           <li><b>Editor</b>{t(': at the top, ', ': arriba de todo, el ')}<b>{t('Writer mode', 'Modo escritor')}</b>{t(', on by default. It adapts the editor to prose: smart quotes (“ ” or « », depending on the language) and', ', activado por defecto. Adapta el editor a la prosa: comillas tipográficas (“ ” o « », según el idioma) y')} <code>--</code> → <code>—</code>, <code>...</code> → <code>…</code>, <code>&lt;&lt; &gt;&gt;</code> → <code>« »</code>, <code>-&gt;</code> → <code>→</code> {t('as you type (Backspace right after undoes the change; nothing changes inside code), a serif book font in a narrower column, and spell checking. Each part can be turned off.', 'al escribir (Backspace justo después deshace el cambio; nada cambia dentro del código), letra de libro con serifa en una columna más angosta y corrector ortográfico. Cada parte se puede apagar.')}</li>
-          <li><b>{t('Diary', 'Diario')}</b>{t(': shows a calendar at the top of the sidebar. Click a day to open its note,', ': muestra un calendario arriba de la barra lateral. Al hacer clic en un día se abre su nota,')} <code>Daily/2026-11-20.md</code>{t(', inside the open anthill. If the note or the Daily folder do not exist yet, Ant creates them; if the anthill already has a Daily folder, Ant uses it. Days that already have a note show a dot. In this mode the Daily folder is hidden from the tree: you reach daily notes through the calendar, and the open ones are listed below it.', ', dentro del hormiguero abierto. Si la nota o la carpeta Daily aún no existen, Ant las crea; si el hormiguero ya tiene una carpeta Daily, Ant usa esa. Los días que ya tienen nota llevan un punto. En este modo la carpeta Daily no aparece en el árbol: a las notas diarias se llega desde el calendario, y las abiertas se listan bajo él.')}</li>
+          <li><b>{t('Diary', 'Diario')}</b>{t(': shows a calendar at the top of the sidebar. Click a day to open its note,', ': muestra un calendario arriba de la barra lateral. Al hacer clic en un día se abre su nota,')} <code>Daily/2026-11-20.md</code>{t(', inside the open chamber. If the note or the Daily folder do not exist yet, Ant creates them; if the chamber already has a Daily folder, Ant uses it. Days that already have a note show a dot. In this mode the Daily folder is hidden from the tree: you reach daily notes through the calendar, and the open ones are listed below it.', ', dentro de la cámara abierta. Si la nota o la carpeta Daily aún no existen, Ant las crea; si la cámara ya tiene una carpeta Daily, Ant usa esa. Los días que ya tienen nota llevan un punto. En este modo la carpeta Daily no aparece en el árbol: a las notas diarias se llega desde el calendario, y las abiertas se listan bajo él.')}</li>
           <li><b>{t('Appearance', 'Apariencia')}</b>{t(': ready-made themes (Dark, Ant, Night, Paper, Sepia) and every color one by one.', ': temas listos (Oscuro, Hormiga, Noche, Papel, Sepia) y cada color por separado.')}</li>
         </ul>
         <h3>{t('Where they are stored', 'Dónde se guardan')}</h3>
         <p>{t('In a JSON file, in the app’s configuration folder:', 'En un archivo JSON, en la carpeta de configuración de la app:')}</p>
 <pre><code>~/Library/Application Support/cl.agus.ant/ajustes.json</code></pre>
 <pre><code>{"{"}
-  "hormiguero_abierto": "{t('/Users/you/Documents/Novel', '/Users/tu/Documents/Novela')}",
-  "hormigueros": ["{t('/Users/you/Documents/Novel', '/Users/tu/Documents/Novela')}", "{t('/Users/you/Documents/Diary', '/Users/tu/Documents/Diario')}"],
-  "fijados": ["{t('/Users/you/Documents/Novel/Book I', '/Users/tu/Documents/Novela/Libro I')}"],
-  "iconos_de_fijados": {"{"} "{t('/Users/you/Documents/Novel/Book I', '/Users/tu/Documents/Novela/Libro I')}": "book-open" {"}"},
+  "hormiguero": "{t('/Users/you/Documents/Anthill', '/Users/tu/Documents/Hormiguero')}",
+  "camara_abierta": "{t('Novel', 'Novela')}",
+  "fijados": ["{t('/Users/you/Documents/Anthill/Novel/Book I', '/Users/tu/Documents/Hormiguero/Novela/Libro I')}"],
+  "iconos_de_fijados": {"{"} "{t('/Users/you/Documents/Anthill/Novel/Book I', '/Users/tu/Documents/Hormiguero/Novela/Libro I')}": "book-open" {"}"},
   "modo_diario": true,
   "colores_elegidos": {"{"} "acento": "#e5ea15" {"}"},
   "idioma": "{t('en', 'es')}",

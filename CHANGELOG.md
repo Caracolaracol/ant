@@ -14,12 +14,15 @@ release with that section as its notes, so this file is always written in Englis
 ### Added
 
 - **Welcome**: the first time you open Ant, a short tour in the style of the website, chamber by
-  chamber along a tunnel, that ends by digging your first anthill. It can be seen again from
-  Ant → Welcome to Ant….
-- **Anthills**: each anthill is a folder for one project (a novel, a diary, work notes), and you
-  can have as many as you want. Create a new folder or use one you already have, dig a new one
-  with File → New Anthill…, and switch between them or manage the list in Settings → General. Removing an anthill from the list never deletes its folder. If you already
-  had a working folder, it becomes your first anthill.
+  chamber along a tunnel, that ends by choosing your anthill and digging your first chamber. It
+  can be seen again from Ant → Welcome to Ant….
+- **Anthill and chambers**: all your notes live in one anthill, a folder on your computer (a new
+  one, or one you already have, like an Obsidian vault). Inside it, each chamber is a folder for
+  one context: your personal notes, everything about one novel, your work and its projects. The
+  sidebar shows one chamber at a time, with its own pins and its own Daily folder. Dig a new
+  chamber with File → New Chamber…, and switch chambers or change the anthill in Settings →
+  General. If you already had a working folder, it becomes your anthill and Ant asks you to pick
+  or dig its first chamber.
 - **Pinned icons**: pins are now a grid of icons, like pinned tabs in Zen or Arc, with the name
   in a tooltip when you hover. Each one starts with the icon of its kind (folder, note or
   chapter); right-click → Change icon… to pick another from about a hundred (Lucide icons). A
@@ -37,12 +40,12 @@ release with that section as its notes, so this file is always written in Englis
   cursor position and its undo history.
 - Typing stays fast in very long notes (a whole novel in one note): the word count and the
   headings in the sidebar update a moment after you pause, instead of on every key. Large
-  anthills are read in the background, so the window never freezes while Ant reads them.
+  chambers are read in the background, so the window never freezes while Ant reads them.
 - If a note changes outside Ant (in another app, or through a sync service), Ant shows the new
   text when you come back to the window. If it also has changes in Ant, Ant never overwrites the
   file: it warns in the status bar, and Cmd+S keeps your version.
 - Settings are saved safely (written to a temporary file first), and if the settings file is ever
-  damaged, Ant keeps a copy of it (`ajustes-ilegibles.json`) instead of losing your anthills.
+  damaged, Ant keeps a copy of it (`ajustes-ilegibles.json`) instead of losing your anthill and the rest of your settings.
 - The sidebar has no separator lines: sections are separated by space only.
 - Settings open inside the main window instead of a separate window. Escape, Cmd+W or a click
   outside closes them.

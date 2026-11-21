@@ -1,7 +1,7 @@
 // Ajustes (Ant → Settings… / Ajustes… o Cmd+,): una ventanita sobre la ventana principal, no una
 // ventana aparte. Está dividida en dos: a la izquierda la lista de áreas de ajustes y a la
 // derecha las opciones del área elegida:
-//   General (idioma y hormigueros) · Editor (modo escritor) · Diario (calendario y notas
+//   General (idioma, hormiguero y cámaras) · Editor (modo escritor) · Diario (calendario y notas
 //   diarias) · Apariencia (colores).
 // Los cambios se aplican y guardan al instante (`cambiarAjustes`, de App); se cierra con Escape,
 // Cmd+W, la × o un clic fuera. Los textos salen de `idioma.tsx`, así cambia de idioma apenas se
@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { Ajustes, OpcionesDelModoEscritor } from "../ajustes";
 import { COLORES_POR_DEFECTO, TEMAS, VARIABLES_DE_COLOR } from "../colores";
 import { NOMBRE_DE_LA_CARPETA_DEL_DIARIO } from "../diario";
-import { cambiosParaQuitarHormigueroDeLaLista } from "../hormigueros/hormigueros";
+import { cambiosParaElegirHormiguero, elegirCarpetaConElDialogo } from "../hormigueros/hormigueros";
 import { IDIOMAS, Idioma, idiomaValido, useTextos } from "../idioma";
 import { nombreDelArchivo } from "../archivosDeNotas";
 import { marcarComoTextoDeIzquierdaADerecha } from "../arbolDeCarpetas";
@@ -28,11 +28,26 @@ interface PropsDeUnPanel {
 }
 
 /**
- * Área «General»: idioma de la interfaz y la lista de hormigueros, con el abierto marcado. Desde
- * aquí se abre otro, se quita uno de la lista (su carpeta queda en el disco) o se cava uno nuevo.
+ * Área «General»: idioma de la interfaz, el hormiguero (se puede cambiar por otra carpeta) y sus
+ * cámaras, con la abierta marcada. Desde aquí se abre otra cámara o se cava una nueva. Al cambiar
+ * de hormiguero, la bienvenida pide elegir una de sus cámaras.
  */
-function PanelGeneral({ ajustes, cambiarAjustes, alPedirHormigueroNuevo }: PropsDeUnPanel & { alPedirHormigueroNuevo(): void }) {
+function PanelGeneral({
+  ajustes,
+  cambiarAjustes,
+  camarasDelHormiguero,
+  alPedirCamaraNueva,
+}: PropsDeUnPanel & { camarasDelHormiguero: string[]; alPedirCamaraNueva(): void }) {
   const textosDeLaInterfaz = useTextos();
+  const carpetaDelHormiguero = ajustes.hormiguero;
+
+  /** Elige otra carpeta como hormiguero con el diálogo del sistema. */
+  const cambiarDeHormiguero = () =>
+    elegirCarpetaConElDialogo(carpetaDelHormiguero).then(
+      (carpetaElegida) => carpetaElegida && carpetaElegida !== carpetaDelHormiguero && cambiarAjustes(cambiosParaElegirHormiguero(carpetaElegida)),
+      () => {},
+    );
+
   return (
     <>
       <h1>{textosDeLaInterfaz.areas.general}</h1>
@@ -49,35 +64,44 @@ function PanelGeneral({ ajustes, cambiarAjustes, alPedirHormigueroNuevo }: Props
           ))}
         </select>
       </div>
-      <div className="ajuste">
-        <div className="ajuste-titulo">{textosDeLaInterfaz.hormigueros}</div>
-        <p className="ajuste-ayuda">{textosDeLaInterfaz.hormiguerosAyuda}</p>
-        <div className="ajuste-hormigueros">
-          {ajustes.hormigueros.map((carpetaDelHormiguero) => {
-            const estaAbierto = carpetaDelHormiguero === ajustes.hormiguero_abierto;
-            return (
-              <div key={carpetaDelHormiguero} className={`ajuste-hormiguero${estaAbierto ? " actual" : ""}`}>
-                <div className="ajuste-hormiguero-nombre">
-                  <b>{nombreDelArchivo(carpetaDelHormiguero)}</b>
-                  <code title={carpetaDelHormiguero}>{marcarComoTextoDeIzquierdaADerecha(carpetaDelHormiguero)}</code>
-                </div>
-                {estaAbierto ? (
-                  <span className="ajuste-hormiguero-abierto">{textosDeLaInterfaz.abierto}</span>
-                ) : (
-                  <button onClick={() => cambiarAjustes({ hormiguero_abierto: carpetaDelHormiguero })}>{textosDeLaInterfaz.abrir}</button>
-                )}
-                <button
-                  title={textosDeLaInterfaz.quitarHormigueroAyuda}
-                  onClick={() => cambiarAjustes(cambiosParaQuitarHormigueroDeLaLista(ajustes, carpetaDelHormiguero))}
-                >
-                  {textosDeLaInterfaz.quitar}
-                </button>
-              </div>
-            );
-          })}
+      {carpetaDelHormiguero && (
+        <div className="ajuste">
+          <div className="ajuste-titulo">{textosDeLaInterfaz.hormiguero}</div>
+          <p className="ajuste-ayuda">{textosDeLaInterfaz.hormigueroAyuda}</p>
+          <div className="ajuste-camara">
+            <div className="ajuste-camara-nombre">
+              <b>{nombreDelArchivo(carpetaDelHormiguero)}</b>
+              <code title={carpetaDelHormiguero}>{marcarComoTextoDeIzquierdaADerecha(carpetaDelHormiguero)}</code>
+            </div>
+            <button onClick={cambiarDeHormiguero}>{textosDeLaInterfaz.cambiar}</button>
+          </div>
         </div>
-        <button className="ajuste-boton" onClick={alPedirHormigueroNuevo}>{textosDeLaInterfaz.nuevoHormigueroBoton}</button>
-      </div>
+      )}
+      {carpetaDelHormiguero && (
+        <div className="ajuste">
+          <div className="ajuste-titulo">{textosDeLaInterfaz.camaras}</div>
+          <p className="ajuste-ayuda">{textosDeLaInterfaz.camarasAyuda}</p>
+          <div className="ajuste-camaras">
+            {camarasDelHormiguero.length === 0 && <p className="ajuste-ayuda">{textosDeLaInterfaz.sinCamaras}</p>}
+            {camarasDelHormiguero.map((nombreDeLaCamara) => {
+              const estaAbierta = nombreDeLaCamara === ajustes.camara_abierta;
+              return (
+                <div key={nombreDeLaCamara} className={`ajuste-camara${estaAbierta ? " actual" : ""}`}>
+                  <div className="ajuste-camara-nombre">
+                    <b>{nombreDeLaCamara}</b>
+                  </div>
+                  {estaAbierta ? (
+                    <span className="ajuste-camara-abierta">{textosDeLaInterfaz.abierta}</span>
+                  ) : (
+                    <button onClick={() => cambiarAjustes({ camara_abierta: nombreDeLaCamara })}>{textosDeLaInterfaz.abrir}</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button className="ajuste-boton" onClick={alPedirCamaraNueva}>{textosDeLaInterfaz.camaraNuevaBoton}</button>
+        </div>
+      )}
     </>
   );
 }
@@ -204,7 +228,7 @@ function PanelDiario({ ajustes, cambiarAjustes }: PropsDeUnPanel) {
             <code>{NOMBRE_DE_LA_CARPETA_DEL_DIARIO}</code>,
           )}
         </p>
-        {ajustes.modo_diario && !ajustes.hormiguero_abierto && <p className="ajuste-aviso">{textosDeLaInterfaz.diarioAviso}</p>}
+        {ajustes.modo_diario && !ajustes.camara_abierta && <p className="ajuste-aviso">{textosDeLaInterfaz.diarioAviso}</p>}
       </div>
     </>
   );
@@ -272,17 +296,19 @@ interface Props {
   ajustes: Ajustes;
   /** Aplica y guarda un cambio al instante (no hay botón «Aceptar», como en macOS). */
   cambiarAjustes(cambios: Partial<Ajustes>): void;
-  /** Abre la ventanita «Hormiguero nuevo» encima de los Ajustes. */
-  alPedirHormigueroNuevo(): void;
+  /** Cámaras del hormiguero, para la lista del área General. */
+  camarasDelHormiguero: string[];
+  /** Abre la ventanita «Cámara nueva» encima de los Ajustes. */
+  alPedirCamaraNueva(): void;
   alCerrar(): void;
 }
 
-export function ModalAjustes({ ajustes, cambiarAjustes, alPedirHormigueroNuevo, alCerrar }: Props) {
+export function ModalAjustes({ ajustes, cambiarAjustes, camarasDelHormiguero, alPedirCamaraNueva, alCerrar }: Props) {
   const textosDeLaInterfaz = useTextos();
   const [areaElegida, setAreaElegida] = useState<AreaDeAjustes>("general");
 
   // Escape y Cmd+W cierran los Ajustes (Cmd+W no cierra la ventana principal). Si hay una
-  // ventanita encima (hormiguero nuevo), Escape la cierra a ella primero.
+  // ventanita encima (cámara nueva), Escape la cierra a ella primero.
   useEffect(() => {
     const alPresionarTecla = (evento: KeyboardEvent) => {
       const hayOtraVentanitaEncima = document.querySelector(".modal-encima");
@@ -310,7 +336,12 @@ export function ModalAjustes({ ajustes, cambiarAjustes, alPedirHormigueroNuevo, 
         <section className="ajustes-panel">
           <button className="modal-cerrar" aria-label={textosDeLaInterfaz.cerrar} onClick={alCerrar}>×</button>
           {areaElegida === "general" && (
-            <PanelGeneral ajustes={ajustes} cambiarAjustes={cambiarAjustes} alPedirHormigueroNuevo={alPedirHormigueroNuevo} />
+            <PanelGeneral
+              ajustes={ajustes}
+              cambiarAjustes={cambiarAjustes}
+              camarasDelHormiguero={camarasDelHormiguero}
+              alPedirCamaraNueva={alPedirCamaraNueva}
+            />
           )}
           {areaElegida === "editor" && <PanelEditor ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
           {areaElegida === "diario" && <PanelDiario ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}

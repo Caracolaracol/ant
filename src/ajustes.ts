@@ -11,10 +11,13 @@ import type { OrigenDelTituloDeCadaCapitulo } from "./compilar/modelo.ts";
 
 /** Preferencias del usuario. Debe coincidir con la estructura `Ajustes` de Rust. */
 export interface Ajustes {
-  /** Hormiguero abierto (la carpeta que muestra la barra lateral), o `null` si no hay ninguno. */
-  hormiguero_abierto: string | null;
-  /** Hormigueros del usuario: rutas de sus carpetas, en el orden en que se agregaron. */
-  hormigueros: string[];
+  /** El hormiguero: la carpeta con todas las notas del usuario, o `null` si todavía no lo eligió. */
+  hormiguero: string | null;
+  /**
+   * Cámara abierta: el nombre de una carpeta de primer nivel del hormiguero (un contexto: notas
+   * personales, una novela, el trabajo), o `null`. La barra lateral muestra su contenido.
+   */
+  camara_abierta: string | null;
   /**
    * Notas, carpetas y capítulos fijados arriba en la barra lateral, en orden de fijado: la ruta
    * completa, o `ruta#título` para un capítulo (ver `barraLateral/clavesDeFijados.ts`).
@@ -88,8 +91,8 @@ export const OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO: OpcionesDelModoEscritor = {
 
 /** Ajustes de una instalación nueva, mientras se leen los guardados. */
 export const AJUSTES_POR_DEFECTO: Ajustes = {
-  hormiguero_abierto: null,
-  hormigueros: [],
+  hormiguero: null,
+  camara_abierta: null,
   fijados: [],
   iconos_de_fijados: {},
   modo_diario: false,

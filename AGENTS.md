@@ -64,12 +64,15 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   ventana; Ajustes, la bienvenida y los diálogos se abren dentro). Aplica colores e idioma
   antes de montar y cada vez que cambian los ajustes.
 - `src/App.tsx` — ventana principal. Solo junta las piezas: barra lateral, editor, barra de
-  estado y, encima, la bienvenida (sin hormigueros, o con el evento `abrir-bienvenida`), los
-  Ajustes, «Hormiguero nuevo» y «Compilar y exportar» (eventos que manda Rust desde el menú,
+  estado y, encima, la bienvenida (sin hormiguero o sin cámara, o con el evento
+  `abrir-bienvenida`), los Ajustes, «Cámara nueva» y «Compilar y exportar» (eventos que manda Rust desde el menú,
   `EVENTOS_DE_RUST` en `src/useEventoDeRust.ts`). La lógica vive en hooks:
   - `src/ajustes/useAjustesGuardados.ts` — los ajustes vigentes y `cambiarAjustes` (aplica y guarda).
-  - `src/hormigueros/useArbolDelHormiguero.ts` — árbol del hormiguero abierto; se relee al
-    cambiar de hormiguero y al volver el foco a la ventana.
+  - `src/hormigueros/useCamarasDelHormiguero.ts` — las cámaras del hormiguero (para la bienvenida,
+    Ajustes y saber si la abierta sigue existiendo); se releen al cambiar de hormiguero y al volver
+    el foco a la ventana.
+  - `src/hormigueros/useArbolDeLaCamara.ts` — árbol de la cámara abierta; se relee al cambiar de
+    cámara y al volver el foco a la ventana.
   - `src/notasAbiertas/useNotasAbiertas.ts` — las notas abiertas (`NotaAbierta`, en
     `notaAbierta.ts`): una sola con archivo a la vez (`dejarComoUnicaNotaAbierta`), guardado
     automático (`guardarNotaEnDiscoAhora`, tras `PAUSA_ANTES_DE_GUARDAR`, al cambiar de nota, al
@@ -81,24 +84,32 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - `src/useAtajosDeTeclado.ts` — Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [ y `Cmd+\`.
 - `src/BarraDeEstado.tsx` — nombre de la nota visible y conteo de palabras, líneas y caracteres
   (o el último error); el conteo está en `src/conteoDelTexto.ts`.
-- **Hormigueros** (los «vaults»): cada uno es una carpeta del usuario; puede tener todos los que
-  quiera (`Ajustes.hormigueros`) y la barra muestra el abierto (`Ajustes.hormiguero_abierto`). Se cambia
-  de uno a otro en Ajustes → General y se cava uno nuevo con File → New Anthill… o desde ahí. Los ajustes
-  de antes (solo `carpeta`) se convierten solos en un hormiguero al leerlos (Rust).
-  - `src/hormigueros/hormigueros.ts` — crear la carpeta (`crear_carpeta_de_hormiguero`), elegir una que
-    existe, y los cambios de ajustes para abrir o quitar uno (quitar no borra la carpeta).
-  - `src/hormigueros/ElegirHormiguero.tsx` — formulario: crear una carpeta nueva (nombre y
-    dónde, Documentos por defecto) o usar una que existe. Lo usan la bienvenida y
-    `NuevoHormiguero.tsx` (ventanita «Hormiguero nuevo»). Estilos en `Hormigueros.css`.
+- **Hormiguero y cámaras**: el hormiguero es una sola carpeta con todas las notas del usuario (lo
+  que en Obsidian es la bóveda), en `Ajustes.hormiguero`. Sus carpetas de primer nivel son las
+  **cámaras**: cada una un contexto (notas personales, una novela, el trabajo y sus proyectos). La
+  barra lateral, los fijados, el diario (`Daily/`) y «Compilar y exportar» trabajan sobre la cámara
+  abierta (`Ajustes.camara_abierta`, guardada por nombre, no por ruta). Se cambia de cámara (o de
+  hormiguero) en Ajustes → General y se cava una cámara con File → New Chamber… o desde ahí. Las
+  notas sueltas en la raíz del hormiguero no son de ninguna cámara (se abren con Cmd+O). Si la
+  cámara abierta falta o ya no existe, la bienvenida se abre en su página de cámaras. Los ajustes
+  de antes (`carpeta`, o `hormiguero_abierto` con la lista `hormigueros`) pasan a ser el hormiguero.
+  Más adelante, algunas cámaras podrán protegerse con contraseña.
+  - `src/hormigueros/hormigueros.ts` — crear carpetas (`crear_carpeta_nueva`), listar las cámaras
+    (`listar_camaras`), elegir una carpeta, la ruta de una cámara y la carpeta de la cámara abierta.
+  - `src/hormigueros/ElegirHormiguero.tsx` — formulario: crear la carpeta del hormiguero (nombre y
+    dónde, «Hormiguero» en Documentos por defecto) o usar una que existe. Lo usa la bienvenida.
+  - `src/hormigueros/ElegirCamara.tsx` — formulario para cavar una cámara (nombre con ejemplos que
+    se tocan) y, en la bienvenida, abrir una que ya existe. Lo usan la bienvenida y
+    `NuevaCamara.tsx` (ventanita «Cámara nueva»). Estilos en `Hormigueros.css`.
 - `src/bienvenida/` — bienvenida (onboarding) con el diseño del sitio: cámaras unidas por un
-  túnel que se recorre en horizontal (una por página: Ant, archivos, hormigueros y cavar el
-  primero), la hormiga y los hoyos abajo, y EN / ES arriba. Reusa del sitio
+  túnel que se recorre en horizontal (una por página: Ant, archivos, el hormiguero y la primera
+  cámara), la hormiga y los hoyos abajo, y EN / ES arriba. Reusa del sitio
   `website/src/lib/cavar.ts` (bordes cavados) y `website/src/assets/tierra.svg`: si se cambian
   allá, revisar también la bienvenida. `prueba/bienvenida.html` la muestra fuera de Tauri.
-- `src/barraLateral/` — la barra lateral, minimalista a propósito (cambiar de hormiguero va en
+- `src/barraLateral/` — la barra lateral, minimalista a propósito (cambiar de cámara va en
   Ajustes, no aquí) y sin líneas separadoras. De arriba abajo: el calendario si hay modo
-  diario, los fijados, «Abiertas» (notas fuera del hormiguero o nuevas ya con algo escrito) y el
-  hormiguero abierto con su nombre y su árbol. Bajo la nota visible, sus títulos.
+  diario, los fijados, «Abiertas» (notas fuera de la cámara o nuevas ya con algo escrito) y la
+  cámara abierta con su nombre y su árbol. Bajo la nota visible, sus títulos.
   - `BarraLateral.tsx` — junta las secciones y provee `ContextoDeLaBarraLateral`
     (`contextoDeLaBarraLateral.ts`): nota visible, carpetas desplegadas, qué está fijado, menú de
     clic derecho… que leen las filas con `useBarraLateral()`.
@@ -108,7 +119,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     (`src/GloboDeAyuda.tsx`); clic derecho → Cambiar icono… (`ElegirIconoDeFijado.tsx`). Una carpeta
     fijada se despliega bajo la grilla (sola, si contiene la nota visible). Se guardan en
     `Ajustes.fijados` (claves: ruta, o `ruta#título` para un capítulo, ver `clavesDeFijados.ts`)
-    con su icono en `Ajustes.iconos_de_fijados`, y solo se muestran los del hormiguero abierto.
+    con su icono en `Ajustes.iconos_de_fijados`, y solo se muestran los de la cámara abierta.
   - `Calendario.tsx` — calendario del modo diario: un mes, semana desde el lunes, punto en los
     días con nota. Con el modo diario activo, `Daily/` no aparece en el árbol y la nota diaria
     abierta va bajo el calendario.
@@ -118,7 +129,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/iconos.ts` — iconos que se pueden elegir para los fijados: una selección de Lucide
   (ISC) copiada aquí, por grupos; `src/Icono.tsx` los dibuja.
 - `src/diario.ts` — fechas `AAAA-MM-DD`, título inicial de cada nota diaria, días con nota
-  (desde el árbol) y llamada a `abrir_o_crear_nota_del_dia`. Las notas diarias van en `Daily/` del hormiguero abierto.
+  (desde el árbol) y llamada a `abrir_o_crear_nota_del_dia`. Las notas diarias van en `Daily/` de la cámara abierta.
 - `src/idioma.tsx` — textos de la interfaz en inglés (por defecto) y español. Los componentes
   los leen con `useTextos()`; `main.tsx` provee `ContextoTextos` según `Ajustes.idioma`. Todo
   texto visible nuevo va aquí, en los dos idiomas (los comentarios del código siguen en español).
@@ -133,8 +144,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   por el principio).
 - `src/ajustes.ts` — tipo `Ajustes` (igual al de Rust), leer, guardar y escuchar cambios.
 - `src/ajustes/ModalAjustes.tsx` y `.css` — Ajustes como ventanita sobre la principal (no es
-  otra ventana), en dos columnas: áreas a la izquierda (`AREAS`: General —idioma y
-  hormigueros—, Editor —modo escritor—, Diario, Apariencia) y el panel del área elegida a la
+  otra ventana), en dos columnas: áreas a la izquierda (`AREAS`: General —idioma, hormiguero y
+  cámaras—, Editor —modo escritor—, Diario, Apariencia) y el panel del área elegida a la
   derecha. Los cambios se guardan al instante; Escape, Cmd+W o clic fuera la cierran. El marco
   de las ventanitas (`.modal-fondo`, `.modal`) está en `App.css`.
   Para agregar un ajuste: campo en `Ajustes` (TS y Rust, con `#[serde(default)]`) y su control
@@ -177,7 +188,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   enseguida: emite `antes-de-salir` para que la interfaz guarde, y sale cuando llama a `salir`
   (o a los 3 s).
 - `src-tauri/src/menu.rs` — menú propio en inglés o español según `Ajustes.idioma` (Ant con
-  «Welcome to Ant…» y «Settings…» Cmd+, · File con «New Anthill…» y «Compile and Export…»
+  «Welcome to Ant…» y «Settings…» Cmd+, · File con «New Chamber…» y «Compile and Export…»
   Cmd+Shift+E · Edit · Window); `EVENTOS` dice qué evento emite cada ítem y `cambiar_idioma`
   lo rehace al guardar otro idioma. No incluye «Cerrar ventana»: Cmd+W no cierra la ventana
   principal.
@@ -185,16 +196,17 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   app, escritos con `escribir_atomico`; al guardar emite `ajustes-cambiados`. Si el archivo está
   dañado, guarda una copia (`ajustes-ilegibles.json`) antes de usar los valores por defecto. Los
   campos que cambiaron de nombre se siguen leyendo con su nombre anterior (`#[serde(alias)]`:
-  `carpeta` → `hormiguero_abierto`, `iconos` → `iconos_de_fijados`, `autor` →
-  `nombre_del_autor`, `compilaciones` → `opciones_de_compilacion_por_carpeta`…) y el hormiguero
-  abierto se suma a la lista de hormigueros si faltaba (con tests).
+  `carpeta` y `hormiguero_abierto` → `hormiguero`, `iconos` → `iconos_de_fijados`, `autor` →
+  `nombre_del_autor`, `compilaciones` → `opciones_de_compilacion_por_carpeta`…; la lista
+  `hormigueros` de antes se ignora), con tests.
 - `src-tauri/src/diario.rs` — `abrir_o_crear_nota_del_dia`: usa la carpeta `Daily` que ya exista (sin importar
   mayúsculas) o la crea, y crea `AAAA-MM-DD.md` si no existe
   (nunca pisa una nota) y devuelve la ruta. Solo acepta fechas `AAAA-MM-DD`. Tiene tests (`cargo test`).
 - `src-tauri/src/carpeta.rs` — `leer_arbol_de_carpeta`: árbol de notas (.md, .markdown, .txt),
   sin ocultas, `node_modules` ni `target`, omitiendo carpetas sin notas (`EntradaDelArbol`, en
-  camelCase hacia la interfaz). `crear_carpeta_de_hormiguero`:
-  crea la carpeta de un hormiguero nuevo (nunca usa una que ya existe; con test).
+  camelCase hacia la interfaz). `listar_camaras`: las carpetas de primer nivel del hormiguero,
+  aunque estén vacías. `crear_carpeta_nueva`: crea la carpeta del hormiguero o de una cámara
+  (nunca usa una que ya existe; con tests).
 - `src-tauri/tauri.conf.json` — nombre, identificador y ventana principal. La barra de título
   nativa está oculta (`titleBarStyle: "Overlay"`, `hiddenTitle`): los botones de la ventana
   flotan sobre la franja `.arrastre`, que sirve para arrastrarla.
@@ -211,7 +223,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   fps y casillas para apagar extensiones. Sirve para comparar motores (Safari/Chrome/Firefox).
 - `prueba/automaticas/*.prueba.ts` — pruebas automáticas (`pnpm test`) de la lógica que no
   depende de la ventana: títulos y conteo de una nota, claves de fijados, notas abiertas,
-  hormigueros, árbol de carpetas, diario, colores, modo escritor y «Compilar y exportar» (del
+  hormiguero y cámaras, árbol de carpetas, diario, colores, modo escritor y «Compilar y exportar» (del
   Markdown al libro, ZIP, PDF y Word). Al cambiar esa lógica, agregar o ajustar su prueba. Node
   las corre sin compilar (`--experimental-strip-types`), así que los módulos que prueban deben
   importar los tipos con `import type` / `type …` y los otros módulos de `src/` con su `.ts`
@@ -263,7 +275,7 @@ Mantener esta sección al día cuando se agreguen carpetas o módulos.
 - Sin abreviaturas ni letras sueltas, tampoco en funciones flecha cortas
   (`(nota) => nota.ruta`, no `(n) => n.ruta`). Únicas excepciones: `i` / `j` como índice de un
   bucle de pocas líneas y `x` / `y` para coordenadas.
-- Los booleanos se leen como pregunta (`estaAbierta`, `tieneArchivo`, `hayHormigueros`) y las
+- Los booleanos se leen como pregunta (`estaAbierta`, `tieneArchivo`, `hayCamaras`) y las
   funciones empiezan con un verbo (`abrirNotaDelDia`, `quitarHormigueroDeLaLista`).
 - Al tocar código que todavía tiene nombres cortos, renombrarlos en ese momento.
 - Lo que se guarda en disco (los campos de `ajustes.json`) no se renombra sin migrar los

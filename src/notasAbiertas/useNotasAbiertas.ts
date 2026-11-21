@@ -41,18 +41,18 @@ const unirCarpetaYNombre = (carpeta: string, nombreDelArchivo: string) =>
 
 interface ParametrosDeLasNotasAbiertas {
   controlDelEditor: RefObject<ControlDelEditor | null>;
-  /** Hormiguero abierto: allí se propone guardar las notas nuevas y van las notas diarias. */
-  carpetaDelHormigueroAbierto: string | null;
-  /** Vuelve a leer el árbol del hormiguero (tras crear una nota). */
-  releerArbolDelHormiguero(): void;
+  /** Cámara abierta: allí se propone guardar las notas nuevas y van las notas diarias. */
+  carpetaDeLaCamaraAbierta: string | null;
+  /** Vuelve a leer el árbol de la cámara (tras crear una nota). */
+  releerArbolDeLaCamara(): void;
   /** Muestra en la barra de estado un error que pasó sin que el usuario hiciera nada (al guardar solo). */
   mostrarError(error: unknown): void;
 }
 
 export function useNotasAbiertas({
   controlDelEditor,
-  carpetaDelHormigueroAbierto,
-  releerArbolDelHormiguero,
+  carpetaDeLaCamaraAbierta,
+  releerArbolDeLaCamara,
   mostrarError,
 }: ParametrosDeLasNotasAbiertas) {
   const textosDeLaInterfaz = useTextos();
@@ -66,8 +66,8 @@ export function useNotasAbiertas({
   idNotaVisibleVigente.current = idNotaVisible;
   const textosVigentes = useRef(textosDeLaInterfaz);
   textosVigentes.current = textosDeLaInterfaz;
-  const carpetaDelHormigueroVigente = useRef(carpetaDelHormigueroAbierto);
-  carpetaDelHormigueroVigente.current = carpetaDelHormigueroAbierto;
+  const carpetaDeLaCamaraVigente = useRef(carpetaDeLaCamaraAbierta);
+  carpetaDeLaCamaraVigente.current = carpetaDeLaCamaraAbierta;
 
   // Un temporizador de guardado por nota con cambios.
   const temporizadoresDeGuardado = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -280,15 +280,15 @@ export function useNotasAbiertas({
    * la carpeta y la nota si no existen; luego se relee el árbol para que aparezcan.
    */
   const abrirNotaDelDia = useCallback(async (diaElegido: Date) => {
-    const carpetaDelHormiguero = carpetaDelHormigueroVigente.current;
-    if (!carpetaDelHormiguero) throw new Error(textosVigentes.current.diarioSinCarpeta);
-    await abrirNotaDeArchivo(await abrirOCrearNotaDelDia(carpetaDelHormiguero, diaElegido, textosVigentes.current.locale));
-    releerArbolDelHormiguero();
-  }, [abrirNotaDeArchivo, releerArbolDelHormiguero]);
+    const carpetaDeLaCamara = carpetaDeLaCamaraVigente.current;
+    if (!carpetaDeLaCamara) throw new Error(textosVigentes.current.diarioSinCarpeta);
+    await abrirNotaDeArchivo(await abrirOCrearNotaDelDia(carpetaDeLaCamara, diaElegido, textosVigentes.current.locale));
+    releerArbolDeLaCamara();
+  }, [abrirNotaDeArchivo, releerArbolDeLaCamara]);
 
-  /** Muestra el diálogo «Abrir» (empezando en el hormiguero) y abre la nota elegida. */
+  /** Muestra el diálogo «Abrir» (empezando en la cámara) y abre la nota elegida. */
   const abrirNotaConElDialogo = useCallback(async () => {
-    const rutaElegida = await elegirNotaConElDialogo(carpetaDelHormigueroVigente.current, textosVigentes.current.filtroNotas);
+    const rutaElegida = await elegirNotaConElDialogo(carpetaDeLaCamaraVigente.current, textosVigentes.current.filtroNotas);
     if (rutaElegida) await abrirNotaDeArchivo(rutaElegida);
   }, [abrirNotaDeArchivo]);
 
@@ -298,7 +298,7 @@ export function useNotasAbiertas({
   /**
    * Guarda la nota visible (Cmd+S). Si tiene archivo, la guarda ya, aunque su archivo haya
    * cambiado fuera de Ant. Si todavía no tiene archivo, o `enOtroArchivo` (Cmd+Shift+S), pregunta
-   * dónde, proponiendo el hormiguero abierto, y relee el árbol para que aparezca.
+   * dónde, proponiendo la cámara abierta, y relee el árbol para que aparezca.
    */
   const guardarNotaVisible = useCallback(async (enOtroArchivo = false) => {
     const notaVisible = notasAbiertasVigentes.current.find((nota) => nota.id === idNotaVisibleVigente.current);
@@ -306,9 +306,9 @@ export function useNotasAbiertas({
     if (notaVisible.rutaDelArchivo && !enOtroArchivo) return guardarNotaEnDiscoAhora(notaVisible.id, true);
     const textos = textosVigentes.current;
     const nombrePropuesto = notaVisible.rutaDelArchivo ? nombreDelArchivo(notaVisible.rutaDelArchivo) : textos.notaNueva;
-    const carpetaDelHormiguero = carpetaDelHormigueroVigente.current;
+    const carpetaDeLaCamara = carpetaDeLaCamaraVigente.current;
     const rutaElegida = await elegirDondeGuardarConElDialogo(
-      carpetaDelHormiguero ? unirCarpetaYNombre(carpetaDelHormiguero, nombrePropuesto) : nombrePropuesto,
+      carpetaDeLaCamara ? unirCarpetaYNombre(carpetaDeLaCamara, nombrePropuesto) : nombrePropuesto,
       textos.filtroNotas,
     );
     if (!rutaElegida) return;
@@ -320,8 +320,8 @@ export function useNotasAbiertas({
       tieneCambiosSinGuardar: false,
       textoQueHayEnDisco: textoGuardado,
     });
-    releerArbolDelHormiguero();
-  }, [guardarNotaEnDiscoAhora, textoActualDeNota, cambiarDatosDeNota, releerArbolDelHormiguero]);
+    releerArbolDeLaCamara();
+  }, [guardarNotaEnDiscoAhora, textoActualDeNota, cambiarDatosDeNota, releerArbolDeLaCamara]);
 
   /**
    * Cierra una nota y muestra la vecina. Si tiene archivo, antes guarda sus cambios; si es una
