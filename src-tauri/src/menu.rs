@@ -25,11 +25,11 @@ pub const EVENTOS: [(&str, &str); 4] = [
 ];
 
 /// Elige el texto en inglés o en español según `idioma` (`"es"` o cualquier otro valor = inglés).
-fn texto<'a>(idioma: &str, en: &'a str, es: &'a str) -> &'a str {
+fn texto<'a>(idioma: &str, en_ingles: &'a str, en_espanol: &'a str) -> &'a str {
     if idioma == "es" {
-        es
+        en_espanol
     } else {
-        en
+        en_ingles
     }
 }
 
@@ -37,28 +37,29 @@ fn texto<'a>(idioma: &str, en: &'a str, es: &'a str) -> &'a str {
 /// (hormiguero nuevo, compilar y exportar), «Edit» y «Window».
 /// El menú de edición es necesario en macOS para que copiar, pegar y deshacer funcionen.
 pub fn crear<R: Runtime>(app: &AppHandle<R>, idioma: &str) -> tauri::Result<Menu<R>> {
-    let t = |en, es| Some(texto(idioma, en, es));
+    // Texto de un ítem predefinido en el idioma elegido (esos ítems lo piden como `Option`).
+    let texto_del_item = |en_ingles, en_espanol| Some(texto(idioma, en_ingles, en_espanol));
     let ajustes = MenuItem::with_id(app, ID_AJUSTES, texto(idioma, "Settings…", "Ajustes…"), true, Some("CmdOrCtrl+,"))?;
     let bienvenida = MenuItem::with_id(app, ID_BIENVENIDA, texto(idioma, "Welcome to Ant…", "Bienvenida a Ant…"), true, None::<&str>)?;
-    let sep = || PredefinedMenuItem::separator(app);
+    let separador = || PredefinedMenuItem::separator(app);
 
     let menu_app = Submenu::with_items(
         app,
         "Ant",
         true,
         &[
-            &PredefinedMenuItem::about(app, t("About Ant", "Acerca de Ant"), None)?,
+            &PredefinedMenuItem::about(app, texto_del_item("About Ant", "Acerca de Ant"), None)?,
             &bienvenida,
-            &sep()?,
+            &separador()?,
             &ajustes,
-            &sep()?,
-            &PredefinedMenuItem::services(app, t("Services", "Servicios"))?,
-            &sep()?,
-            &PredefinedMenuItem::hide(app, t("Hide Ant", "Ocultar Ant"))?,
-            &PredefinedMenuItem::hide_others(app, t("Hide Others", "Ocultar otros"))?,
-            &PredefinedMenuItem::show_all(app, t("Show All", "Mostrar todo"))?,
-            &sep()?,
-            &PredefinedMenuItem::quit(app, t("Quit Ant", "Salir de Ant"))?,
+            &separador()?,
+            &PredefinedMenuItem::services(app, texto_del_item("Services", "Servicios"))?,
+            &separador()?,
+            &PredefinedMenuItem::hide(app, texto_del_item("Hide Ant", "Ocultar Ant"))?,
+            &PredefinedMenuItem::hide_others(app, texto_del_item("Hide Others", "Ocultar otros"))?,
+            &PredefinedMenuItem::show_all(app, texto_del_item("Show All", "Mostrar todo"))?,
+            &separador()?,
+            &PredefinedMenuItem::quit(app, texto_del_item("Quit Ant", "Salir de Ant"))?,
         ],
     )?;
 
@@ -76,20 +77,20 @@ pub fn crear<R: Runtime>(app: &AppHandle<R>, idioma: &str) -> tauri::Result<Menu
         true,
         Some("CmdOrCtrl+Shift+E"),
     )?;
-    let menu_archivo = Submenu::with_items(app, texto(idioma, "File", "Archivo"), true, &[&hormiguero, &sep()?, &compilar])?;
+    let menu_archivo = Submenu::with_items(app, texto(idioma, "File", "Archivo"), true, &[&hormiguero, &separador()?, &compilar])?;
 
     let menu_edicion = Submenu::with_items(
         app,
         texto(idioma, "Edit", "Edición"),
         true,
         &[
-            &PredefinedMenuItem::undo(app, t("Undo", "Deshacer"))?,
-            &PredefinedMenuItem::redo(app, t("Redo", "Rehacer"))?,
-            &sep()?,
-            &PredefinedMenuItem::cut(app, t("Cut", "Cortar"))?,
-            &PredefinedMenuItem::copy(app, t("Copy", "Copiar"))?,
-            &PredefinedMenuItem::paste(app, t("Paste", "Pegar"))?,
-            &PredefinedMenuItem::select_all(app, t("Select All", "Seleccionar todo"))?,
+            &PredefinedMenuItem::undo(app, texto_del_item("Undo", "Deshacer"))?,
+            &PredefinedMenuItem::redo(app, texto_del_item("Redo", "Rehacer"))?,
+            &separador()?,
+            &PredefinedMenuItem::cut(app, texto_del_item("Cut", "Cortar"))?,
+            &PredefinedMenuItem::copy(app, texto_del_item("Copy", "Copiar"))?,
+            &PredefinedMenuItem::paste(app, texto_del_item("Paste", "Pegar"))?,
+            &PredefinedMenuItem::select_all(app, texto_del_item("Select All", "Seleccionar todo"))?,
         ],
     )?;
 
@@ -98,10 +99,10 @@ pub fn crear<R: Runtime>(app: &AppHandle<R>, idioma: &str) -> tauri::Result<Menu
         texto(idioma, "Window", "Ventana"),
         true,
         &[
-            &PredefinedMenuItem::minimize(app, t("Minimize", "Minimizar"))?,
-            &PredefinedMenuItem::maximize(app, t("Zoom", "Zoom"))?,
-            &sep()?,
-            &PredefinedMenuItem::fullscreen(app, t("Enter Full Screen", "Pantalla completa"))?,
+            &PredefinedMenuItem::minimize(app, texto_del_item("Minimize", "Minimizar"))?,
+            &PredefinedMenuItem::maximize(app, texto_del_item("Zoom", "Zoom"))?,
+            &separador()?,
+            &PredefinedMenuItem::fullscreen(app, texto_del_item("Enter Full Screen", "Pantalla completa"))?,
         ],
     )?;
 
@@ -111,9 +112,9 @@ pub fn crear<R: Runtime>(app: &AppHandle<R>, idioma: &str) -> tauri::Result<Menu
 /// Rehace el menú de la app en `idioma`. Se llama al guardar los ajustes con un idioma distinto.
 pub fn cambiar_idioma<R: Runtime>(app: &AppHandle<R>, idioma: &str) {
     match crear(app, idioma) {
-        Ok(menu) => {
-            let _ = app.set_menu(menu);
+        Ok(menu_nuevo) => {
+            let _ = app.set_menu(menu_nuevo);
         }
-        Err(e) => eprintln!("Could not rebuild the menu: {e}"),
+        Err(error) => eprintln!("Could not rebuild the menu: {error}"),
     }
 }

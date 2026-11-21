@@ -7,7 +7,7 @@ import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 
 /** Estilos de la vista: fondo, texto, cursor, selección y márgenes de lectura. */
-export const tema = EditorView.theme(
+export const temaDelEditor = EditorView.theme(
   {
     "&": { height: "100%", color: "var(--texto)", backgroundColor: "var(--fondo)" },
     "&.cm-focused": { outline: "none" },
@@ -28,7 +28,7 @@ export const tema = EditorView.theme(
 );
 
 /** Colores del Markdown: títulos, énfasis, enlaces, código y citas. */
-export const resaltado = syntaxHighlighting(
+export const resaltadoDelMarkdown = syntaxHighlighting(
   HighlightStyle.define([
     { tag: tags.heading1, fontSize: "1.5em", fontWeight: "700", color: "var(--titulo)" },
     { tag: tags.heading2, fontSize: "1.25em", fontWeight: "700", color: "var(--titulo)" },

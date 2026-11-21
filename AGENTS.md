@@ -79,10 +79,10 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/BarraDeEstado.tsx` — nombre de la nota visible y conteo de palabras, líneas y caracteres
   (o el último error).
 - **Hormigueros** (los «vaults»): cada uno es una carpeta del usuario; puede tener todos los que
-  quiera (`Ajustes.hormigueros`) y la barra muestra el abierto (`Ajustes.carpeta`). Se cambia
+  quiera (`Ajustes.hormigueros`) y la barra muestra el abierto (`Ajustes.hormiguero_abierto`). Se cambia
   de uno a otro en Ajustes → General y se cava uno nuevo con File → New Anthill… o desde ahí. Los ajustes
   de antes (solo `carpeta`) se convierten solos en un hormiguero al leerlos (Rust).
-  - `src/hormigueros/hormigueros.ts` — crear la carpeta (`crear_hormiguero`), elegir una que
+  - `src/hormigueros/hormigueros.ts` — crear la carpeta (`crear_carpeta_de_hormiguero`), elegir una que
     existe, y los cambios de ajustes para abrir o quitar uno (quitar no borra la carpeta).
   - `src/hormigueros/ElegirHormiguero.tsx` — formulario: crear una carpeta nueva (nombre y
     dónde, Documentos por defecto) o usar una que existe. Lo usan la bienvenida y
@@ -102,29 +102,31 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - `FilasDelArbol.tsx` — `FilaDeNota` (con sus títulos si es la visible), las carpetas y
     `EntradasDelArbol` (recursivo, se salta lo fijado).
   - `Fijados.tsx` — grilla de iconos sin texto, al estilo de Zen/Arc, con el nombre en un globo
-    (`src/Globo.tsx`); clic derecho → Cambiar icono… (`ElegirIconoDeFijado.tsx`). Una carpeta
+    (`src/GloboDeAyuda.tsx`); clic derecho → Cambiar icono… (`ElegirIconoDeFijado.tsx`). Una carpeta
     fijada se despliega bajo la grilla (sola, si contiene la nota visible). Se guardan en
     `Ajustes.fijados` (claves: ruta, o `ruta#título` para un capítulo, ver `clavesDeFijados.ts`)
-    con su icono en `Ajustes.iconos`, y solo se muestran los del hormiguero abierto.
+    con su icono en `Ajustes.iconos_de_fijados`, y solo se muestran los del hormiguero abierto.
   - `Calendario.tsx` — calendario del modo diario: un mes, semana desde el lunes, punto en los
     días con nota. Con el modo diario activo, `Daily/` no aparece en el árbol y la nota diaria
     abierta va bajo el calendario.
   - `useArrastreDelBorde.ts` — el ancho se cambia arrastrando el borde derecho (`.barra-tirador`,
-    invisible, puntero `col-resize`); se guarda en `Ajustes.ancho_barra` al soltar.
+    invisible, puntero `col-resize`); se guarda en `Ajustes.ancho_de_la_barra_lateral` al soltar.
   `prueba/barra.html` la muestra con fijados de ejemplo (y los Ajustes, `?ajustes`).
 - `src/iconos.ts` — iconos que se pueden elegir para los fijados: una selección de Lucide
   (ISC) copiada aquí, por grupos; `src/Icono.tsx` los dibuja.
 - `src/diario.ts` — fechas `AAAA-MM-DD`, título inicial de cada nota diaria, días con nota
-  (desde el árbol) y llamada a `abrir_dia`. Las notas diarias van en `Daily/` del hormiguero abierto.
+  (desde el árbol) y llamada a `abrir_o_crear_nota_del_dia`. Las notas diarias van en `Daily/` del hormiguero abierto.
 - `src/idioma.tsx` — textos de la interfaz en inglés (por defecto) y español. Los componentes
   los leen con `useTextos()`; `main.tsx` provee `ContextoTextos` según `Ajustes.idioma`. Todo
   texto visible nuevo va aquí, en los dos idiomas (los comentarios del código siguen en español).
 - `src/colores.ts` — variables de color que se pueden cambiar, temas listos (`TEMAS`) y
   `aplicarColores`, que `main.tsx` llama al abrir la app y al cambiar los ajustes.
 - `src/MenuContextual.tsx` — menú de clic derecho propio (se cierra con clic fuera, scroll o Escape).
-- `src/marcadores.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de código).
-- `src/carpeta.ts` — tipo `Entrada` y llamada a `listar_carpeta`; utilidades de rutas y del
-  árbol (`estaDentro`, `carpetasPadre`, `buscarEntradaPorRuta`, `ltr` para mostrar rutas cortadas
+- `src/titulosDeLaNota.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de
+  código) y dice en qué título está el cursor.
+- `src/arbolDeCarpetas.ts` — tipo `EntradaDelArbol` y llamada a `leer_arbol_de_carpeta`;
+  utilidades de rutas y del árbol (`estaDentroDe`, `carpetasQueContienenA`, `buscarEntradaPorRuta`,
+  `marcarComoTextoDeIzquierdaADerecha` para mostrar rutas cortadas
   por el principio).
 - `src/ajustes.ts` — tipo `Ajustes` (igual al de Rust), leer, guardar y escuchar cambios.
 - `src/ajustes/ModalAjustes.tsx` y `.css` — Ajustes como ventanita sobre la principal (no es
@@ -136,7 +138,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   en el panel.
 - `src/App.css` — variables de color del tema (`--fondo`, `--texto`, `--acento`, …) y la
   distribución. Para cambiar colores, tocar las variables, no los componentes. Los colores que
-  elige el usuario (`Ajustes.colores`) pisan estas variables; un tema nuevo va en `TEMAS`.
+  elige el usuario (`Ajustes.colores_elegidos`) pisan estas variables; un tema nuevo va en `TEMAS`.
 - `src/editor/Editor.tsx` — monta CodeMirror 6 con historial, búsqueda (Cmd+F), Markdown y
   resaltado de bloques de código. Una sola vista para todas las notas: cada nota guarda su
   `EditorState` (texto, cursor, historial) y se intercambia al cambiar de nota; se recuerdan
@@ -151,7 +153,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/compilar/` — «Compilar y exportar» (menú File, Cmd+Shift+E; Rust emite
   `abrir-compilar` y `App` abre el diálogo). Sin dependencias ni programas externos:
   - `Compilar.tsx` y `.css` — el diálogo: carpeta, capítulos (incluir, ordenar), título, autor,
-    formato, estilo y opciones; recuerda todo por carpeta en `Ajustes.compilaciones`.
+    formato, estilo y opciones; recuerda todo por carpeta en `Ajustes.opciones_de_compilacion_por_carpeta`.
   - `modelo.ts` — Markdown → libro (capítulos, párrafos con estilos, títulos, escenas) con el
     analizador de Lezer; cada línea es un párrafo, `%% %%` y YAML se omiten, tipografía opcional.
   - `docx.ts` — Word escrito a mano (WordprocessingML), con estilos de Word (Title, Heading 1…).
@@ -161,11 +163,14 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - `zip.ts` — ZIP mínimo (CRC-32, `CompressionStream`) para el .docx.
   Para probar sin la app: `node --experimental-strip-types` puede importar estos módulos (usan
   `.ts` explícito), y `prueba/compilar.html` muestra el diálogo con datos de ejemplo.
-- `src/notas.ts` — diálogos de abrir/guardar y llamadas a `read_note` / `write_note`.
+- `src/archivosDeNotas.ts` — diálogos de abrir/guardar y llamadas a `leer_nota_del_disco`,
+  `guardar_nota_en_el_disco`, `guardar_archivo_binario` y `mostrar_archivo_en_su_carpeta`.
 - `src-tauri/src/lib.rs` — arma la app: plugin de diálogos, menú (cada ítem propio emite su
-  evento a la ventana principal), comandos `read_note`, `write_note` (guardado atómico con
-  archivo temporal + renombrar), `guardar_binario` (bytes crudos en el cuerpo y la ruta en el
-  encabezado `ruta`), `mostrar_en_carpeta` y `salir`. Al pedir salir (Cmd+Q, Dock) no sale
+  evento a la ventana principal), comandos `leer_nota_del_disco`, `guardar_nota_en_el_disco`
+  (guardado atómico con archivo temporal + renombrar), `guardar_archivo_binario` (bytes crudos en
+  el cuerpo y la ruta en el encabezado `ruta`), `mostrar_archivo_en_su_carpeta` y `salir`. Los
+  argumentos de los comandos van en snake_case en Rust y en camelCase desde la interfaz
+  (`ruta_del_archivo` ↔ `rutaDelArchivo`), como los convierte Tauri. Al pedir salir (Cmd+Q, Dock) no sale
   enseguida: emite `antes-de-salir` para que la interfaz guarde, y sale cuando llama a `salir`
   (o a los 3 s).
 - `src-tauri/src/menu.rs` — menú propio en inglés o español según `Ajustes.idioma` (Ant con
@@ -175,13 +180,17 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   principal.
 - `src-tauri/src/ajustes.rs` — ajustes en `ajustes.json` de la carpeta de configuración de la
   app, escritos con `escribir_atomico`; al guardar emite `ajustes-cambiados`. Si el archivo está
-  dañado, guarda una copia (`ajustes-ilegibles.json`) antes de usar los valores por defecto. Al leer, la `carpeta` de versiones anteriores pasa
-  a la lista de hormigueros (con test).
-- `src-tauri/src/diario.rs` — `abrir_dia`: usa la carpeta `Daily` que ya exista (sin importar
+  dañado, guarda una copia (`ajustes-ilegibles.json`) antes de usar los valores por defecto. Los
+  campos que cambiaron de nombre se siguen leyendo con su nombre anterior (`#[serde(alias)]`:
+  `carpeta` → `hormiguero_abierto`, `iconos` → `iconos_de_fijados`, `autor` →
+  `nombre_del_autor`, `compilaciones` → `opciones_de_compilacion_por_carpeta`…) y el hormiguero
+  abierto se suma a la lista de hormigueros si faltaba (con tests).
+- `src-tauri/src/diario.rs` — `abrir_o_crear_nota_del_dia`: usa la carpeta `Daily` que ya exista (sin importar
   mayúsculas) o la crea, y crea `AAAA-MM-DD.md` si no existe
   (nunca pisa una nota) y devuelve la ruta. Solo acepta fechas `AAAA-MM-DD`. Tiene tests (`cargo test`).
-- `src-tauri/src/carpeta.rs` — `listar_carpeta`: árbol de notas (.md, .markdown, .txt),
-  sin ocultas, `node_modules` ni `target`, omitiendo carpetas sin notas. `crear_hormiguero`:
+- `src-tauri/src/carpeta.rs` — `leer_arbol_de_carpeta`: árbol de notas (.md, .markdown, .txt),
+  sin ocultas, `node_modules` ni `target`, omitiendo carpetas sin notas (`EntradaDelArbol`, en
+  camelCase hacia la interfaz). `crear_carpeta_de_hormiguero`:
   crea la carpeta de un hormiguero nuevo (nunca usa una que ya existe; con test).
 - `src-tauri/tauri.conf.json` — nombre, identificador y ventana principal. La barra de título
   nativa está oculta (`titleBarStyle: "Overlay"`, `hiddenTitle`): los botones de la ventana

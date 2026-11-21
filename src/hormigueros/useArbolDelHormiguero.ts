@@ -5,10 +5,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Entrada, listarCarpeta } from "../carpeta";
+import { EntradaDelArbol, leerArbolDeCarpeta } from "../arbolDeCarpetas";
 
 export function useArbolDelHormiguero(carpetaDelHormiguero: string | null, mostrarError: (error: unknown) => void) {
-  const [arbolDelHormiguero, setArbolDelHormiguero] = useState<Entrada[]>([]);
+  const [arbolDelHormiguero, setArbolDelHormiguero] = useState<EntradaDelArbol[]>([]);
   const carpetaVigente = useRef(carpetaDelHormiguero);
   carpetaVigente.current = carpetaDelHormiguero;
 
@@ -16,7 +16,7 @@ export function useArbolDelHormiguero(carpetaDelHormiguero: string | null, mostr
   const releerArbolDelHormiguero = useCallback(() => {
     const carpeta = carpetaVigente.current;
     if (!carpeta) return setArbolDelHormiguero([]);
-    listarCarpeta(carpeta).then(
+    leerArbolDeCarpeta(carpeta).then(
       (arbolLeido) => {
         // Si mientras se leía se cambió de hormiguero, este árbol ya no sirve.
         if (carpetaVigente.current === carpeta) setArbolDelHormiguero(arbolLeido);

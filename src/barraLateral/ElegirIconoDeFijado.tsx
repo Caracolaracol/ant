@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icono } from "../Icono";
 import { GRUPOS_ICONOS, GrupoIconos } from "../iconos";
-import { useGlobo } from "../Globo";
+import { useGloboDeAyuda } from "../GloboDeAyuda";
 import { useTextos } from "../idioma";
 
 interface Props {
@@ -23,7 +23,7 @@ interface Props {
 export function ElegirIconoDeFijado({ x, y, iconoActual, alElegirIcono, alCerrar }: Props) {
   const textosDeLaInterfaz = useTextos();
   const cajaDelSelector = useRef<HTMLDivElement>(null);
-  const globoConElNombre = useGlobo();
+  const globoConElNombre = useGloboDeAyuda();
   // Posición final: la del clic, corrida para que la ventanita no se salga de la pantalla.
   const [posicionEnPantalla, setPosicionEnPantalla] = useState({ left: x, top: y });
   useLayoutEffect(() => {
@@ -51,7 +51,7 @@ export function ElegirIconoDeFijado({ x, y, iconoActual, alElegirIcono, alCerrar
 
   /** Elige un icono (o el de por defecto, con `null`) y cierra. */
   const elegirYCerrar = (iconoElegido: string | null) => {
-    globoConElNombre.ocultar();
+    globoConElNombre.ocultarGlobo();
     alElegirIcono(iconoElegido);
     alCerrar();
   };
@@ -69,10 +69,10 @@ export function ElegirIconoDeFijado({ x, y, iconoActual, alElegirIcono, alCerrar
                   className={`elegir-icono-opcion${nombreDelIcono === iconoActual ? " elegido" : ""}`}
                   aria-label={nombreDelIcono}
                   onClick={() => elegirYCerrar(nombreDelIcono)}
-                  onMouseEnter={(evento) => globoConElNombre.mostrar(evento.currentTarget, nombreDelIcono.replace(/-/g, " "))}
-                  onMouseLeave={globoConElNombre.ocultar}
+                  onMouseEnter={(evento) => globoConElNombre.mostrarGlobo(evento.currentTarget, nombreDelIcono.replace(/-/g, " "))}
+                  onMouseLeave={globoConElNombre.ocultarGlobo}
                 >
-                  <Icono id={nombreDelIcono} tamano={18} />
+                  <Icono nombreDelIcono={nombreDelIcono} tamanoEnPixeles={18} />
                 </button>
               ))}
             </div>
@@ -80,7 +80,7 @@ export function ElegirIconoDeFijado({ x, y, iconoActual, alElegirIcono, alCerrar
         ))}
       </div>
       <button className="elegir-icono-defecto" onClick={() => elegirYCerrar(null)}>{textosDeLaInterfaz.iconoPorDefecto}</button>
-      {globoConElNombre.dibujo}
+      {globoConElNombre.globoParaDibujar}
     </div>,
     document.body,
   );

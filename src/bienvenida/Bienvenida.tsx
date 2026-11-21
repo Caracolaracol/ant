@@ -11,9 +11,9 @@
 // `website/src/assets/tierra.svg`), así la app y el sitio se ven iguales.
 
 import { useCallback, useEffect, useRef } from "react";
-import { cavar } from "../../website/src/lib/cavar";
-import tierra from "../../website/src/assets/tierra.svg";
-import icono from "../../marca/ant-icono.svg";
+import { cavar as cavarBordesDeLasCamaras } from "../../website/src/lib/cavar";
+import imagenDeLaTierra from "../../website/src/assets/tierra.svg";
+import iconoDeAnt from "../../marca/ant-icono.svg";
 import { ElegirHormiguero } from "../hormigueros/ElegirHormiguero";
 import { IDIOMAS, Idioma, useTextos } from "../idioma";
 import { Hormiga } from "./Hormiga";
@@ -21,198 +21,214 @@ import "./Bienvenida.css";
 
 interface Props {
   idioma: Idioma;
-  onCambiarIdioma(idioma: Idioma): void;
+  alCambiarIdioma(idiomaElegido: Idioma): void;
   /** Recibe la carpeta del hormiguero creado o elegido en la última cámara. */
-  onListo(ruta: string): void;
+  alElegirCarpeta(carpetaDelHormiguero: string): void;
   /** Si ya hay hormigueros, la bienvenida se puede cerrar sin crear otro. */
-  onCerrar?: () => void;
+  alCerrar?: () => void;
 }
 
-/** Cuántas cámaras tiene la bienvenida. */
-const CAMARAS = 4;
+/** Cuántas cámaras (páginas) tiene la bienvenida. */
+const CANTIDAD_DE_CAMARAS = 4;
 
-export function Bienvenida({ idioma, onCambiarIdioma, onListo, onCerrar }: Props) {
-  const tx = useTextos();
-  const nido = useRef<HTMLDivElement>(null);
-  const fila = useRef<HTMLDivElement>(null);
-  const hormiga = useRef<SVGSVGElement>(null);
-  const pista = useRef<HTMLDivElement>(null);
-  const hoyos = useRef<HTMLOListElement>(null);
+/** Pausa tras un paso con la rueda del mouse, para que un giro largo no se salte todas las cámaras. */
+const PAUSA_ENTRE_PASOS_DE_LA_RUEDA = 650;
+
+export function Bienvenida({ idioma, alCambiarIdioma, alElegirCarpeta, alCerrar }: Props) {
+  const textosDeLaInterfaz = useTextos();
+  const nidoConScroll = useRef<HTMLDivElement>(null);
+  const filaDeCamaras = useRef<HTMLDivElement>(null);
+  const hormigaDelRecorrido = useRef<SVGSVGElement>(null);
+  const pistaDelRecorrido = useRef<HTMLDivElement>(null);
+  const hoyosDelRecorrido = useRef<HTMLOListElement>(null);
 
   // Bordes imperfectos de las cámaras y del túnel, como en el sitio.
   useEffect(() => {
-    if (fila.current) cavar(fila.current);
+    if (filaDeCamaras.current) cavarBordesDeLasCamaras(filaDeCamaras.current);
   }, []);
 
-  /** Lleva el nido hasta la cámara `i`. */
-  const irA = useCallback((i: number) => {
-    const n = nido.current;
-    if (!n) return;
-    const destino = Math.max(0, Math.min(CAMARAS - 1, i));
-    const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    n.scrollTo({ left: destino * n.clientWidth, behavior: sinMovimiento ? "auto" : "smooth" });
+  /** Cámara que se ve ahora (la más cercana al scroll). */
+  const camaraVisible = () => {
+    const nido = nidoConScroll.current;
+    return nido ? Math.round(nido.scrollLeft / (nido.clientWidth || 1)) : 0;
+  };
+
+  /** Lleva el nido hasta la cámara `numeroDeCamara` (desde 0). */
+  const irACamara = useCallback((numeroDeCamara: number) => {
+    const nido = nidoConScroll.current;
+    if (!nido) return;
+    const camaraDestino = Math.max(0, Math.min(CANTIDAD_DE_CAMARAS - 1, numeroDeCamara));
+    const prefiereSinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    nido.scrollTo({ left: camaraDestino * nido.clientWidth, behavior: prefiereSinMovimiento ? "auto" : "smooth" });
   }, []);
 
   // La rueda del mouse (vertical) pasa de cámara en cámara: un paso por gesto, con una pausa
   // para que un giro largo no se salte todas. El trackpad (horizontal) usa el scroll normal, que
   // se ajusta a cada cámara por `scroll-snap`.
   useEffect(() => {
-    const n = nido.current;
-    if (!n) return;
-    let bloqueado = false;
-    const alGirar = (e: WheelEvent) => {
-      if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-      e.preventDefault();
-      if (bloqueado || Math.abs(e.deltaY) < 4) return;
-      bloqueado = true;
-      setTimeout(() => (bloqueado = false), 650);
-      irA(Math.round(n.scrollLeft / n.clientWidth) + Math.sign(e.deltaY));
+    const nido = nidoConScroll.current;
+    if (!nido) return;
+    let estaEnPausa = false;
+    const alGirarLaRueda = (evento: WheelEvent) => {
+      if (evento.ctrlKey || Math.abs(evento.deltaY) <= Math.abs(evento.deltaX)) return;
+      evento.preventDefault();
+      if (estaEnPausa || Math.abs(evento.deltaY) < 4) return;
+      estaEnPausa = true;
+      setTimeout(() => (estaEnPausa = false), PAUSA_ENTRE_PASOS_DE_LA_RUEDA);
+      irACamara(camaraVisible() + Math.sign(evento.deltaY));
     };
-    n.addEventListener("wheel", alGirar, { passive: false });
-    return () => n.removeEventListener("wheel", alGirar);
-  }, [irA]);
+    nido.addEventListener("wheel", alGirarLaRueda, { passive: false });
+    return () => nido.removeEventListener("wheel", alGirarLaRueda);
+  }, [irACamara]);
 
-  // Teclado: flechas, Re Pág/Av Pág, Inicio y Fin (salvo mientras se escribe el nombre).
+  // Teclado: flechas, Re Pág/Av Pág, Inicio y Fin (salvo mientras se escribe el nombre), y
+  // Escape para cerrar si se puede.
   useEffect(() => {
-    const alTeclear = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as Element).closest("input")) return;
-      const i = Math.round((nido.current?.scrollLeft ?? 0) / (nido.current?.clientWidth || 1));
-      if (["ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) irA(i + 1);
-      else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) irA(i - 1);
-      else if (e.key === "Home") irA(0);
-      else if (e.key === "End") irA(CAMARAS - 1);
-      else if (e.key === "Escape" && onCerrar) onCerrar();
+    const alPresionarTecla = (evento: KeyboardEvent) => {
+      if (evento.metaKey || evento.ctrlKey || evento.altKey || (evento.target as Element).closest("input")) return;
+      if (["ArrowRight", "ArrowDown", "PageDown"].includes(evento.key)) irACamara(camaraVisible() + 1);
+      else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(evento.key)) irACamara(camaraVisible() - 1);
+      else if (evento.key === "Home") irACamara(0);
+      else if (evento.key === "End") irACamara(CANTIDAD_DE_CAMARAS - 1);
+      else if (evento.key === "Escape" && alCerrar) alCerrar();
       else return;
-      e.preventDefault();
+      evento.preventDefault();
     };
-    window.addEventListener("keydown", alTeclear);
-    return () => window.removeEventListener("keydown", alTeclear);
-  }, [irA, onCerrar]);
+    window.addEventListener("keydown", alPresionarTecla);
+    return () => window.removeEventListener("keydown", alPresionarTecla);
+  }, [irACamara, alCerrar]);
 
   // La hormiga de abajo avanza según lo recorrido, mira hacia donde va y mueve las patas
   // mientras hay scroll. El hoyo de la cámara visible se rellena. Todo directo en el DOM, como en
   // el sitio: cambia en cada cuadro del scroll y no hace falta volver a dibujar con React.
   useEffect(() => {
-    const n = nido.current;
-    if (!n) return;
-    let anterior = n.scrollLeft;
-    let quieta: ReturnType<typeof setTimeout> | undefined;
-    const mover = () => {
-      const h = hormiga.current;
-      const p = pista.current;
-      if (!h || !p) return;
-      const max = n.scrollWidth - n.clientWidth;
-      const avance = max > 0 ? n.scrollLeft / max : 0;
-      h.style.setProperty("--x", `${avance * (p.clientWidth - h.getBoundingClientRect().width)}px`);
-      if (n.scrollLeft !== anterior) h.classList.toggle("atras", n.scrollLeft < anterior);
-      anterior = n.scrollLeft;
-      h.classList.add("caminando");
-      clearTimeout(quieta);
-      quieta = setTimeout(() => h.classList.remove("caminando"), 160);
-      const i = Math.round(n.scrollLeft / (n.clientWidth || 1));
-      hoyos.current?.querySelectorAll("button").forEach((b, j) => b.toggleAttribute("aria-current", j === i));
+    const nido = nidoConScroll.current;
+    if (!nido) return;
+    let scrollAnterior = nido.scrollLeft;
+    let temporizadorDeQuietud: ReturnType<typeof setTimeout> | undefined;
+    const moverLaHormiga = () => {
+      const hormiga = hormigaDelRecorrido.current;
+      const pista = pistaDelRecorrido.current;
+      if (!hormiga || !pista) return;
+      const scrollMaximo = nido.scrollWidth - nido.clientWidth;
+      const fraccionRecorrida = scrollMaximo > 0 ? nido.scrollLeft / scrollMaximo : 0;
+      const espacioParaAvanzar = pista.clientWidth - hormiga.getBoundingClientRect().width;
+      hormiga.style.setProperty("--x", `${fraccionRecorrida * espacioParaAvanzar}px`);
+      if (nido.scrollLeft !== scrollAnterior) hormiga.classList.toggle("atras", nido.scrollLeft < scrollAnterior);
+      scrollAnterior = nido.scrollLeft;
+      hormiga.classList.add("caminando");
+      clearTimeout(temporizadorDeQuietud);
+      temporizadorDeQuietud = setTimeout(() => hormiga.classList.remove("caminando"), 160);
+      const numeroDeCamaraVisible = camaraVisible();
+      hoyosDelRecorrido.current?.querySelectorAll("button").forEach((hoyo, numeroDeHoyo) => {
+        hoyo.toggleAttribute("aria-current", numeroDeHoyo === numeroDeCamaraVisible);
+      });
     };
-    n.addEventListener("scroll", mover, { passive: true });
-    window.addEventListener("resize", mover);
-    mover();
-    hormiga.current?.classList.remove("caminando");
+    nido.addEventListener("scroll", moverLaHormiga, { passive: true });
+    window.addEventListener("resize", moverLaHormiga);
+    moverLaHormiga();
+    hormigaDelRecorrido.current?.classList.remove("caminando");
     return () => {
-      n.removeEventListener("scroll", mover);
-      window.removeEventListener("resize", mover);
-      clearTimeout(quieta);
+      nido.removeEventListener("scroll", moverLaHormiga);
+      window.removeEventListener("resize", moverLaHormiga);
+      clearTimeout(temporizadorDeQuietud);
     };
   }, []);
 
-  /** Botón para pasar a la cámara siguiente. */
-  const seguir = (i: number) => (
-    <button className="bv-boton" onClick={() => irA(i + 1)}>
-      {tx.bvSeguir} <span aria-hidden="true">→</span>
+  /** Botón para pasar de la cámara `numeroDeCamara` a la siguiente. */
+  const botonParaSeguirDesde = (numeroDeCamara: number) => (
+    <button className="bienvenida-boton" onClick={() => irACamara(numeroDeCamara + 1)}>
+      {textosDeLaInterfaz.bienvenidaSeguir} <span aria-hidden="true">→</span>
     </button>
   );
 
   return (
-    <div className="bv">
+    <div className="bienvenida">
       {/* Superficie: arrastra la ventana; deja lugar a los botones de macOS a la izquierda. */}
-      <header className="bv-superficie" data-tauri-drag-region>
-        <span className="bv-marca" data-tauri-drag-region>
-          <img src={icono} width="28" height="28" alt="" />
+      <header className="bienvenida-superficie" data-tauri-drag-region>
+        <span className="bienvenida-marca" data-tauri-drag-region>
+          <img src={iconoDeAnt} width="28" height="28" alt="" />
           Ant
         </span>
-        <nav className="bv-nav">
-          <span className="bv-idiomas" aria-label={tx.idioma}>
-            {IDIOMAS.map((i, n) => (
-              <span key={i.id}>
-                {n > 0 && <span aria-hidden="true"> / </span>}
-                <button aria-current={i.id === idioma || undefined} lang={i.id} onClick={() => onCambiarIdioma(i.id)}>
-                  {i.id.toUpperCase()}
+        <nav className="bienvenida-navegacion">
+          <span className="bienvenida-idiomas" aria-label={textosDeLaInterfaz.idioma}>
+            {IDIOMAS.map((idiomaDisponible, posicion) => (
+              <span key={idiomaDisponible.id}>
+                {posicion > 0 && <span aria-hidden="true"> / </span>}
+                <button
+                  aria-current={idiomaDisponible.id === idioma || undefined}
+                  lang={idiomaDisponible.id}
+                  onClick={() => alCambiarIdioma(idiomaDisponible.id)}
+                >
+                  {idiomaDisponible.id.toUpperCase()}
                 </button>
               </span>
             ))}
           </span>
-          {onCerrar && (
-            <button className="bv-cerrar" onClick={onCerrar}>{tx.bvVolver}</button>
+          {alCerrar && (
+            <button className="bienvenida-cerrar" onClick={alCerrar}>{textosDeLaInterfaz.bienvenidaVolver}</button>
           )}
         </nav>
       </header>
 
-      <div className="bv-nido" ref={nido} style={{ backgroundImage: `url(${tierra})` }}>
-        <div className="bv-fila" ref={fila}>
-          <section className="bv-camara">
-            <div className="hueco bv-portada">
-              <img className="bv-icono" src={icono} width="150" height="150" alt="" />
+      <div className="bienvenida-nido" ref={nidoConScroll} style={{ backgroundImage: `url(${imagenDeLaTierra})` }}>
+        <div className="bienvenida-fila" ref={filaDeCamaras}>
+          <section className="bienvenida-camara">
+            <div className="hueco bienvenida-portada">
+              <img className="bienvenida-icono" src={iconoDeAnt} width="150" height="150" alt="" />
               <div>
                 <h1>Ant<span>.</span></h1>
-                <p className="bv-lema">{tx.bvLema}</p>
-                <p>{tx.bvPresentacion}</p>
-                {seguir(0)}
+                <p className="bienvenida-lema">{textosDeLaInterfaz.bienvenidaLema}</p>
+                <p>{textosDeLaInterfaz.bienvenidaPresentacion}</p>
+                {botonParaSeguirDesde(0)}
               </div>
             </div>
           </section>
 
-          <section className="bv-camara">
+          <section className="bienvenida-camara">
             <div className="hueco">
-              <p className="bv-etiqueta">{tx.bvArchivosEtiqueta}</p>
-              <h2>{tx.bvArchivosTitulo}</h2>
-              <p>{tx.bvArchivosTexto}</p>
-              <p className="bv-tenue">{tx.bvArchivosNota}</p>
-              {seguir(1)}
+              <p className="bienvenida-etiqueta">{textosDeLaInterfaz.bienvenidaArchivosEtiqueta}</p>
+              <h2>{textosDeLaInterfaz.bienvenidaArchivosTitulo}</h2>
+              <p>{textosDeLaInterfaz.bienvenidaArchivosTexto}</p>
+              <p className="bienvenida-tenue">{textosDeLaInterfaz.bienvenidaArchivosNota}</p>
+              {botonParaSeguirDesde(1)}
             </div>
           </section>
 
-          <section className="bv-camara">
+          <section className="bienvenida-camara">
             <div className="hueco">
-              <p className="bv-etiqueta">{tx.bvHormiguerosEtiqueta}</p>
-              <h2>{tx.bvHormiguerosTitulo}</h2>
-              <p>{tx.bvHormiguerosTexto}</p>
-              <ul className="bv-ejemplos" aria-label={tx.bvEjemplos}>
-                {tx.bvEjemplosLista.map((e) => (
-                  <li key={e}>{e}</li>
+              <p className="bienvenida-etiqueta">{textosDeLaInterfaz.bienvenidaHormiguerosEtiqueta}</p>
+              <h2>{textosDeLaInterfaz.bienvenidaHormiguerosTitulo}</h2>
+              <p>{textosDeLaInterfaz.bienvenidaHormiguerosTexto}</p>
+              <ul className="bienvenida-ejemplos" aria-label={textosDeLaInterfaz.bienvenidaEjemplos}>
+                {textosDeLaInterfaz.bienvenidaEjemplosLista.map((ejemploDeHormiguero) => (
+                  <li key={ejemploDeHormiguero}>{ejemploDeHormiguero}</li>
                 ))}
               </ul>
-              <p className="bv-tenue">{tx.bvHormiguerosNota}</p>
-              {seguir(2)}
+              <p className="bienvenida-tenue">{textosDeLaInterfaz.bienvenidaHormiguerosNota}</p>
+              {botonParaSeguirDesde(2)}
             </div>
           </section>
 
-          <section className="bv-camara">
-            <div className="hueco bv-cavar">
-              <p className="bv-etiqueta">{tx.bvCavarEtiqueta}</p>
-              <h2>{tx.bvCavarTitulo}</h2>
-              <p>{tx.bvCavarTexto}</p>
-              <ElegirHormiguero onListo={onListo} />
+          <section className="bienvenida-camara">
+            <div className="hueco bienvenida-cavar">
+              <p className="bienvenida-etiqueta">{textosDeLaInterfaz.bienvenidaCavarEtiqueta}</p>
+              <h2>{textosDeLaInterfaz.bienvenidaCavarTitulo}</h2>
+              <p>{textosDeLaInterfaz.bienvenidaCavarTexto}</p>
+              <ElegirHormiguero alElegirCarpeta={alElegirCarpeta} />
             </div>
           </section>
         </div>
       </div>
 
-      <nav className="bv-recorrido" aria-label={tx.bvRecorrido}>
-        <div className="bv-pista" ref={pista}>
-          <Hormiga className="bv-hormiga" ref={hormiga} />
+      <nav className="bienvenida-recorrido" aria-label={textosDeLaInterfaz.bienvenidaRecorrido}>
+        <div className="bienvenida-pista" ref={pistaDelRecorrido}>
+          <Hormiga className="bienvenida-hormiga" ref={hormigaDelRecorrido} />
         </div>
-        <ol className="bv-hoyos" ref={hoyos}>
-          {Array.from({ length: CAMARAS }, (_, i) => (
-            <li key={i}>
-              <button aria-label={tx.bvCamara(i + 1)} onClick={() => irA(i)} />
+        <ol className="bienvenida-hoyos" ref={hoyosDelRecorrido}>
+          {Array.from({ length: CANTIDAD_DE_CAMARAS }, (_, numeroDeCamara) => (
+            <li key={numeroDeCamara}>
+              <button aria-label={textosDeLaInterfaz.bienvenidaCamara(numeroDeCamara + 1)} onClick={() => irACamara(numeroDeCamara)} />
             </li>
           ))}
         </ol>

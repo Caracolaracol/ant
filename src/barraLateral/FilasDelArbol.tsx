@@ -4,7 +4,7 @@
 // Leen lo compartido de `useBarraLateral()`.
 
 import { useTextos } from "../idioma";
-import type { Entrada } from "../carpeta";
+import type { EntradaDelArbol } from "../arbolDeCarpetas";
 import { esperaQueLaGuarden, type NotaAbierta } from "../notasAbiertas/notaAbierta";
 import { useBarraLateral } from "./contextoDeLaBarraLateral";
 import { claveDeCapitulo } from "./clavesDeFijados";
@@ -23,10 +23,10 @@ function TitulosDeLaNotaVisible({ nivelDeProfundidad }: { nivelDeProfundidad: nu
     <>
       {barra.titulosDeLaNotaVisible.map((titulo, indice) => (
         <div
-          key={`${titulo.pos}-${titulo.texto}`}
+          key={`${titulo.posicion}-${titulo.texto}`}
           className={`barra-marcador${indice === barra.indiceDelTituloConElCursor ? " actual" : ""}`}
           style={{ paddingLeft: sangriaEnPixeles(nivelDeProfundidad) + (titulo.nivel - 1) * 10 }}
-          onClick={() => barra.alSaltarATitulo(titulo.pos)}
+          onClick={() => barra.alSaltarATitulo(titulo.posicion)}
           // Clic derecho: fijar el título como capítulo (si la nota está en el hormiguero).
           onContextMenu={
             rutaFijable
@@ -88,7 +88,7 @@ export function FilaDeNota({ nombreVisible, nivelDeProfundidad, notaAbierta, alH
 }
 
 /** Fila de una carpeta con su flecha y, si está desplegada, su contenido. */
-function FilaDeCarpeta({ carpeta, nivelDeProfundidad }: { carpeta: Entrada; nivelDeProfundidad: number }) {
+function FilaDeCarpeta({ carpeta, nivelDeProfundidad }: { carpeta: EntradaDelArbol; nivelDeProfundidad: number }) {
   const barra = useBarraLateral();
   const estaDesplegada = barra.carpetasDesplegadas.has(carpeta.ruta);
   return (
@@ -108,14 +108,14 @@ function FilaDeCarpeta({ carpeta, nivelDeProfundidad }: { carpeta: Entrada; nive
 }
 
 /** Dibuja las entradas del árbol (carpetas y notas), saltándose las fijadas (ya están arriba). */
-export function EntradasDelArbol({ entradas, nivelDeProfundidad }: { entradas: Entrada[]; nivelDeProfundidad: number }) {
+export function EntradasDelArbol({ entradas, nivelDeProfundidad }: { entradas: EntradaDelArbol[]; nivelDeProfundidad: number }) {
   const barra = useBarraLateral();
   return (
     <>
       {entradas
         .filter((entrada) => !barra.clavesFijadasVisibles.has(entrada.ruta))
         .map((entrada) =>
-          entrada.es_carpeta ? (
+          entrada.esCarpeta ? (
             <FilaDeCarpeta key={entrada.ruta} carpeta={entrada} nivelDeProfundidad={nivelDeProfundidad} />
           ) : (
             <FilaDeNota

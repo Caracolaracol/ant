@@ -7,45 +7,47 @@ use std::fs;
 use std::path::Path;
 
 /// Extensiones de archivo que se consideran notas.
-const EXTENSIONES: [&str; 3] = ["md", "markdown", "txt"];
+const EXTENSIONES_DE_NOTAS: [&str; 3] = ["md", "markdown", "txt"];
 /// Carpetas que nunca se muestran (dependencias de proyectos), además de las ocultas (que empiezan con «.»).
-const IGNORADAS: [&str; 2] = ["node_modules", "target"];
+const CARPETAS_IGNORADAS: [&str; 2] = ["node_modules", "target"];
 /// Profundidad máxima del árbol, para no quedar recorriendo carpetas enormes sin fin.
-const PROFUNDIDAD_MAX: usize = 12;
+const PROFUNDIDAD_MAXIMA_DEL_ARBOL: usize = 12;
 
-/// Un elemento del árbol: una carpeta (con sus hijos) o una nota.
+/// Un elemento del árbol: una carpeta (con sus hijos) o una nota. Se manda a la interfaz con los
+/// nombres en camelCase (`esCarpeta`), como `EntradaDelArbol` de `src/arbolDeCarpetas.ts`.
 #[derive(Serialize)]
-pub struct Entrada {
+#[serde(rename_all = "camelCase")]
+pub struct EntradaDelArbol {
     nombre: String,
     ruta: String,
     es_carpeta: bool,
-    hijos: Vec<Entrada>,
+    hijos: Vec<EntradaDelArbol>,
 }
 
-/// Lee recursivamente `dir`. Las carpetas sin ninguna nota dentro se omiten para que el árbol
+/// Lee recursivamente una carpeta. Las carpetas sin ninguna nota dentro se omiten para que el árbol
 /// muestre solo lo útil. Los errores de lectura de una subcarpeta (permisos) se saltan en silencio.
-fn leer(dir: &Path, profundidad: usize) -> Vec<Entrada> {
-    let Ok(lectura) = fs::read_dir(dir) else { return Vec::new() };
-    let mut entradas: Vec<Entrada> = lectura
+fn leer_arbol(carpeta: &Path, profundidad: usize) -> Vec<EntradaDelArbol> {
+    let Ok(contenido_de_la_carpeta) = fs::read_dir(carpeta) else { return Vec::new() };
+    let mut entradas: Vec<EntradaDelArbol> = contenido_de_la_carpeta
         .filter_map(Result::ok)
-        .filter_map(|e| {
-            let nombre = e.file_name().to_string_lossy().into_owned();
+        .filter_map(|elemento| {
+            let nombre = elemento.file_name().to_string_lossy().into_owned();
             if nombre.starts_with('.') {
                 return None;
             }
-            let ruta = e.path();
+            let ruta = elemento.path();
             if ruta.is_dir() {
-                if IGNORADAS.contains(&nombre.as_str()) || profundidad >= PROFUNDIDAD_MAX {
+                if CARPETAS_IGNORADAS.contains(&nombre.as_str()) || profundidad >= PROFUNDIDAD_MAXIMA_DEL_ARBOL {
                     return None;
                 }
-                let hijos = leer(&ruta, profundidad + 1);
+                let hijos = leer_arbol(&ruta, profundidad + 1);
                 if hijos.is_empty() {
                     return None;
                 }
-                Some(Entrada { nombre, ruta: ruta.to_string_lossy().into_owned(), es_carpeta: true, hijos })
+                Some(EntradaDelArbol { nombre, ruta: ruta.to_string_lossy().into_owned(), es_carpeta: true, hijos })
             } else {
-                let ext = ruta.extension()?.to_str()?.to_lowercase();
-                EXTENSIONES.contains(&ext.as_str()).then(|| Entrada {
+                let extension = ruta.extension()?.to_str()?.to_lowercase();
+                EXTENSIONES_DE_NOTAS.contains(&extension.as_str()).then(|| EntradaDelArbol {
                     nombre,
                     ruta: ruta.to_string_lossy().into_owned(),
                     es_carpeta: false,
@@ -55,43 +57,46 @@ fn leer(dir: &Path, profundidad: usize) -> Vec<Entrada> {
         })
         .collect();
     // Carpetas primero; dentro de cada grupo, orden alfabético sin distinguir mayúsculas.
-    entradas.sort_by(|a, b| b.es_carpeta.cmp(&a.es_carpeta).then_with(|| a.nombre.to_lowercase().cmp(&b.nombre.to_lowercase())));
+    entradas.sort_by(|una, otra| {
+        otra.es_carpeta.cmp(&una.es_carpeta).then_with(|| una.nombre.to_lowercase().cmp(&otra.nombre.to_lowercase()))
+    });
     entradas
 }
 
-/// Devuelve el árbol de notas de la carpeta `path`. Corre en un hilo aparte (`en_segundo_plano`):
-/// un hormiguero con miles de notas no traba la ventana mientras se lee.
+/// Devuelve el árbol de notas de una carpeta. Corre en un hilo aparte (`en_segundo_plano`): un
+/// hormiguero con miles de notas no traba la ventana mientras se lee.
 #[tauri::command]
-pub async fn listar_carpeta(path: String) -> Result<Vec<Entrada>, String> {
+pub async fn leer_arbol_de_carpeta(ruta_de_la_carpeta: String) -> Result<Vec<EntradaDelArbol>, String> {
     crate::en_segundo_plano(move || {
-        let carpeta_del_hormiguero = Path::new(&path);
-        if !carpeta_del_hormiguero.is_dir() {
-            return Err(format!("The folder {path} does not exist"));
+        let carpeta = Path::new(&ruta_de_la_carpeta);
+        if !carpeta.is_dir() {
+            return Err(format!("The folder {ruta_de_la_carpeta} does not exist"));
         }
-        Ok(leer(carpeta_del_hormiguero, 0))
+        Ok(leer_arbol(carpeta, 0))
     })
     .await
 }
 
-/// Crea la carpeta de un hormiguero nuevo, `nombre` dentro de `padre`, y devuelve su ruta. No
-/// usa una carpeta que ya exista (para eso está «elegir una carpeta»), así nunca mezcla un
-/// hormiguero nuevo con lo que ya había ahí.
+/// Crea la carpeta de un hormiguero nuevo, `nombre_del_hormiguero` dentro de
+/// `carpeta_donde_crearla`, y devuelve su ruta. No usa una carpeta que ya exista (para eso está
+/// «elegir una carpeta»), así nunca mezcla un hormiguero nuevo con lo que ya había ahí.
 #[tauri::command]
-pub fn crear_hormiguero(padre: String, nombre: String) -> Result<String, String> {
-    let nombre = nombre.trim();
+pub fn crear_carpeta_de_hormiguero(carpeta_donde_crearla: String, nombre_del_hormiguero: String) -> Result<String, String> {
+    let nombre = nombre_del_hormiguero.trim();
     if nombre.is_empty() || nombre == "." || nombre == ".." || nombre.contains(['/', '\\', ':']) {
         return Err(format!("“{nombre}” cannot be a folder name"));
     }
-    let padre = Path::new(&padre);
-    if !padre.is_dir() {
-        return Err(format!("The folder {} does not exist", padre.display()));
+    let carpeta_padre = Path::new(&carpeta_donde_crearla);
+    if !carpeta_padre.is_dir() {
+        return Err(format!("The folder {} does not exist", carpeta_padre.display()));
     }
-    let ruta = padre.join(nombre);
-    if ruta.exists() {
-        return Err(format!("There is already a “{nombre}” folder in {}", padre.display()));
+    let carpeta_del_hormiguero = carpeta_padre.join(nombre);
+    if carpeta_del_hormiguero.exists() {
+        return Err(format!("There is already a “{nombre}” folder in {}", carpeta_padre.display()));
     }
-    fs::create_dir(&ruta).map_err(|e| format!("Could not create {}: {e}", ruta.display()))?;
-    Ok(ruta.to_string_lossy().into_owned())
+    fs::create_dir(&carpeta_del_hormiguero)
+        .map_err(|error| format!("Could not create {}: {error}", carpeta_del_hormiguero.display()))?;
+    Ok(carpeta_del_hormiguero.to_string_lossy().into_owned())
 }
 
 #[cfg(test)]
@@ -100,15 +105,21 @@ mod pruebas {
 
     #[test]
     fn crea_el_hormiguero_sin_pisar_una_carpeta() {
-        let base = std::env::temp_dir().join(format!("ant-hormiguero-{}", std::process::id()));
-        fs::create_dir_all(&base).unwrap();
-        let padre = base.to_string_lossy().into_owned();
-        let ruta = crear_hormiguero(padre.clone(), " Novela ".into()).unwrap();
-        assert!(Path::new(&ruta).is_dir());
-        assert!(ruta.ends_with("Novela"));
-        assert!(crear_hormiguero(padre.clone(), "Novela".into()).is_err());
-        assert!(crear_hormiguero(padre.clone(), "a/b".into()).is_err());
-        assert!(crear_hormiguero(padre, "  ".into()).is_err());
-        fs::remove_dir_all(base).unwrap();
+        let carpeta_de_prueba = std::env::temp_dir().join(format!("ant-hormiguero-{}", std::process::id()));
+        fs::create_dir_all(&carpeta_de_prueba).unwrap();
+        let carpeta_padre = carpeta_de_prueba.to_string_lossy().into_owned();
+        let carpeta_creada = crear_carpeta_de_hormiguero(carpeta_padre.clone(), " Novela ".into()).unwrap();
+        assert!(Path::new(&carpeta_creada).is_dir());
+        assert!(carpeta_creada.ends_with("Novela"));
+        assert!(crear_carpeta_de_hormiguero(carpeta_padre.clone(), "Novela".into()).is_err());
+        assert!(crear_carpeta_de_hormiguero(carpeta_padre.clone(), "a/b".into()).is_err());
+        assert!(crear_carpeta_de_hormiguero(carpeta_padre, "  ".into()).is_err());
+        fs::remove_dir_all(carpeta_de_prueba).unwrap();
+    }
+
+    #[test]
+    fn manda_es_carpeta_en_camel_case() {
+        let entrada = EntradaDelArbol { nombre: "a".into(), ruta: "/a".into(), es_carpeta: true, hijos: Vec::new() };
+        assert!(serde_json::to_string(&entrada).unwrap().contains("\"esCarpeta\":true"));
     }
 }

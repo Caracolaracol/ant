@@ -3,56 +3,62 @@
 // carpeta `Daily` y la nota del día si todavía no existen.
 
 import { invoke } from "@tauri-apps/api/core";
-import { Entrada } from "./carpeta";
+import type { EntradaDelArbol } from "./arbolDeCarpetas";
 
 /** Nombre de la carpeta de notas diarias dentro del hormiguero abierto (igual que en Rust). */
-export const CARPETA_DIARIO = "Daily";
+export const NOMBRE_DE_LA_CARPETA_DEL_DIARIO = "Daily";
 
-/** Ruta donde se crearía la carpeta `Daily` dentro de `carpeta`, con el mismo separador que use la carpeta. */
-export const rutaDiario = (carpeta: string) =>
-  `${carpeta.replace(/[\\/]+$/, "")}${carpeta.includes("\\") ? "\\" : "/"}${CARPETA_DIARIO}`;
+/** Ruta donde se crearía la carpeta `Daily` dentro del hormiguero, con el mismo separador que use su ruta. */
+export const rutaDeLaCarpetaDelDiario = (carpetaDelHormiguero: string) =>
+  `${carpetaDelHormiguero.replace(/[\\/]+$/, "")}${carpetaDelHormiguero.includes("\\") ? "\\" : "/"}${NOMBRE_DE_LA_CARPETA_DEL_DIARIO}`;
 
 /** Fecha local como `AAAA-MM-DD` (no se usa `toISOString`, que pasa a UTC y puede cambiar el día). */
-export function claveDia(fecha: Date): string {
-  const dos = (n: number) => String(n).padStart(2, "0");
-  return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}`;
+export function claveDelDia(dia: Date): string {
+  const conDosCifras = (numero: number) => String(numero).padStart(2, "0");
+  return `${dia.getFullYear()}-${conDosCifras(dia.getMonth() + 1)}-${conDosCifras(dia.getDate())}`;
 }
 
 /**
- * Título con que nace la nota de un día, en el idioma de la interfaz (`locale`):
+ * Título con que nace la nota de un día, en el idioma de la interfaz (`codigoDeIdioma`):
  * «# Friday, November 20, 2026» o «# Viernes 20 de noviembre de 2026».
  */
-function tituloDia(fecha: Date, locale: string): string {
-  let texto = fecha.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+function tituloDeLaNotaDelDia(dia: Date, codigoDeIdioma: string): string {
+  let fechaEscrita = dia.toLocaleDateString(codigoDeIdioma, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   // En español: «viernes, 20 de noviembre de 2026» → «Viernes 20 de noviembre de 2026».
-  if (locale.startsWith("es")) texto = texto.charAt(0).toUpperCase() + texto.slice(1).replace(",", "");
-  return `# ${texto}\n\n`;
+  if (codigoDeIdioma.startsWith("es")) fechaEscrita = fechaEscrita.charAt(0).toUpperCase() + fechaEscrita.slice(1).replace(",", "");
+  return `# ${fechaEscrita}\n\n`;
 }
 
 /**
- * Devuelve la ruta de la nota de `fecha` en la carpeta `Daily` de `carpeta`, creándola si no
+ * Devuelve la ruta de la nota de `dia` en la carpeta `Daily` del hormiguero, creándola si no
  * existe (Rust usa la carpeta `Daily` que ya haya, aunque esté escrita `daily` o `DAILY`).
  */
-export const abrirDia = (carpeta: string, fecha: Date, locale: string) =>
-  invoke<string>("abrir_dia", { carpeta, fecha: claveDia(fecha), contenido: tituloDia(fecha, locale) });
+export const abrirOCrearNotaDelDia = (carpetaDelHormiguero: string, dia: Date, codigoDeIdioma: string) =>
+  invoke<string>("abrir_o_crear_nota_del_dia", {
+    carpetaDelHormiguero,
+    claveDelDia: claveDelDia(dia),
+    textoInicial: tituloDeLaNotaDelDia(dia, codigoDeIdioma),
+  });
 
 /** Carpeta `Daily` del primer nivel del árbol, sin importar mayúsculas (`Daily`, `daily`…). */
-export const entradaDiario = (arbol: Entrada[]) =>
-  arbol.find((e) => e.es_carpeta && e.nombre.toLowerCase() === CARPETA_DIARIO.toLowerCase());
+export const buscarCarpetaDelDiario = (arbolDelHormiguero: EntradaDelArbol[]) =>
+  arbolDelHormiguero.find(
+    (entrada) => entrada.esCarpeta && entrada.nombre.toLowerCase() === NOMBRE_DE_LA_CARPETA_DEL_DIARIO.toLowerCase(),
+  );
 
 /** Días que ya tienen nota, según el árbol del hormiguero abierto (`Daily/AAAA-MM-DD.md`). */
-export function diasConNota(arbol: Entrada[]): Set<string> {
-  const daily = entradaDiario(arbol);
+export function diasQueTienenNota(arbolDelHormiguero: EntradaDelArbol[]): Set<string> {
+  const carpetaDelDiario = buscarCarpetaDelDiario(arbolDelHormiguero);
   const dias = new Set<string>();
-  for (const e of daily?.hijos ?? []) {
-    const m = /^(\d{4}-\d{2}-\d{2})\.md$/.exec(e.nombre);
-    if (m && !e.es_carpeta) dias.add(m[1]);
+  for (const entrada of carpetaDelDiario?.hijos ?? []) {
+    const nombreConFecha = /^(\d{4}-\d{2}-\d{2})\.md$/.exec(entrada.nombre);
+    if (nombreConFecha && !entrada.esCarpeta) dias.add(nombreConFecha[1]);
   }
   return dias;
 }
 
 /** Si `ruta` es una nota diaria (`…/Daily/AAAA-MM-DD.md`), devuelve su `AAAA-MM-DD`; si no, `null`. */
-export function diaDeRuta(ruta: string | null): string | null {
-  const m = ruta && /[\\/]Daily[\\/](\d{4}-\d{2}-\d{2})\.md$/i.exec(ruta);
-  return m ? m[1] : null;
+export function diaDeLaNotaDiaria(ruta: string | null): string | null {
+  const rutaConFecha = ruta && /[\\/]Daily[\\/](\d{4}-\d{2}-\d{2})\.md$/i.exec(ruta);
+  return rutaConFecha ? rutaConFecha[1] : null;
 }

@@ -8,11 +8,11 @@
 //   · Lo que ya no existe en el hormiguero (se borró o movió) se ve atenuado y no hace nada.
 
 import { useCallback, useEffect, useState } from "react";
-import { Entrada, buscarEntradaPorRuta, estaDentro } from "../carpeta";
-import { useGlobo } from "../Globo";
+import { EntradaDelArbol, buscarEntradaPorRuta, estaDentroDe } from "../arbolDeCarpetas";
+import { useGloboDeAyuda } from "../GloboDeAyuda";
 import { Icono } from "../Icono";
 import { useTextos } from "../idioma";
-import { nombreArchivo } from "../notas";
+import { nombreDelArchivo } from "../archivosDeNotas";
 import type { NotaAbierta } from "../notasAbiertas/notaAbierta";
 import { useBarraLateral } from "./contextoDeLaBarraLateral";
 import { ElegirIconoDeFijado } from "./ElegirIconoDeFijado";
@@ -22,7 +22,7 @@ import { Fijado, ICONO_POR_DEFECTO_DE_CADA_TIPO } from "./clavesDeFijados";
 interface Props {
   /** Fijados del hormiguero abierto, ya interpretados. */
   fijadosVisibles: Fijado[];
-  arbolDelHormiguero: Entrada[];
+  arbolDelHormiguero: EntradaDelArbol[];
   /** Icono elegido para cada fijado, por su clave. */
   iconosElegidosPorFijado: Record<string, string>;
   notaVisible: NotaAbierta | undefined;
@@ -43,7 +43,7 @@ export function Fijados({
 }: Props) {
   const barra = useBarraLateral();
   const textosDeLaInterfaz = useTextos();
-  const globoConElNombre = useGlobo();
+  const globoConElNombre = useGloboDeAyuda();
 
   // Carpeta fijada desplegada bajo la grilla (una a la vez), o null.
   const [carpetaFijadaDesplegada, setCarpetaFijadaDesplegada] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export function Fijados({
   useEffect(() => {
     if (!rutaDeLaNotaVisible || barra.clavesFijadasVisibles.has(rutaDeLaNotaVisible)) return;
     const carpetaQueLaContiene = fijadosVisibles.find(
-      (fijado) => !fijado.tituloDelCapitulo && fijado.ruta !== rutaDeLaNotaVisible && estaDentro(rutaDeLaNotaVisible, fijado.ruta),
+      (fijado) => !fijado.tituloDelCapitulo && fijado.ruta !== rutaDeLaNotaVisible && estaDentroDe(rutaDeLaNotaVisible, fijado.ruta),
     );
     if (carpetaQueLaContiene) setCarpetaFijadaDesplegada(carpetaQueLaContiene.ruta);
   }, [rutaDeLaNotaVisible, clavesFijadasComoTexto]);
@@ -69,12 +69,12 @@ export function Fijados({
    */
   function dibujarBotonDeFijado(fijado: Fijado) {
     const entradaEnElArbol = buscarEntradaPorRuta(arbolDelHormiguero, fijado.ruta);
-    const tipo = fijado.tituloDelCapitulo ? "capitulo" : entradaEnElArbol?.es_carpeta ? "carpeta" : "nota";
+    const tipo = fijado.tituloDelCapitulo ? "capitulo" : entradaEnElArbol?.esCarpeta ? "carpeta" : "nota";
     const iconoDelFijado = iconosElegidosPorFijado[fijado.clave] ?? ICONO_POR_DEFECTO_DE_CADA_TIPO[tipo];
-    const nombreDeLaNota = nombreSinExtension(nombreArchivo(fijado.ruta));
+    const nombreDeLaNota = nombreSinExtension(nombreDelArchivo(fijado.ruta));
     const nombreVisible = fijado.tituloDelCapitulo
       ? `${fijado.tituloDelCapitulo} · ${nombreDeLaNota}`
-      : entradaEnElArbol?.es_carpeta
+      : entradaEnElArbol?.esCarpeta
         ? entradaEnElArbol.nombre
         : nombreDeLaNota;
     const notaAbierta = barra.notasAbiertasPorRuta.get(fijado.ruta);
@@ -93,10 +93,10 @@ export function Fijados({
 
     /** Abre la nota o el capítulo, o despliega la carpeta. */
     const alHacerClic = () => {
-      globoConElNombre.ocultar();
+      globoConElNombre.ocultarGlobo();
       if (!entradaEnElArbol) return;
       if (fijado.tituloDelCapitulo) alAbrirCapitulo(fijado.ruta, fijado.tituloDelCapitulo);
-      else if (entradaEnElArbol.es_carpeta) setCarpetaFijadaDesplegada((desplegada) => (desplegada === fijado.ruta ? null : fijado.ruta));
+      else if (entradaEnElArbol.esCarpeta) setCarpetaFijadaDesplegada((desplegada) => (desplegada === fijado.ruta ? null : fijado.ruta));
       else barra.alAbrirNotaDeArchivo(fijado.ruta);
     };
 
@@ -107,19 +107,19 @@ export function Fijados({
         aria-label={nombreVisible}
         onClick={alHacerClic}
         onMouseEnter={(evento) =>
-          globoConElNombre.mostrar(evento.currentTarget, entradaEnElArbol ? nombreVisible : `${nombreVisible} — ${textosDeLaInterfaz.yaNoEsta}`)
+          globoConElNombre.mostrarGlobo(evento.currentTarget, entradaEnElArbol ? nombreVisible : `${nombreVisible} — ${textosDeLaInterfaz.yaNoEsta}`)
         }
-        onMouseLeave={globoConElNombre.ocultar}
+        onMouseLeave={globoConElNombre.ocultarGlobo}
         onContextMenu={(evento) => {
-          globoConElNombre.ocultar();
+          globoConElNombre.ocultarGlobo();
           const { clientX: x, clientY: y } = evento;
           barra.abrirMenuContextual(evento, [
-            { texto: textosDeLaInterfaz.cambiarIcono, accion: () => setEleccionDeIcono({ x, y, clave: fijado.clave, iconoActual: iconoDelFijado }) },
-            { texto: textosDeLaInterfaz.quitarFijado, accion: () => alQuitarFijado(fijado.clave) },
+            { texto: textosDeLaInterfaz.cambiarIcono, alElegir: () => setEleccionDeIcono({ x, y, clave: fijado.clave, iconoActual: iconoDelFijado }) },
+            { texto: textosDeLaInterfaz.quitarFijado, alElegir: () => alQuitarFijado(fijado.clave) },
           ]);
         }}
       >
-        <Icono id={iconoDelFijado} />
+        <Icono nombreDelIcono={iconoDelFijado} />
       </button>
     );
   }
@@ -138,7 +138,7 @@ export function Fijados({
       {notaVisibleEstaFijada && notaVisible && (
         <div className="fijados-carpeta">
           <FilaDeNota
-            nombreVisible={nombreSinExtension(nombreArchivo(rutaDeLaNotaVisible))}
+            nombreVisible={nombreSinExtension(nombreDelArchivo(rutaDeLaNotaVisible))}
             nivelDeProfundidad={0}
             notaAbierta={notaVisible}
             alHacerClic={() => {}}
@@ -161,7 +161,7 @@ export function Fijados({
           alCerrar={cerrarEleccionDeIcono}
         />
       )}
-      {globoConElNombre.dibujo}
+      {globoConElNombre.globoParaDibujar}
     </section>
   );
 }

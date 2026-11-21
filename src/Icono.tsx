@@ -6,18 +6,18 @@ import { ICONOS } from "./iconos";
 
 interface Props {
   /** Nombre del icono (una clave de `ICONOS`); si no existe, se dibuja el de una nota. */
-  id: string;
+  nombreDelIcono: string;
   /** Lado en píxeles. */
-  tamano?: number;
+  tamanoEnPixeles?: number;
 }
 
-export function Icono({ id, tamano = 16 }: Props) {
-  const nodos = ICONOS[id] ?? ICONOS["file-text"];
+export function Icono({ nombreDelIcono, tamanoEnPixeles = 16 }: Props) {
+  const elementosDelDibujo = ICONOS[nombreDelIcono] ?? ICONOS["file-text"];
   return (
     <svg
       className="icono"
-      width={tamano}
-      height={tamano}
+      width={tamanoEnPixeles}
+      height={tamanoEnPixeles}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -26,7 +26,7 @@ export function Icono({ id, tamano = 16 }: Props) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {nodos.map(([etiqueta, atributos], i) => createElement(etiqueta, { key: i, ...atributos }))}
+      {elementosDelDibujo.map(([etiqueta, atributos], i) => createElement(etiqueta, { key: i, ...atributos }))}
     </svg>
   );
 }

@@ -3,7 +3,7 @@
 // (`src-tauri/src/ajustes.rs`); el formato está en `ajustes.ts`.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Ajustes, escucharAjustes, guardarAjustes, leerAjustes } from "../ajustes";
+import { Ajustes, escucharCambiosDeAjustes, guardarAjustesEnDisco, leerAjustesGuardados } from "../ajustes";
 
 /**
  * `ajustesIniciales` ya vienen leídos de `main.tsx`: así la bienvenida o el tema por defecto no
@@ -17,8 +17,8 @@ export function useAjustesGuardados(ajustesIniciales: Ajustes, mostrarError: (er
 
   // Vuelve a leer los ajustes al iniciar y los pone al día cada vez que se guardan.
   useEffect(() => {
-    leerAjustes().then(setAjustes, mostrarError);
-    const dejarDeEscuchar = escucharAjustes(setAjustes);
+    leerAjustesGuardados().then(setAjustes, mostrarError);
+    const dejarDeEscuchar = escucharCambiosDeAjustes(setAjustes);
     return () => void dejarDeEscuchar.then((dejar) => dejar());
   }, [mostrarError]);
 
@@ -27,7 +27,7 @@ export function useAjustesGuardados(ajustesIniciales: Ajustes, mostrarError: (er
     const ajustesNuevos = { ...ajustesVigentes.current, ...cambios };
     ajustesVigentes.current = ajustesNuevos;
     setAjustes(ajustesNuevos);
-    guardarAjustes(ajustesNuevos).catch(mostrarError);
+    guardarAjustesEnDisco(ajustesNuevos).catch(mostrarError);
   }, [mostrarError]);
 
   return { ajustes, ajustesVigentes, cambiarAjustes };

@@ -4,8 +4,8 @@
 // `useBarraLateral()`, así no hay que pasarlo de componente en componente.
 
 import { createContext, useContext } from "react";
-import type { Marcador } from "../marcadores";
-import type { OpcionMenu } from "../MenuContextual";
+import type { TituloDeLaNota } from "../titulosDeLaNota";
+import type { OpcionDelMenu } from "../MenuContextual";
 import type { NotaAbierta } from "../notasAbiertas/notaAbierta";
 
 export interface DatosDeLaBarraLateral {
@@ -13,7 +13,7 @@ export interface DatosDeLaBarraLateral {
   /** Notas abiertas que tienen archivo, por su ruta. */
   notasAbiertasPorRuta: Map<string, NotaAbierta>;
   /** Títulos (`#`…) de la nota visible. */
-  titulosDeLaNotaVisible: Marcador[];
+  titulosDeLaNotaVisible: TituloDeLaNota[];
   /** Índice del título donde está el cursor, o -1. */
   indiceDelTituloConElCursor: number;
   /** Ruta de la nota visible si está en el hormiguero (sus títulos se pueden fijar como capítulos), o `null`. */
@@ -24,9 +24,9 @@ export interface DatosDeLaBarraLateral {
   /** Claves de lo fijado en el hormiguero abierto (lo fijado no se repite en el árbol). */
   clavesFijadasVisibles: Set<string>;
   /** Abre el menú de clic derecho con `opciones` donde se hizo el clic. */
-  abrirMenuContextual(evento: React.MouseEvent, opciones: OpcionMenu[]): void;
+  abrirMenuContextual(evento: React.MouseEvent, opciones: OpcionDelMenu[]): void;
   /** Opciones del clic derecho para fijar algo, o para quitarlo si ya está fijado. */
-  opcionesParaFijarOQuitar(clave: string): OpcionMenu[];
+  opcionesParaFijarOQuitar(clave: string): OpcionDelMenu[];
   alAbrirNotaDeArchivo(rutaDelArchivo: string): void;
   alCerrarNota(idNota: string): void;
   alSaltarATitulo(posicionDelTitulo: number): void;

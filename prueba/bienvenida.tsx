@@ -7,32 +7,32 @@ import { useState } from "react";
 import ReactDOM from "react-dom/client";
 import "../src/App.css";
 import { Bienvenida } from "../src/bienvenida/Bienvenida";
-import { ContextoTextos, Idioma, textosDe } from "../src/idioma";
+import { ContextoDeTextos, Idioma, textosDelIdioma } from "../src/idioma";
 
 const parametros = new URLSearchParams(location.search);
 
 function Prueba() {
   const [idioma, setIdioma] = useState<Idioma>(parametros.has("es") ? "es" : "en");
   return (
-    <ContextoTextos.Provider value={textosDe(idioma)}>
+    <ContextoDeTextos.Provider value={textosDelIdioma(idioma)}>
       <Bienvenida
         idioma={idioma}
-        onCambiarIdioma={setIdioma}
-        onListo={(ruta) => console.log("hormiguero", ruta)}
-        onCerrar={parametros.has("vuelta") ? () => console.log("cerrar") : undefined}
+        alCambiarIdioma={setIdioma}
+        alElegirCarpeta={(carpeta) => console.log("hormiguero", carpeta)}
+        alCerrar={parametros.has("vuelta") ? () => console.log("cerrar") : undefined}
       />
-    </ContextoTextos.Provider>
+    </ContextoDeTextos.Provider>
   );
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(<Prueba />);
 
 // Abre en la cámara pedida (`?n=`), sin animación.
-const n = Number(parametros.get("n") ?? 1) - 1;
-if (n > 0) {
+const camaraInicial = Number(parametros.get("n") ?? 1) - 1;
+if (camaraInicial > 0) {
   setTimeout(() => {
-    const nido = document.querySelector<HTMLElement>(".bv-nido")!;
+    const nido = document.querySelector<HTMLElement>(".bienvenida-nido")!;
     nido.style.scrollSnapType = "none";
-    nido.scrollLeft = n * nido.clientWidth;
+    nido.scrollLeft = camaraInicial * nido.clientWidth;
   }, 50);
 }

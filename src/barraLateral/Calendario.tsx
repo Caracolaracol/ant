@@ -4,12 +4,12 @@
 // el color de acento y el día de la nota visible queda marcado.
 
 import { useState } from "react";
-import { claveDia } from "../diario";
+import { claveDelDia } from "../diario";
 import { useTextos } from "../idioma";
 
 interface Props {
   /** Días que ya tienen nota, como `AAAA-MM-DD`. */
-  diasConNota: Set<string>;
+  diasQueTienenNota: Set<string>;
   /** Día de la nota visible (`AAAA-MM-DD`), o `null` si no es una nota diaria. */
   diaDeLaNotaVisible: string | null;
   alElegirDia(diaElegido: Date): void;
@@ -34,10 +34,10 @@ function casillasDelMes(primerDia: Date): (Date | null)[] {
   return casillas;
 }
 
-export function Calendario({ diasConNota, diaDeLaNotaVisible, alElegirDia }: Props) {
+export function Calendario({ diasQueTienenNota, diaDeLaNotaVisible, alElegirDia }: Props) {
   const [mesVisible, setMesVisible] = useState(() => primerDiaDelMes(new Date()));
   const textosDeLaInterfaz = useTextos();
-  const claveDeHoy = claveDia(new Date());
+  const claveDeHoy = claveDelDia(new Date());
 
   /** Avanza (`paso` = 1) o retrocede (`paso` = -1) un mes. */
   const cambiarDeMes = (paso: 1 | -1) =>
@@ -65,13 +65,13 @@ export function Calendario({ diasConNota, diaDeLaNotaVisible, alElegirDia }: Pro
         ))}
         {casillasDelMes(mesVisible).map((dia, i) => {
           if (!dia) return <span key={i} />;
-          const claveDelDia = claveDia(dia);
+          const claveDeEsteDia = claveDelDia(dia);
           const clases = ["calendario-dia"];
-          if (claveDelDia === claveDeHoy) clases.push("hoy");
-          if (claveDelDia === diaDeLaNotaVisible) clases.push("activo");
-          if (diasConNota.has(claveDelDia)) clases.push("con-nota");
+          if (claveDeEsteDia === claveDeHoy) clases.push("hoy");
+          if (claveDeEsteDia === diaDeLaNotaVisible) clases.push("activo");
+          if (diasQueTienenNota.has(claveDeEsteDia)) clases.push("con-nota");
           return (
-            <button key={i} className={clases.join(" ")} title={claveDelDia} onClick={() => alElegirDia(dia)}>
+            <button key={i} className={clases.join(" ")} title={claveDeEsteDia} onClick={() => alElegirDia(dia)}>
               {dia.getDate()}
             </button>
           );

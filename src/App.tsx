@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Editor, ControlDelEditor } from "./editor/Editor";
-import { configEscritor } from "./editor/escritor";
+import { crearConfiguracionModoEscritor } from "./editor/escritor";
 import { BarraLateral } from "./barraLateral/BarraLateral";
 import { ANCHO_DE_LA_BARRA_POR_DEFECTO } from "./barraLateral/useArrastreDelBorde";
 import { BarraDeEstado } from "./BarraDeEstado";
@@ -21,12 +21,12 @@ import { ModalAjustes } from "./ajustes/ModalAjustes";
 import { useAjustesGuardados } from "./ajustes/useAjustesGuardados";
 import { Bienvenida } from "./bienvenida/Bienvenida";
 import { Compilar } from "./compilar/Compilar";
-import { conHormiguero } from "./hormigueros/hormigueros";
+import { cambiosParaAbrirHormiguero } from "./hormigueros/hormigueros";
 import { NuevoHormiguero } from "./hormigueros/NuevoHormiguero";
 import { useArbolDelHormiguero } from "./hormigueros/useArbolDelHormiguero";
-import { idiomaDe, useTextos } from "./idioma";
-import { extraerMarcadores, marcadorActual } from "./marcadores";
-import { nombreArchivo } from "./notas";
+import { idiomaValido, useTextos } from "./idioma";
+import { extraerTitulosDeLaNota, indiceDelTituloEnLaPosicion } from "./titulosDeLaNota";
+import { nombreDelArchivo } from "./archivosDeNotas";
 import { esperaQueLaGuarden } from "./notasAbiertas/notaAbierta";
 import { useNotasAbiertas } from "./notasAbiertas/useNotasAbiertas";
 import { useAtajosDeTeclado } from "./useAtajosDeTeclado";
@@ -48,7 +48,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   );
 
   const { ajustes, ajustesVigentes, cambiarAjustes } = useAjustesGuardados(ajustesIniciales, mostrarError);
-  const carpetaDelHormiguero = ajustes.carpeta;
+  const carpetaDelHormiguero = ajustes.hormiguero_abierto;
   const { arbolDelHormiguero, releerArbolDelHormiguero } = useArbolDelHormiguero(carpetaDelHormiguero, mostrarError);
   const notas = useNotasAbiertas({
     controlDelEditor,
@@ -85,7 +85,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
 
   /** Abre un hormiguero (y lo suma a la lista si es nuevo); cierra lo que se abrió para cavarlo. */
   const abrirHormiguero = useCallback((carpetaDelHormigueroElegido: string) => {
-    cambiarAjustes(conHormiguero(ajustesVigentes.current, carpetaDelHormigueroElegido));
+    cambiarAjustes(cambiosParaAbrirHormiguero(ajustesVigentes.current, carpetaDelHormigueroElegido));
     setCavandoHormigueroNuevo(false);
     setBienvenidaPedida(false);
   }, [cambiarAjustes, ajustesVigentes]);
@@ -98,39 +98,39 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
 
   /** Quita un fijado, y su icono si tenía uno elegido. */
   const quitarFijado = useCallback((clave: string) => {
-    const { [clave]: _iconoQueSeQuita, ...iconosQueQuedan } = ajustesVigentes.current.iconos;
-    cambiarAjustes({ fijados: ajustesVigentes.current.fijados.filter((claveFijada) => claveFijada !== clave), iconos: iconosQueQuedan });
+    const { [clave]: _iconoQueSeQuita, ...iconosQueQuedan } = ajustesVigentes.current.iconos_de_fijados;
+    cambiarAjustes({ fijados: ajustesVigentes.current.fijados.filter((claveFijada) => claveFijada !== clave), iconos_de_fijados: iconosQueQuedan });
   }, [cambiarAjustes, ajustesVigentes]);
 
   /** Cambia el icono de un fijado; `null` vuelve al de su tipo. */
   const cambiarIconoDeFijado = useCallback((clave: string, icono: string | null) => {
-    const iconos = { ...ajustesVigentes.current.iconos };
-    if (icono) iconos[clave] = icono;
-    else delete iconos[clave];
-    cambiarAjustes({ iconos });
+    const iconosDeFijados = { ...ajustesVigentes.current.iconos_de_fijados };
+    if (icono) iconosDeFijados[clave] = icono;
+    else delete iconosDeFijados[clave];
+    cambiarAjustes({ iconos_de_fijados: iconosDeFijados });
   }, [cambiarAjustes, ajustesVigentes]);
 
   // Títulos de la nota visible y el título donde está el cursor. La posición del cursor va en una
   // ref y no en el estado: cambia en cada movimiento del mouse al seleccionar, y si cada cambio
   // volviera a dibujar la ventana, el scroll al seleccionar texto largo perdería cuadros. Solo se
   // vuelve a dibujar cuando el cursor pasa a otro título.
-  const titulosDeLaNotaVisible = useMemo(() => extraerMarcadores(notaVisible.ultimoTextoConocido), [notaVisible.ultimoTextoConocido]);
+  const titulosDeLaNotaVisible = useMemo(() => extraerTitulosDeLaNota(notaVisible.ultimoTextoConocido), [notaVisible.ultimoTextoConocido]);
   const titulosVigentes = useRef(titulosDeLaNotaVisible);
   titulosVigentes.current = titulosDeLaNotaVisible;
   const posicionDelCursor = useRef(0);
   const [, setIndiceDelTituloConElCursor] = useState(-1);
   const alMoverCursor = useCallback((posicion: number) => {
     posicionDelCursor.current = posicion;
-    setIndiceDelTituloConElCursor(marcadorActual(titulosVigentes.current, posicion));
+    setIndiceDelTituloConElCursor(indiceDelTituloEnLaPosicion(titulosVigentes.current, posicion));
   }, []);
 
   // Modo escritor para el editor (o `null` si está apagado), con las comillas según el idioma.
   const configuracionModoEscritor = useMemo(
-    () => (ajustes.escritor ? configEscritor(ajustes.opciones_escritor, idiomaDe(ajustes.idioma)) : null),
-    [ajustes.escritor, ajustes.opciones_escritor, ajustes.idioma],
+    () => (ajustes.modo_escritor ? crearConfiguracionModoEscritor(ajustes.opciones_del_modo_escritor, idiomaValido(ajustes.idioma)) : null),
+    [ajustes.modo_escritor, ajustes.opciones_del_modo_escritor, ajustes.idioma],
   );
 
-  const nombreDeLaNotaVisible = notaVisible.rutaDelArchivo ? nombreArchivo(notaVisible.rutaDelArchivo) : textosDeLaInterfaz.sinTitulo;
+  const nombreDeLaNotaVisible = notaVisible.rutaDelArchivo ? nombreDelArchivo(notaVisible.rutaDelArchivo) : textosDeLaInterfaz.sinTitulo;
   const notaVisibleEsperaQueLaGuarden = esperaQueLaGuarden(notaVisible);
 
   // El título de la ventana (visible en Mission Control y el Dock) muestra la nota y si está sin guardar.
@@ -152,14 +152,14 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
             carpetaDelHormiguero={carpetaDelHormiguero}
             arbolDelHormiguero={arbolDelHormiguero}
             clavesDeFijados={ajustes.fijados}
-            iconosElegidosPorFijado={ajustes.iconos}
-            modoDiarioActivo={ajustes.diario}
+            iconosElegidosPorFijado={ajustes.iconos_de_fijados}
+            modoDiarioActivo={ajustes.modo_diario}
             notasAbiertas={notas.notasAbiertas}
             idNotaVisible={notaVisible.id}
             titulosDeLaNotaVisible={titulosDeLaNotaVisible}
-            indiceDelTituloConElCursor={marcadorActual(titulosDeLaNotaVisible, posicionDelCursor.current)}
-            anchoEnPixeles={ajustes.ancho_barra ?? ANCHO_DE_LA_BARRA_POR_DEFECTO}
-            alCambiarAncho={(anchoEnPixeles) => cambiarAjustes({ ancho_barra: anchoEnPixeles })}
+            indiceDelTituloConElCursor={indiceDelTituloEnLaPosicion(titulosDeLaNotaVisible, posicionDelCursor.current)}
+            anchoEnPixeles={ajustes.ancho_de_la_barra_lateral ?? ANCHO_DE_LA_BARRA_POR_DEFECTO}
+            alCambiarAncho={(anchoEnPixeles) => cambiarAjustes({ ancho_de_la_barra_lateral: anchoEnPixeles })}
             alMostrarNotaAbierta={notas.mostrarNotaAbierta}
             alAbrirNotaDeArchivo={(rutaDelArchivo) => ejecutarMostrandoErrores(notas.abrirNotaDeArchivo(rutaDelArchivo))}
             alAbrirCapitulo={(rutaDeLaNota, titulo) => ejecutarMostrandoErrores(notas.abrirCapitulo(rutaDeLaNota, titulo))}
@@ -180,13 +180,13 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
       </div>
       {compilarAbierto && !bienvenidaVisible && (
         <Compilar
-          carpeta={carpetaDelHormiguero}
-          arbol={arbolDelHormiguero}
-          rutaActiva={notaVisible.rutaDelArchivo}
+          carpetaDelHormiguero={carpetaDelHormiguero}
+          arbolDelHormiguero={arbolDelHormiguero}
+          rutaDeLaNotaVisible={notaVisible.rutaDelArchivo}
           ajustes={ajustes}
-          textoAbierto={notas.textoDeNotaAbiertaPorRuta}
-          onGuardarAjustes={cambiarAjustes}
-          onCerrar={() => {
+          textoDeNotaAbiertaPorRuta={notas.textoDeNotaAbiertaPorRuta}
+          cambiarAjustes={cambiarAjustes}
+          alCerrar={() => {
             setCompilarAbierto(false);
             enfocarElEditor();
           }}
@@ -195,9 +195,9 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
       {ajustesAbiertos && !bienvenidaVisible && (
         <ModalAjustes
           ajustes={ajustes}
-          cambiar={cambiarAjustes}
-          onNuevoHormiguero={() => setCavandoHormigueroNuevo(true)}
-          onCerrar={() => {
+          cambiarAjustes={cambiarAjustes}
+          alPedirHormigueroNuevo={() => setCavandoHormigueroNuevo(true)}
+          alCerrar={() => {
             setAjustesAbiertos(false);
             enfocarElEditor();
           }}
@@ -205,13 +205,13 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
       )}
       {bienvenidaVisible && (
         <Bienvenida
-          idioma={idiomaDe(ajustes.idioma)}
-          onCambiarIdioma={(idioma) => cambiarAjustes({ idioma })}
-          onListo={abrirHormiguero}
-          onCerrar={hayHormigueros ? () => setBienvenidaPedida(false) : undefined}
+          idioma={idiomaValido(ajustes.idioma)}
+          alCambiarIdioma={(idiomaElegido) => cambiarAjustes({ idioma: idiomaElegido })}
+          alElegirCarpeta={abrirHormiguero}
+          alCerrar={hayHormigueros ? () => setBienvenidaPedida(false) : undefined}
         />
       )}
-      {cavandoHormigueroNuevo && <NuevoHormiguero onListo={abrirHormiguero} onCerrar={() => setCavandoHormigueroNuevo(false)} />}
+      {cavandoHormigueroNuevo && <NuevoHormiguero alElegirCarpeta={abrirHormiguero} alCerrar={() => setCavandoHormigueroNuevo(false)} />}
       <BarraDeEstado
         nombreDeLaNota={nombreDeLaNotaVisible}
         esperaQueLaGuarden={notaVisibleEsperaQueLaGuarden}

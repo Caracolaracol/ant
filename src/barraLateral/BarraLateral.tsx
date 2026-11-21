@@ -16,12 +16,12 @@
 // `ContextoDeLaBarraLateral`.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Entrada, carpetasPadre, estaDentro } from "../carpeta";
-import { diaDeRuta, diasConNota, entradaDiario, rutaDiario } from "../diario";
+import { EntradaDelArbol, carpetasQueContienenA, estaDentroDe } from "../arbolDeCarpetas";
+import { diaDeLaNotaDiaria, diasQueTienenNota, buscarCarpetaDelDiario, rutaDeLaCarpetaDelDiario } from "../diario";
 import { useTextos } from "../idioma";
-import type { Marcador } from "../marcadores";
-import { MenuContextual, OpcionMenu } from "../MenuContextual";
-import { nombreArchivo } from "../notas";
+import type { TituloDeLaNota } from "../titulosDeLaNota";
+import { MenuContextual, OpcionDelMenu } from "../MenuContextual";
+import { nombreDelArchivo } from "../archivosDeNotas";
 import type { NotaAbierta } from "../notasAbiertas/notaAbierta";
 import { Calendario } from "./Calendario";
 import { ContextoDeLaBarraLateral, DatosDeLaBarraLateral } from "./contextoDeLaBarraLateral";
@@ -33,7 +33,7 @@ import { useArrastreDelBorde } from "./useArrastreDelBorde";
 interface Props {
   /** Carpeta del hormiguero abierto, o `null` si no hay ninguno. */
   carpetaDelHormiguero: string | null;
-  arbolDelHormiguero: Entrada[];
+  arbolDelHormiguero: EntradaDelArbol[];
   /** Claves de todo lo fijado (de los ajustes); solo se muestran las del hormiguero abierto. */
   clavesDeFijados: string[];
   /** Icono elegido para cada fijado, por su clave. */
@@ -43,7 +43,7 @@ interface Props {
   notasAbiertas: NotaAbierta[];
   idNotaVisible: string;
   /** Títulos de la nota visible (los calcula App tras una pausa al escribir). */
-  titulosDeLaNotaVisible: Marcador[];
+  titulosDeLaNotaVisible: TituloDeLaNota[];
   /** Índice del título donde está el cursor, o -1. */
   indiceDelTituloConElCursor: number;
   /** Ancho de la barra en píxeles. */
@@ -74,13 +74,13 @@ export function BarraLateral(props: Props) {
   const alPresionarElBorde = useArrastreDelBorde(elementoDeLaBarra, props.alCambiarAncho);
 
   // Días con nota en `Daily/`, para marcarlos en el calendario (solo se recalcula si cambia el árbol).
-  const diasQueTienenNota = useMemo(() => diasConNota(arbolDelHormiguero), [arbolDelHormiguero]);
+  const diasConNotaEnElHormiguero = useMemo(() => diasQueTienenNota(arbolDelHormiguero), [arbolDelHormiguero]);
 
   // Carpetas desplegadas. Al abrir una nota se despliegan las que la contienen.
   const [carpetasDesplegadas, setCarpetasDesplegadas] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!carpetaDelHormiguero || !rutaDeLaNotaVisible) return;
-    const carpetasQueLaContienen = carpetasPadre(rutaDeLaNotaVisible, carpetaDelHormiguero);
+    const carpetasQueLaContienen = carpetasQueContienenA(rutaDeLaNotaVisible, carpetaDelHormiguero);
     setCarpetasDesplegadas((desplegadas) =>
       carpetasQueLaContienen.every((carpeta) => desplegadas.has(carpeta)) ? desplegadas : new Set([...desplegadas, ...carpetasQueLaContienen]),
     );
@@ -96,13 +96,13 @@ export function BarraLateral(props: Props) {
   }, []);
 
   // Menú de clic derecho abierto (posición y opciones), o null.
-  const [menuContextual, setMenuContextual] = useState<{ x: number; y: number; opciones: OpcionMenu[] } | null>(null);
+  const [menuContextual, setMenuContextual] = useState<{ x: number; y: number; opciones: OpcionDelMenu[] } | null>(null);
   const cerrarMenuContextual = useCallback(() => setMenuContextual(null), []);
 
   // Solo cuentan los fijados que están dentro del hormiguero abierto: al cambiar de hormiguero,
   // cada uno muestra los suyos.
   const fijadosVisibles = carpetaDelHormiguero
-    ? props.clavesDeFijados.map(interpretarClaveDeFijado).filter((fijado) => estaDentro(fijado.ruta, carpetaDelHormiguero))
+    ? props.clavesDeFijados.map(interpretarClaveDeFijado).filter((fijado) => estaDentroDe(fijado.ruta, carpetaDelHormiguero))
     : [];
 
   // Con el modo diario activo, la carpeta `Daily` se esconde del árbol y su nota abierta se muestra
@@ -110,18 +110,18 @@ export function BarraLateral(props: Props) {
   // no, donde se creará.
   const carpetaDelDiario =
     props.modoDiarioActivo && carpetaDelHormiguero
-      ? (entradaDiario(arbolDelHormiguero)?.ruta ?? rutaDiario(carpetaDelHormiguero))
+      ? (buscarCarpetaDelDiario(arbolDelHormiguero)?.ruta ?? rutaDeLaCarpetaDelDiario(carpetaDelHormiguero))
       : null;
   const arbolSinElDiario = carpetaDelDiario ? arbolDelHormiguero.filter((entrada) => entrada.ruta !== carpetaDelDiario) : arbolDelHormiguero;
   const notasDiariasAbiertas = carpetaDelDiario
-    ? notasAbiertas.filter((nota) => nota.rutaDelArchivo && estaDentro(nota.rutaDelArchivo, carpetaDelDiario))
+    ? notasAbiertas.filter((nota) => nota.rutaDelArchivo && estaDentroDe(nota.rutaDelArchivo, carpetaDelDiario))
     : [];
 
   // «Abiertas»: notas fuera del hormiguero. La nota en blanco con que arranca la app no se lista:
   // solo aparece cuando se empieza a escribir en ella.
   const notasFueraDelHormiguero = notasAbiertas.filter((nota) =>
     nota.rutaDelArchivo
-      ? !carpetaDelHormiguero || !estaDentro(nota.rutaDelArchivo, carpetaDelHormiguero)
+      ? !carpetaDelHormiguero || !estaDentroDe(nota.rutaDelArchivo, carpetaDelHormiguero)
       : nota.ultimoTextoConocido || nota.tieneCambiosSinGuardar,
   );
 
@@ -135,7 +135,7 @@ export function BarraLateral(props: Props) {
     indiceDelTituloConElCursor: props.indiceDelTituloConElCursor,
     // Los títulos de la nota visible se pueden fijar como capítulos si la nota está en el hormiguero.
     rutaDeLaNotaVisibleQueSePuedeFijar:
-      rutaDeLaNotaVisible && carpetaDelHormiguero && estaDentro(rutaDeLaNotaVisible, carpetaDelHormiguero) ? rutaDeLaNotaVisible : null,
+      rutaDeLaNotaVisible && carpetaDelHormiguero && estaDentroDe(rutaDeLaNotaVisible, carpetaDelHormiguero) ? rutaDeLaNotaVisible : null,
     carpetasDesplegadas,
     desplegarOPlegarCarpeta,
     clavesFijadasVisibles: new Set(fijadosVisibles.map((fijado) => fijado.clave)),
@@ -146,8 +146,8 @@ export function BarraLateral(props: Props) {
     },
     opcionesParaFijarOQuitar: (clave) =>
       props.clavesDeFijados.includes(clave)
-        ? [{ texto: textosDeLaInterfaz.quitarFijado, accion: () => props.alQuitarFijado(clave) }]
-        : [{ texto: textosDeLaInterfaz.fijarArriba, accion: () => props.alFijar(clave) }],
+        ? [{ texto: textosDeLaInterfaz.quitarFijado, alElegir: () => props.alQuitarFijado(clave) }]
+        : [{ texto: textosDeLaInterfaz.fijarArriba, alElegir: () => props.alFijar(clave) }],
     alAbrirNotaDeArchivo: props.alAbrirNotaDeArchivo,
     alCerrarNota: props.alCerrarNota,
     alSaltarATitulo: props.alSaltarATitulo,
@@ -160,14 +160,14 @@ export function BarraLateral(props: Props) {
           {carpetaDelDiario && (
             <section className="barra-seccion barra-diario">
               <Calendario
-                diasConNota={diasQueTienenNota}
-                diaDeLaNotaVisible={diaDeRuta(rutaDeLaNotaVisible)}
+                diasQueTienenNota={diasConNotaEnElHormiguero}
+                diaDeLaNotaVisible={diaDeLaNotaDiaria(rutaDeLaNotaVisible)}
                 alElegirDia={props.alAbrirNotaDelDia}
               />
               {notasDiariasAbiertas.map((notaDiaria) => (
                 <FilaDeNota
                   key={notaDiaria.id}
-                  nombreVisible={nombreSinExtension(nombreArchivo(notaDiaria.rutaDelArchivo!))}
+                  nombreVisible={nombreSinExtension(nombreDelArchivo(notaDiaria.rutaDelArchivo!))}
                   nivelDeProfundidad={0}
                   notaAbierta={notaDiaria}
                   alHacerClic={() => props.alMostrarNotaAbierta(notaDiaria.id)}
@@ -192,7 +192,7 @@ export function BarraLateral(props: Props) {
               {notasFueraDelHormiguero.map((nota) => (
                 <FilaDeNota
                   key={nota.id}
-                  nombreVisible={nota.rutaDelArchivo ? nombreArchivo(nota.rutaDelArchivo) : textosDeLaInterfaz.sinTitulo}
+                  nombreVisible={nota.rutaDelArchivo ? nombreDelArchivo(nota.rutaDelArchivo) : textosDeLaInterfaz.sinTitulo}
                   nivelDeProfundidad={0}
                   notaAbierta={nota}
                   alHacerClic={() => props.alMostrarNotaAbierta(nota.id)}
@@ -202,7 +202,7 @@ export function BarraLateral(props: Props) {
           )}
           {carpetaDelHormiguero && (
             <section className="barra-seccion">
-              <div className="barra-encabezado" title={carpetaDelHormiguero}>{nombreArchivo(carpetaDelHormiguero)}</div>
+              <div className="barra-encabezado" title={carpetaDelHormiguero}>{nombreDelArchivo(carpetaDelHormiguero)}</div>
               {arbolSinElDiario.length ? (
                 <EntradasDelArbol entradas={arbolSinElDiario} nivelDeProfundidad={0} />
               ) : (
@@ -219,7 +219,7 @@ export function BarraLateral(props: Props) {
           onDoubleClick={() => props.alCambiarAncho(null)}
         />
         {menuContextual && (
-          <MenuContextual x={menuContextual.x} y={menuContextual.y} onCerrar={cerrarMenuContextual} opciones={menuContextual.opciones} />
+          <MenuContextual x={menuContextual.x} y={menuContextual.y} alCerrar={cerrarMenuContextual} opciones={menuContextual.opciones} />
         )}
       </nav>
     </ContextoDeLaBarraLateral.Provider>

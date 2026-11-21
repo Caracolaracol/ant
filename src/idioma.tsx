@@ -126,8 +126,8 @@ const en = {
   sinNotas: "This folder has no notes.",
   subir: "Move up",
   bajar: "Move down",
-  palabrasN: (n: number) => `${n.toLocaleString("en-US")} words`,
-  capitulosN: (n: number, total: number) => `${n} of ${total} chapters`,
+  palabrasN: (cantidadDePalabras: number) => `${cantidadDePalabras.toLocaleString("en-US")} words`,
+  capitulosN: (capitulosIncluidos: number, totalDeCapitulos: number) => `${capitulosIncluidos} of ${totalDeCapitulos} chapters`,
   tituloLibro: "Title",
   autor: "Author",
   formato: "Format",
@@ -151,30 +151,30 @@ const en = {
   cerrar: "Close",
 
   // Bienvenida.
-  bvSeguir: "Follow the tunnel",
-  bvVolver: "Back to my notes",
-  bvLema: "Write without distractions.",
-  bvPresentacion: "A simple, quiet place for stories, novels and notes. Let’s dig your first anthill: it takes a minute.",
-  bvArchivosEtiqueta: "How it works",
-  bvArchivosTitulo: "Your texts are files",
-  bvArchivosTexto: "Every note is a Markdown file in a folder on your computer. No accounts, no cloud, nothing to import.",
-  bvArchivosNota: "Open them with any other app and back them up however you like.",
-  bvHormiguerosEtiqueta: "Anthills",
-  bvHormiguerosTitulo: "One anthill per project",
-  bvHormiguerosTexto: "An anthill is a folder where your notes live, chamber by chamber. Make as many as you want: one for your novel, another for your diary, another for work.",
-  bvEjemplos: "Examples",
-  bvEjemplosLista: ["My novel", "Diary", "Work"],
-  bvHormiguerosNota: "Switch between them in Settings, and dig a new one anytime with File → New Anthill…",
-  bvCavarEtiqueta: "Last chamber",
-  bvCavarTitulo: "Dig your first anthill",
-  bvCavarTexto: "Create a new folder for it, or use one you already have, like a folder of chapters or an Obsidian vault.",
-  bvRecorrido: "Welcome pages",
-  bvCamara: (n: number) => `Page ${n}`,
+  bienvenidaSeguir: "Follow the tunnel",
+  bienvenidaVolver: "Back to my notes",
+  bienvenidaLema: "Write without distractions.",
+  bienvenidaPresentacion: "A simple, quiet place for stories, novels and notes. Let’s dig your first anthill: it takes a minute.",
+  bienvenidaArchivosEtiqueta: "How it works",
+  bienvenidaArchivosTitulo: "Your texts are files",
+  bienvenidaArchivosTexto: "Every note is a Markdown file in a folder on your computer. No accounts, no cloud, nothing to import.",
+  bienvenidaArchivosNota: "Open them with any other app and back them up however you like.",
+  bienvenidaHormiguerosEtiqueta: "Anthills",
+  bienvenidaHormiguerosTitulo: "One anthill per project",
+  bienvenidaHormiguerosTexto: "An anthill is a folder where your notes live, chamber by chamber. Make as many as you want: one for your novel, another for your diary, another for work.",
+  bienvenidaEjemplos: "Examples",
+  bienvenidaEjemplosLista: ["My novel", "Diary", "Work"],
+  bienvenidaHormiguerosNota: "Switch between them in Settings, and dig a new one anytime with File → New Anthill…",
+  bienvenidaCavarEtiqueta: "Last chamber",
+  bienvenidaCavarTitulo: "Dig your first anthill",
+  bienvenidaCavarTexto: "Create a new folder for it, or use one you already have, like a folder of chapters or an Obsidian vault.",
+  bienvenidaRecorrido: "Welcome pages",
+  bienvenidaCamara: (numeroDePagina: number) => `Page ${numeroDePagina}`,
 };
 
-export type Textos = typeof en;
+export type TextosDeLaInterfaz = typeof en;
 
-const es: Textos = {
+const es: TextosDeLaInterfaz = {
   locale: "es",
 
   sinTitulo: "Sin título",
@@ -255,7 +255,7 @@ const es: Textos = {
   diarioAviso: "Abre primero un hormiguero: ahí va la carpeta Daily.",
   tema: "Tema",
   temaAyuda: "Un punto de partida; después puedes cambiar cada color abajo.",
-  colores: "Colores",
+  colores: "ColoresPorVariable",
   restablecerColores: "Restablecer colores",
   nombresTemas: { oscuro: "Oscuro", hormiga: "Hormiga", noche: "Noche", papel: "Papel", sepia: "Sepia" },
   nombresColores: {
@@ -277,8 +277,8 @@ const es: Textos = {
   sinNotas: "Esta carpeta no tiene notas.",
   subir: "Subir",
   bajar: "Bajar",
-  palabrasN: (n) => `${n.toLocaleString("es")} palabras`,
-  capitulosN: (n, total) => `${n} de ${total} capítulos`,
+  palabrasN: (cantidadDePalabras) => `${cantidadDePalabras.toLocaleString("es")} palabras`,
+  capitulosN: (capitulosIncluidos, totalDeCapitulos) => `${capitulosIncluidos} de ${totalDeCapitulos} capítulos`,
   tituloLibro: "Título",
   autor: "Autor",
   formato: "Formato",
@@ -301,35 +301,35 @@ const es: Textos = {
   mostrarEnFinder: "Mostrar en la carpeta",
   cerrar: "Cerrar",
 
-  bvSeguir: "Sigue el túnel",
-  bvVolver: "Volver a mis notas",
-  bvLema: "Escribe sin distracciones.",
-  bvPresentacion: "Un lugar simple y silencioso para cuentos, novelas y notas. Cavemos tu primer hormiguero: toma un minuto.",
-  bvArchivosEtiqueta: "Cómo funciona",
-  bvArchivosTitulo: "Tus textos son archivos",
-  bvArchivosTexto: "Cada nota es un archivo Markdown en una carpeta de tu computador. Sin cuentas, sin nube, nada que importar.",
-  bvArchivosNota: "Ábrelos con cualquier otra app y respáldalos como quieras.",
-  bvHormiguerosEtiqueta: "Hormigueros",
-  bvHormiguerosTitulo: "Un hormiguero por proyecto",
-  bvHormiguerosTexto: "Un hormiguero es una carpeta donde viven tus notas, cámara por cámara. Crea todos los que quieras: uno para tu novela, otro para tu diario, otro para el trabajo.",
-  bvEjemplos: "Ejemplos",
-  bvEjemplosLista: ["Mi novela", "Diario", "Trabajo"],
-  bvHormiguerosNota: "Pasa de uno a otro en Ajustes, y cava uno nuevo cuando quieras con Archivo → Hormiguero nuevo…",
-  bvCavarEtiqueta: "Última cámara",
-  bvCavarTitulo: "Cava tu primer hormiguero",
-  bvCavarTexto: "Crea una carpeta nueva para él, o usa una que ya tengas, como una carpeta de capítulos o una bóveda de Obsidian.",
-  bvRecorrido: "Páginas de bienvenida",
-  bvCamara: (n) => `Página ${n}`,
+  bienvenidaSeguir: "Sigue el túnel",
+  bienvenidaVolver: "Volver a mis notas",
+  bienvenidaLema: "Escribe sin distracciones.",
+  bienvenidaPresentacion: "Un lugar simple y silencioso para cuentos, novelas y notas. Cavemos tu primer hormiguero: toma un minuto.",
+  bienvenidaArchivosEtiqueta: "Cómo funciona",
+  bienvenidaArchivosTitulo: "Tus textos son archivos",
+  bienvenidaArchivosTexto: "Cada nota es un archivo Markdown en una carpeta de tu computador. Sin cuentas, sin nube, nada que importar.",
+  bienvenidaArchivosNota: "Ábrelos con cualquier otra app y respáldalos como quieras.",
+  bienvenidaHormiguerosEtiqueta: "Hormigueros",
+  bienvenidaHormiguerosTitulo: "Un hormiguero por proyecto",
+  bienvenidaHormiguerosTexto: "Un hormiguero es una carpeta donde viven tus notas, cámara por cámara. Crea todos los que quieras: uno para tu novela, otro para tu diario, otro para el trabajo.",
+  bienvenidaEjemplos: "Ejemplos",
+  bienvenidaEjemplosLista: ["Mi novela", "Diario", "Trabajo"],
+  bienvenidaHormiguerosNota: "Pasa de uno a otro en Ajustes, y cava uno nuevo cuando quieras con Archivo → Hormiguero nuevo…",
+  bienvenidaCavarEtiqueta: "Última cámara",
+  bienvenidaCavarTitulo: "Cava tu primer hormiguero",
+  bienvenidaCavarTexto: "Crea una carpeta nueva para él, o usa una que ya tengas, como una carpeta de capítulos o una bóveda de Obsidian.",
+  bienvenidaRecorrido: "Páginas de bienvenida",
+  bienvenidaCamara: (numeroDePagina) => `Página ${numeroDePagina}`,
 };
 
 /** Textos del idioma pedido; cualquier valor desconocido (o vacío) cae en inglés. */
-export const textosDe = (idioma: string | null | undefined): Textos => (idioma === "es" ? es : en);
+export const textosDelIdioma = (idioma: string | null | undefined): TextosDeLaInterfaz => (idioma === "es" ? es : en);
 
 /** Idioma efectivo de un valor guardado en los ajustes. */
-export const idiomaDe = (idioma: string | null | undefined): Idioma => (idioma === "es" ? "es" : "en");
+export const idiomaValido = (idioma: string | null | undefined): Idioma => (idioma === "es" ? "es" : "en");
 
 /** Contexto con los textos del idioma actual; lo provee `main.tsx` alrededor de cada ventana. */
-export const ContextoTextos = createContext<Textos>(en);
+export const ContextoDeTextos = createContext<TextosDeLaInterfaz>(en);
 
 /** Textos del idioma actual, para usar dentro de los componentes. */
-export const useTextos = () => useContext(ContextoTextos);
+export const useTextos = () => useContext(ContextoDeTextos);

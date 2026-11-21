@@ -12,65 +12,73 @@
 //     texto con las mismas reglas del modo escritor, sin tocar los archivos.
 
 import { markdownLanguage } from "@codemirror/lang-markdown";
-import { reemplazo, type ConfigEscritor } from "../editor/escritor.ts";
+import { reemplazoTipografico, type ConfiguracionModoEscritor } from "../editor/escritor.ts";
 
 /** Un trozo de texto con un mismo estilo. */
-export interface Tramo {
+export interface TramoDeTexto {
   texto: string;
-  cursiva?: boolean;
-  negrita?: boolean;
-  tachado?: boolean;
-  codigo?: boolean;
+  enCursiva?: boolean;
+  enNegrita?: boolean;
+  estaTachado?: boolean;
+  esCodigo?: boolean;
 }
 
+/** Estilo de un tramo (todo menos el texto). */
+type EstiloDeTramo = Omit<TramoDeTexto, "texto">;
+
 /** Un bloque del texto de un capítulo. */
-export type Bloque =
-  | { tipo: "parrafo"; tramos: Tramo[]; cita?: boolean; sinSangria?: boolean }
-  | { tipo: "titulo"; nivel: number; tramos: Tramo[] }
+export type BloqueDelCapitulo =
+  | { tipo: "parrafo"; tramos: TramoDeTexto[]; esCita?: boolean; sinSangria?: boolean }
+  | { tipo: "titulo"; nivel: number; tramos: TramoDeTexto[] }
   | { tipo: "escena" }
   | { tipo: "codigo"; lineas: string[] };
 
 export interface Capitulo {
   /** Título del capítulo, o `null` si no lleva. */
   titulo: string | null;
-  bloques: Bloque[];
+  bloques: BloqueDelCapitulo[];
 }
 
 export interface Libro {
   titulo: string;
-  autor: string;
+  nombreDelAutor: string;
   capitulos: Capitulo[];
   /** Palabras de todo el libro (sin contar títulos de capítulo). */
-  palabras: number;
+  cantidadDePalabras: number;
 }
 
-/** De dónde sale el título de cada capítulo. */
-export type OrigenTitulo = "titulo" | "archivo" | "ninguno";
+/**
+ * De dónde sale el título de cada capítulo: el primer título de la nota, el nombre del archivo o
+ * ninguno. (Los valores se guardan en las opciones de compilación de cada carpeta.)
+ */
+export type OrigenDelTituloDeCadaCapitulo = "titulo" | "archivo" | "ninguno";
 
 /** Una nota a compilar: su nombre de archivo y su texto. */
-export interface NotaCompilar {
-  nombre: string;
+export interface NotaParaCompilar {
+  nombreDelArchivo: string;
   texto: string;
 }
 
 /** Nodo del árbol de sintaxis (el tipo viene de @lezer/common, que no es dependencia directa). */
-type Nodo = ReturnType<typeof markdownLanguage.parser.parse>["topNode"];
+type NodoDelMarkdown = ReturnType<typeof markdownLanguage.parser.parse>["topNode"];
 
 /** Marcas de sintaxis que no forman parte del texto. */
-const MARCAS = new Set([
+const MARCAS_DE_SINTAXIS_QUE_NO_SON_TEXTO = new Set([
   "EmphasisMark", "StrikethroughMark", "CodeMark", "LinkMark", "QuoteMark", "HeaderMark", "ListMark",
   "LinkTitle", "LinkLabel", "HTMLTag", "Comment", "Image", "TaskMarker", "CodeInfo",
 ]);
 
 /** Entidades HTML más comunes, por si el texto trae alguna. */
-const ENTIDADES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", mdash: "—", ndash: "–", hellip: "…", laquo: "«", raquo: "»" };
+const ENTIDADES_HTML: Record<string, string> = {
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", mdash: "—", ndash: "–", hellip: "…", laquo: "«", raquo: "»",
+};
 
 /** Una línea que, sola, marca un cambio de escena. */
-const ESCENA = /^\s*((\*\s*){3,}|(-\s*){3,}|(_\s*){3,}|(#\s*)+|⁂|~{3,})\s*$/;
+const LINEA_DE_CAMBIO_DE_ESCENA = /^\s*((\*\s*){3,}|(-\s*){3,}|(_\s*){3,}|(#\s*)+|⁂|~{3,})\s*$/;
 
 /** Quita lo que nunca se exporta: encabezado YAML, comentarios `%% %%`, imágenes y enlaces de Obsidian. */
-function limpiar(texto: string): string {
-  return texto
+function quitarLoQueNoSeExporta(textoDeLaNota: string): string {
+  return textoDeLaNota
     .replace(/\r\n?/g, "\n")
     .replace(/^---\n[\s\S]*?\n---[ \t]*(\n|$)/, "")
     .replace(/%%[\s\S]*?%%/g, "")
@@ -79,237 +87,265 @@ function limpiar(texto: string): string {
 }
 
 /** Recorre el contenido en línea de `nodo` y devuelve sus tramos con estilo. */
-function enLinea(nodo: Nodo, src: string, estilo: Omit<Tramo, "texto"> = {}): Tramo[] {
-  const tramos: Tramo[] = [];
-  const agregar = (texto: string, e = estilo) => {
+function tramosConEstilo(nodo: NodoDelMarkdown, textoFuente: string, estiloHeredado: EstiloDeTramo = {}): TramoDeTexto[] {
+  const tramos: TramoDeTexto[] = [];
+  const agregarTexto = (texto: string, estilo = estiloHeredado) => {
     if (!texto) return;
-    const ultimo = tramos[tramos.length - 1];
+    const ultimoTramo = tramos[tramos.length - 1];
     // Une tramos seguidos del mismo estilo, para no partir palabras sin necesidad.
-    if (ultimo && ultimo.cursiva === e.cursiva && ultimo.negrita === e.negrita && ultimo.tachado === e.tachado && ultimo.codigo === e.codigo) {
-      ultimo.texto += texto;
-    } else tramos.push({ texto, ...e });
+    const tieneElMismoEstilo =
+      ultimoTramo &&
+      ultimoTramo.enCursiva === estilo.enCursiva &&
+      ultimoTramo.enNegrita === estilo.enNegrita &&
+      ultimoTramo.estaTachado === estilo.estaTachado &&
+      ultimoTramo.esCodigo === estilo.esCodigo;
+    if (tieneElMismoEstilo) ultimoTramo.texto += texto;
+    else tramos.push({ texto, ...estilo });
   };
-  let pos = nodo.from;
-  for (let h = nodo.firstChild; h; h = h.nextSibling) {
-    if (h.from > pos) agregar(src.slice(pos, h.from));
-    pos = h.to;
-    const n = h.name;
+  let posicionLeida = nodo.from;
+  for (let hijo = nodo.firstChild; hijo; hijo = hijo.nextSibling) {
+    if (hijo.from > posicionLeida) agregarTexto(textoFuente.slice(posicionLeida, hijo.from));
+    posicionLeida = hijo.to;
+    const tipoDeNodo = hijo.name;
     // Una URL suelta en el texto se deja; la de un enlace `[texto](url)` no.
-    if (n === "URL") {
-      if (nodo.name !== "Link") agregar(src.slice(h.from, h.to));
-    } else if (n === "Autolink") {
-      const url = h.getChild("URL");
-      if (url) agregar(src.slice(url.from, url.to));
-    } else if (MARCAS.has(n)) {
+    if (tipoDeNodo === "URL") {
+      if (nodo.name !== "Link") agregarTexto(textoFuente.slice(hijo.from, hijo.to));
+    } else if (tipoDeNodo === "Autolink") {
+      const direccion = hijo.getChild("URL");
+      if (direccion) agregarTexto(textoFuente.slice(direccion.from, direccion.to));
+    } else if (MARCAS_DE_SINTAXIS_QUE_NO_SON_TEXTO.has(tipoDeNodo)) {
       continue;
-    } else if (n === "Escape") {
-      agregar(src.slice(h.from + 1, h.to));
-    } else if (n === "HardBreak") {
-      agregar("\n");
-    } else if (n === "Entity") {
-      const ent = src.slice(h.from + 1, h.to - 1);
-      const num = /^#x([0-9a-f]+)$/i.exec(ent) ?? /^#(\d+)$/.exec(ent);
-      agregar(num ? String.fromCodePoint(parseInt(num[1], num[0].startsWith("#x") ? 16 : 10)) : (ENTIDADES[ent] ?? src.slice(h.from, h.to)));
+    } else if (tipoDeNodo === "Escape") {
+      agregarTexto(textoFuente.slice(hijo.from + 1, hijo.to));
+    } else if (tipoDeNodo === "HardBreak") {
+      agregarTexto("\n");
+    } else if (tipoDeNodo === "Entity") {
+      const nombreDeLaEntidad = textoFuente.slice(hijo.from + 1, hijo.to - 1);
+      const entidadNumerica = /^#x([0-9a-f]+)$/i.exec(nombreDeLaEntidad) ?? /^#(\d+)$/.exec(nombreDeLaEntidad);
+      agregarTexto(
+        entidadNumerica
+          ? String.fromCodePoint(parseInt(entidadNumerica[1], entidadNumerica[0].startsWith("#x") ? 16 : 10))
+          : (ENTIDADES_HTML[nombreDeLaEntidad] ?? textoFuente.slice(hijo.from, hijo.to)),
+      );
     } else {
-      const sub =
-        n === "Emphasis" ? { ...estilo, cursiva: true } :
-        n === "StrongEmphasis" ? { ...estilo, negrita: true } :
-        n === "Strikethrough" ? { ...estilo, tachado: true } :
-        n === "InlineCode" ? { ...estilo, codigo: true } :
-        estilo;
-      for (const t of enLinea(h, src, sub)) agregar(t.texto, t);
+      const estiloDelHijo =
+        tipoDeNodo === "Emphasis" ? { ...estiloHeredado, enCursiva: true } :
+        tipoDeNodo === "StrongEmphasis" ? { ...estiloHeredado, enNegrita: true } :
+        tipoDeNodo === "Strikethrough" ? { ...estiloHeredado, estaTachado: true } :
+        tipoDeNodo === "InlineCode" ? { ...estiloHeredado, esCodigo: true } :
+        estiloHeredado;
+      for (const tramo of tramosConEstilo(hijo, textoFuente, estiloDelHijo)) agregarTexto(tramo.texto, tramo);
     }
   }
-  if (nodo.to > pos) agregar(src.slice(pos, nodo.to));
+  if (nodo.to > posicionLeida) agregarTexto(textoFuente.slice(posicionLeida, nodo.to));
   return tramos;
 }
 
 /** Parte los tramos en líneas (cada salto de línea empieza un párrafo nuevo) y recorta los espacios de los bordes. */
-function enLineas(tramos: Tramo[]): Tramo[][] {
-  const lineas: Tramo[][] = [[]];
-  for (const t of tramos) {
-    t.texto.split("\n").forEach((parte, i) => {
-      if (i > 0) lineas.push([]);
-      if (parte) lineas[lineas.length - 1].push({ ...t, texto: parte });
+function partirEnLineas(tramos: TramoDeTexto[]): TramoDeTexto[][] {
+  const lineas: TramoDeTexto[][] = [[]];
+  for (const tramo of tramos) {
+    tramo.texto.split("\n").forEach((parteDelTramo, numeroDeParte) => {
+      if (numeroDeParte > 0) lineas.push([]);
+      if (parteDelTramo) lineas[lineas.length - 1].push({ ...tramo, texto: parteDelTramo });
     });
   }
   return lineas
-    .map((l) => {
-      if (l.length) {
-        l[0] = { ...l[0], texto: l[0].texto.trimStart() };
-        l[l.length - 1] = { ...l[l.length - 1], texto: l[l.length - 1].texto.trimEnd() };
+    .map((linea) => {
+      if (linea.length) {
+        linea[0] = { ...linea[0], texto: linea[0].texto.trimStart() };
+        linea[linea.length - 1] = { ...linea[linea.length - 1], texto: linea[linea.length - 1].texto.trimEnd() };
       }
-      return l.filter((t) => t.texto);
+      return linea.filter((tramo) => tramo.texto);
     })
-    .filter((l) => l.length);
+    .filter((linea) => linea.length);
 }
 
 /** Texto plano de unos tramos. */
-export const textoDe = (tramos: Tramo[]) => tramos.map((t) => t.texto).join("");
+export const textoPlanoDe = (tramos: TramoDeTexto[]) => tramos.map((tramo) => tramo.texto).join("");
 
 /** Convierte un bloque de Markdown (y sus hijos) en bloques del libro. */
-function bloques(nodo: Nodo, src: string, cita = false): Bloque[] {
-  const n = nodo.name;
-  const titulo = /^(ATXHeading|SetextHeading)(\d)$/.exec(n);
-  if (titulo) {
-    const tramos = enLineas(enLinea(nodo, src)).flat();
+function bloquesDelNodo(nodo: NodoDelMarkdown, textoFuente: string, estaEnUnaCita = false): BloqueDelCapitulo[] {
+  const tipoDeNodo = nodo.name;
+  const tituloDeMarkdown = /^(ATXHeading|SetextHeading)(\d)$/.exec(tipoDeNodo);
+  if (tituloDeMarkdown) {
+    const tramos = partirEnLineas(tramosConEstilo(nodo, textoFuente)).flat();
     // `#` o `# # #` solos son un cambio de escena, no un título vacío.
-    if (!textoDe(tramos).replace(/[#\s]/g, "")) return [{ tipo: "escena" }];
-    return [{ tipo: "titulo", nivel: Number(titulo[2]), tramos }];
+    if (!textoPlanoDe(tramos).replace(/[#\s]/g, "")) return [{ tipo: "escena" }];
+    return [{ tipo: "titulo", nivel: Number(tituloDeMarkdown[2]), tramos }];
   }
-  switch (n) {
+  switch (tipoDeNodo) {
     case "Paragraph":
-      return enLineas(enLinea(nodo, src)).map((tramos): Bloque =>
-        ESCENA.test(textoDe(tramos)) ? { tipo: "escena" } : { tipo: "parrafo", tramos, cita },
+      return partirEnLineas(tramosConEstilo(nodo, textoFuente)).map((tramos): BloqueDelCapitulo =>
+        LINEA_DE_CAMBIO_DE_ESCENA.test(textoPlanoDe(tramos)) ? { tipo: "escena" } : { tipo: "parrafo", tramos, esCita: estaEnUnaCita },
       );
     case "HorizontalRule":
       return [{ tipo: "escena" }];
     case "Blockquote": {
-      const out: Bloque[] = [];
-      for (let h = nodo.firstChild; h; h = h.nextSibling) if (h.name !== "QuoteMark") out.push(...bloques(h, src, true));
-      return out;
+      const bloques: BloqueDelCapitulo[] = [];
+      for (let hijo = nodo.firstChild; hijo; hijo = hijo.nextSibling) {
+        if (hijo.name !== "QuoteMark") bloques.push(...bloquesDelNodo(hijo, textoFuente, true));
+      }
+      return bloques;
     }
     case "BulletList":
     case "OrderedList": {
-      const out: Bloque[] = [];
-      let numero = 0;
+      const bloques: BloqueDelCapitulo[] = [];
+      let numeroDeItem = 0;
       for (let item = nodo.firstChild; item; item = item.nextSibling) {
         if (item.name !== "ListItem") continue;
-        numero++;
-        const marca = item.getChild("ListMark");
-        const vineta = n === "OrderedList" ? `${marca ? src.slice(marca.from, marca.to) : `${numero}.`} ` : "• ";
-        let primero = true;
-        for (let h = item.firstChild; h; h = h.nextSibling) {
-          if (h.name === "ListMark") continue;
-          out.push(...conVineta(bloques(h, src, cita), primero ? vineta : ""));
-          primero = false;
+        numeroDeItem++;
+        const marcaDelItem = item.getChild("ListMark");
+        const vineta =
+          tipoDeNodo === "OrderedList"
+            ? `${marcaDelItem ? textoFuente.slice(marcaDelItem.from, marcaDelItem.to) : `${numeroDeItem}.`} `
+            : "• ";
+        let esElPrimerBloqueDelItem = true;
+        for (let hijo = item.firstChild; hijo; hijo = hijo.nextSibling) {
+          if (hijo.name === "ListMark") continue;
+          bloques.push(...conVinetaDeLista(bloquesDelNodo(hijo, textoFuente, estaEnUnaCita), esElPrimerBloqueDelItem ? vineta : ""));
+          esElPrimerBloqueDelItem = false;
         }
       }
-      return out;
+      return bloques;
     }
     case "Task":
-      return enLineas(enLinea(nodo, src)).map((tramos): Bloque => ({ tipo: "parrafo", tramos, cita }));
+      return partirEnLineas(tramosConEstilo(nodo, textoFuente)).map((tramos): BloqueDelCapitulo => ({ tipo: "parrafo", tramos, esCita: estaEnUnaCita }));
     case "FencedCode":
     case "CodeBlock": {
-      const lineas: string[] = [];
-      for (let h = nodo.firstChild; h; h = h.nextSibling) if (h.name === "CodeText") lineas.push(...src.slice(h.from, h.to).split("\n"));
-      return lineas.length ? [{ tipo: "codigo", lineas }] : [];
+      const lineasDeCodigo: string[] = [];
+      for (let hijo = nodo.firstChild; hijo; hijo = hijo.nextSibling) {
+        if (hijo.name === "CodeText") lineasDeCodigo.push(...textoFuente.slice(hijo.from, hijo.to).split("\n"));
+      }
+      return lineasDeCodigo.length ? [{ tipo: "codigo", lineas: lineasDeCodigo }] : [];
     }
     case "Table":
       // Cada fila como un párrafo, con las celdas separadas; la fila de guiones se omite.
-      return src
+      return textoFuente
         .slice(nodo.from, nodo.to)
         .split("\n")
-        .filter((l) => l.trim() && !/^\s*\|?[\s:|-]+\|?\s*$/.test(l))
-        .map((l): Bloque => ({ tipo: "parrafo", sinSangria: true, tramos: [{ texto: l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim()).join("  ·  ") }] }));
+        .filter((fila) => fila.trim() && !/^\s*\|?[\s:|-]+\|?\s*$/.test(fila))
+        .map((fila): BloqueDelCapitulo => ({
+          tipo: "parrafo",
+          sinSangria: true,
+          tramos: [{ texto: fila.trim().replace(/^\||\|$/g, "").split("|").map((celda) => celda.trim()).join("  ·  ") }],
+        }));
     case "HTMLBlock":
     case "CommentBlock":
     case "LinkReference":
     case "ProcessingInstructionBlock":
       return [];
-    default: {
-      const tramos = enLineas(enLinea(nodo, src));
-      return tramos.map((t): Bloque => ({ tipo: "parrafo", tramos: t, cita }));
-    }
+    default:
+      return partirEnLineas(tramosConEstilo(nodo, textoFuente)).map((tramos): BloqueDelCapitulo => ({ tipo: "parrafo", tramos, esCita: estaEnUnaCita }));
   }
 }
 
 /** Pone la viñeta de una lista delante del primer párrafo de un ítem (sin sangría). */
-function conVineta(bs: Bloque[], vineta: string): Bloque[] {
-  return bs.map((b, i) =>
-    b.tipo === "parrafo" ? { ...b, sinSangria: true, tramos: i === 0 && vineta ? [{ texto: vineta }, ...b.tramos] : b.tramos } : b,
+function conVinetaDeLista(bloques: BloqueDelCapitulo[], vineta: string): BloqueDelCapitulo[] {
+  return bloques.map((bloque, posicion) =>
+    bloque.tipo === "parrafo"
+      ? { ...bloque, sinSangria: true, tramos: posicion === 0 && vineta ? [{ texto: vineta }, ...bloque.tramos] : bloque.tramos }
+      : bloque,
   );
 }
 
 /** Convierte el texto de una nota en bloques. */
-export function analizar(texto: string): Bloque[] {
-  const src = limpiar(texto);
-  const arbol = markdownLanguage.parser.parse(src);
-  const out: Bloque[] = [];
-  for (let h = arbol.topNode.firstChild; h; h = h.nextSibling) out.push(...bloques(h, src));
-  return out;
+export function analizarNotaEnBloques(textoDeLaNota: string): BloqueDelCapitulo[] {
+  const textoFuente = quitarLoQueNoSeExporta(textoDeLaNota);
+  const arbolDelMarkdown = markdownLanguage.parser.parse(textoFuente);
+  const bloques: BloqueDelCapitulo[] = [];
+  for (let hijo = arbolDelMarkdown.topNode.firstChild; hijo; hijo = hijo.nextSibling) bloques.push(...bloquesDelNodo(hijo, textoFuente));
+  return bloques;
 }
 
 /** Corrige la tipografía de unos tramos simulando que se teclean con el modo escritor (el código no se toca). */
-function corregir(tramos: Tramo[], cfg: ConfigEscritor): Tramo[] {
-  let linea = "";
-  return tramos.map((t) => {
-    if (t.codigo) {
-      linea += t.texto;
-      return t;
+function corregirTipografiaDeTramos(tramos: TramoDeTexto[], configuracion: ConfiguracionModoEscritor): TramoDeTexto[] {
+  let lineaHastaAhora = "";
+  return tramos.map((tramo) => {
+    if (tramo.esCodigo) {
+      lineaHastaAhora += tramo.texto;
+      return tramo;
     }
-    let out = "";
-    for (const c of t.texto) {
-      const r = reemplazo(linea, c, cfg);
+    let textoCorregido = "";
+    for (const caracter of tramo.texto) {
+      const reemplazo = reemplazoTipografico(lineaHastaAhora, caracter, configuracion);
       // Si el reemplazo tendría que borrar texto de un tramo anterior (otro estilo), se omite.
-      if (r && r.borrar <= out.length) {
-        out = out.slice(0, out.length - r.borrar) + r.insertar;
-        linea = linea.slice(0, linea.length - r.borrar) + r.insertar;
+      if (reemplazo && reemplazo.caracteresQueSeBorran <= textoCorregido.length) {
+        textoCorregido = textoCorregido.slice(0, textoCorregido.length - reemplazo.caracteresQueSeBorran) + reemplazo.textoQueSeInserta;
+        lineaHastaAhora = lineaHastaAhora.slice(0, lineaHastaAhora.length - reemplazo.caracteresQueSeBorran) + reemplazo.textoQueSeInserta;
       } else {
-        out += c;
-        linea += c;
+        textoCorregido += caracter;
+        lineaHastaAhora += caracter;
       }
     }
-    return { ...t, texto: out };
+    return { ...tramo, texto: textoCorregido };
   });
 }
 
-/** Aplica `corregir` a todos los párrafos y títulos de unos bloques. */
-function corregirBloques(bs: Bloque[], cfg: ConfigEscritor): Bloque[] {
-  return bs.map((b) => (b.tipo === "parrafo" || b.tipo === "titulo" ? { ...b, tramos: corregir(b.tramos, cfg) } : b));
+/** Corrige la tipografía de todos los párrafos y títulos de unos bloques. */
+function corregirTipografiaDeBloques(bloques: BloqueDelCapitulo[], configuracion: ConfiguracionModoEscritor): BloqueDelCapitulo[] {
+  return bloques.map((bloque) =>
+    bloque.tipo === "parrafo" || bloque.tipo === "titulo" ? { ...bloque, tramos: corregirTipografiaDeTramos(bloque.tramos, configuracion) } : bloque,
+  );
 }
 
 /** Nombre de archivo como título: sin extensión ni la numeración del principio («01 - El viaje» → «El viaje»). */
-export function tituloDeArchivo(nombre: string): string {
-  const sin = nombre.replace(/\.(md|markdown|txt)$/i, "");
-  return sin.replace(/^\d+[\s._)-]*/, "").trim() || sin;
+export function tituloDesdeElNombreDelArchivo(nombreDelArchivo: string): string {
+  const nombreSinExtension = nombreDelArchivo.replace(/\.(md|markdown|txt)$/i, "");
+  return nombreSinExtension.replace(/^\d+[\s._)-]*/, "").trim() || nombreSinExtension;
 }
 
 /** Cuenta las palabras de unos bloques (las rayas y signos sueltos no cuentan). */
-export function contarPalabras(bs: Bloque[]): number {
-  let n = 0;
-  for (const b of bs) {
-    if (b.tipo !== "parrafo" && b.tipo !== "titulo") continue;
-    for (const p of textoDe(b.tramos).split(/\s+/)) if (/[\p{L}\p{N}]/u.test(p)) n++;
+export function contarPalabrasDeBloques(bloques: BloqueDelCapitulo[]): number {
+  let cantidadDePalabras = 0;
+  for (const bloque of bloques) {
+    if (bloque.tipo !== "parrafo" && bloque.tipo !== "titulo") continue;
+    for (const palabra of textoPlanoDe(bloque.tramos).split(/\s+/)) if (/[\p{L}\p{N}]/u.test(palabra)) cantidadDePalabras++;
   }
-  return n;
+  return cantidadDePalabras;
 }
 
 /** Quita los cambios de escena del principio y del final, y los repetidos seguidos. */
-function ordenarEscenas(bs: Bloque[]): Bloque[] {
-  const out: Bloque[] = [];
-  for (const b of bs) {
-    if (b.tipo === "escena" && (!out.length || out[out.length - 1].tipo === "escena")) continue;
-    out.push(b);
+function limpiarCambiosDeEscena(bloques: BloqueDelCapitulo[]): BloqueDelCapitulo[] {
+  const bloquesLimpios: BloqueDelCapitulo[] = [];
+  for (const bloque of bloques) {
+    const sobraEsteCambioDeEscena =
+      bloque.tipo === "escena" && (!bloquesLimpios.length || bloquesLimpios[bloquesLimpios.length - 1].tipo === "escena");
+    if (!sobraEsteCambioDeEscena) bloquesLimpios.push(bloque);
   }
-  while (out.length && out[out.length - 1].tipo === "escena") out.pop();
-  return out;
+  while (bloquesLimpios.length && bloquesLimpios[bloquesLimpios.length - 1].tipo === "escena") bloquesLimpios.pop();
+  return bloquesLimpios;
 }
 
 /**
  * Compila un libro con las notas en el orden dado. El título de cada capítulo sale del primer
  * título de la nota (si la nota empieza con uno), del nombre del archivo, o no lleva.
- * Con `tipografia`, corrige comillas, rayas y puntos suspensivos de todo el texto.
+ * Con `configuracionTipografica`, corrige comillas, rayas y puntos suspensivos de todo el texto.
  */
-export function compilar(
-  notas: NotaCompilar[],
-  opciones: { titulo: string; autor: string; origenTitulo: OrigenTitulo; tipografia: ConfigEscritor | null },
+export function compilarLibro(
+  notas: NotaParaCompilar[],
+  opciones: {
+    titulo: string;
+    nombreDelAutor: string;
+    origenDelTitulo: OrigenDelTituloDeCadaCapitulo;
+    configuracionTipografica: ConfiguracionModoEscritor | null;
+  },
 ): Libro {
   const capitulos: Capitulo[] = notas.map((nota) => {
-    let bs = analizar(nota.texto);
-    if (opciones.tipografia) bs = corregirBloques(bs, opciones.tipografia);
-    let titulo: string | null = null;
-    if (opciones.origenTitulo === "titulo") {
-      const primero = bs[0];
-      if (primero?.tipo === "titulo") {
-        titulo = textoDe(primero.tramos);
-        bs = bs.slice(1);
-      } else titulo = tituloDeArchivo(nota.nombre);
-    } else if (opciones.origenTitulo === "archivo") {
-      titulo = tituloDeArchivo(nota.nombre);
+    let bloques = analizarNotaEnBloques(nota.texto);
+    if (opciones.configuracionTipografica) bloques = corregirTipografiaDeBloques(bloques, opciones.configuracionTipografica);
+    let tituloDelCapitulo: string | null = null;
+    if (opciones.origenDelTitulo === "titulo") {
+      const primerBloque = bloques[0];
+      if (primerBloque?.tipo === "titulo") {
+        tituloDelCapitulo = textoPlanoDe(primerBloque.tramos);
+        bloques = bloques.slice(1);
+      } else tituloDelCapitulo = tituloDesdeElNombreDelArchivo(nota.nombreDelArchivo);
+    } else if (opciones.origenDelTitulo === "archivo") {
+      tituloDelCapitulo = tituloDesdeElNombreDelArchivo(nota.nombreDelArchivo);
     }
-    return { titulo, bloques: ordenarEscenas(bs) };
+    return { titulo: tituloDelCapitulo, bloques: limpiarCambiosDeEscena(bloques) };
   });
-  const palabras = capitulos.reduce((s, c) => s + contarPalabras(c.bloques), 0);
-  return { titulo: opciones.titulo, autor: opciones.autor, capitulos, palabras };
+  const cantidadDePalabras = capitulos.reduce((total, capitulo) => total + contarPalabrasDeBloques(capitulo.bloques), 0);
+  return { titulo: opciones.titulo, nombreDelAutor: opciones.nombreDelAutor, capitulos, cantidadDePalabras };
 }

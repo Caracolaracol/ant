@@ -6,20 +6,20 @@
 
 import ReactDOM from "react-dom/client";
 import "../src/App.css";
-import { AJUSTES_INICIALES, type Ajustes } from "../src/ajustes";
+import { AJUSTES_POR_DEFECTO, type Ajustes } from "../src/ajustes";
 import { ModalAjustes } from "../src/ajustes/ModalAjustes";
 import { BarraLateral } from "../src/barraLateral/BarraLateral";
-import type { Entrada } from "../src/carpeta";
+import type { EntradaDelArbol } from "../src/arbolDeCarpetas";
 import { ElegirIconoDeFijado } from "../src/barraLateral/ElegirIconoDeFijado";
 import { NuevoHormiguero } from "../src/hormigueros/NuevoHormiguero";
-import { ContextoTextos, textosDe } from "../src/idioma";
-import { extraerMarcadores } from "../src/marcadores";
+import { ContextoDeTextos, textosDelIdioma } from "../src/idioma";
+import { extraerTitulosDeLaNota } from "../src/titulosDeLaNota";
 
-const p = new URLSearchParams(location.search);
+const parametrosDeLaDireccion = new URLSearchParams(location.search);
 const base = "/Users/yo/Documents/Novela";
-const nota = (ruta: string): Entrada => ({ nombre: ruta.split("/").pop()!, ruta: `${base}/${ruta}`, es_carpeta: false, hijos: [] });
-const carpeta = (nombre: string, hijos: Entrada[]): Entrada => ({ nombre, ruta: `${base}/${nombre}`, es_carpeta: true, hijos });
-const arbol: Entrada[] = [
+const nota = (ruta: string): EntradaDelArbol => ({ nombre: ruta.split("/").pop()!, ruta: `${base}/${ruta}`, esCarpeta: false, hijos: [] });
+const carpeta = (nombre: string, hijos: EntradaDelArbol[]): EntradaDelArbol => ({ nombre, ruta: `${base}/${nombre}`, esCarpeta: true, hijos });
+const arbol: EntradaDelArbol[] = [
   carpeta("Libro I", [nota("Libro I/01 - El hormiguero.md"), nota("Libro I/02 - La lluvia.md"), nota("Libro I/03 - La mudanza.md")]),
   carpeta("Personajes", [nota("Personajes/Reina.md"), nota("Personajes/Mira.md")]),
   nota("Ideas.md"),
@@ -27,12 +27,12 @@ const arbol: Entrada[] = [
 ];
 const texto = "# La lluvia\n\nTexto.\n\n## La cueva\n\nMás texto.\n\n## La salida\n";
 const ajustes: Ajustes = {
-  ...AJUSTES_INICIALES,
-  idioma: p.has("es") ? "es" : "en",
-  carpeta: base,
+  ...AJUSTES_POR_DEFECTO,
+  idioma: parametrosDeLaDireccion.has("es") ? "es" : "en",
+  hormiguero_abierto: base,
   hormigueros: [base, "/Users/yo/Documents/Diario", "/Users/yo/Trabajo/Notas"],
   fijados: [`${base}/Libro I`, `${base}/Ideas.md`, `${base}/Libro I/02 - La lluvia.md#La cueva`, `${base}/Personajes`, `${base}/Borrado.md`],
-  iconos: { [`${base}/Personajes`]: "drama", [`${base}/Ideas.md`]: "lightbulb" },
+  iconos_de_fijados: { [`${base}/Personajes`]: "drama", [`${base}/Ideas.md`]: "lightbulb" },
 };
 const notasAbiertas = [
   { id: "a", rutaDelArchivo: `${base}/Libro I/02 - La lluvia.md`, ultimoTextoConocido: texto, tieneCambiosSinGuardar: false, textoQueHayEnDisco: texto },
@@ -40,7 +40,7 @@ const notasAbiertas = [
 const nada = () => {};
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <ContextoTextos.Provider value={textosDe(ajustes.idioma)}>
+  <ContextoDeTextos.Provider value={textosDelIdioma(ajustes.idioma)}>
     <main className="app">
       <div className="arrastre" />
       <div className="cuerpo">
@@ -48,11 +48,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           carpetaDelHormiguero={base}
           arbolDelHormiguero={arbol}
           clavesDeFijados={ajustes.fijados}
-          iconosElegidosPorFijado={ajustes.iconos}
-          modoDiarioActivo={p.has("diario")}
+          iconosElegidosPorFijado={ajustes.iconos_de_fijados}
+          modoDiarioActivo={parametrosDeLaDireccion.has("diario")}
           notasAbiertas={notasAbiertas}
           idNotaVisible="a"
-          titulosDeLaNotaVisible={extraerMarcadores(texto)}
+          titulosDeLaNotaVisible={extraerTitulosDeLaNota(texto)}
           indiceDelTituloConElCursor={1}
           anchoEnPixeles={240}
           alCambiarAncho={nada}
@@ -70,13 +70,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       </div>
       <footer className="estado"><span>02 - La lluvia.md</span><span /></footer>
     </main>
-    {p.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiar={nada} onNuevoHormiguero={nada} onCerrar={nada} />}
-    {p.has("nuevo") && <NuevoHormiguero onListo={nada} onCerrar={nada} />}
-    {p.has("iconos") && <ElegirIconoDeFijado x={120} y={90} iconoActual="drama" alElegirIcono={nada} alCerrar={nada} />}
-  </ContextoTextos.Provider>,
+    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} alPedirHormigueroNuevo={nada} alCerrar={nada} />}
+    {parametrosDeLaDireccion.has("nuevo") && <NuevoHormiguero alElegirCarpeta={nada} alCerrar={nada} />}
+    {parametrosDeLaDireccion.has("iconos") && <ElegirIconoDeFijado x={120} y={90} iconoActual="drama" alElegirIcono={nada} alCerrar={nada} />}
+  </ContextoDeTextos.Provider>,
 );
 
 // Simula pasar el mouse por el primer fijado, para ver su globo.
-if (p.has("globo")) {
+if (parametrosDeLaDireccion.has("globo")) {
   setTimeout(() => document.querySelectorAll(".fijado")[2]?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true })), 100);
 }

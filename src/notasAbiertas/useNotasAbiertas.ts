@@ -18,10 +18,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
 import type { ControlDelEditor } from "../editor/Editor";
-import { abrirDia } from "../diario";
+import { abrirOCrearNotaDelDia } from "../diario";
 import { useTextos } from "../idioma";
-import { extraerMarcadores } from "../marcadores";
-import { elegirNota, elegirRutaGuardado, guardarNota, leerNota, nombreArchivo } from "../notas";
+import { extraerTitulosDeLaNota } from "../titulosDeLaNota";
+import { elegirNotaConElDialogo, elegirDondeGuardarConElDialogo, guardarNotaEnElDisco, leerNotaDelDisco, nombreDelArchivo } from "../archivosDeNotas";
 import { useEventoDeRust } from "../useEventoDeRust";
 import { NotaAbierta, crearNotaEnBlanco, idDeNotaConArchivo } from "./notaAbierta";
 
@@ -93,7 +93,7 @@ export function useNotasAbiertas({
 
   /** Mensaje de error para un archivo que cambió fuera de Ant y no se quiso pisar. */
   const errorCambiadaFueraDeAnt = (rutaDelArchivo: string) =>
-    new Error(textosVigentes.current.cambiadaFueraDeAnt(nombreArchivo(rutaDelArchivo)));
+    new Error(textosVigentes.current.cambiadaFueraDeAnt(nombreDelArchivo(rutaDelArchivo)));
 
   /**
    * Guarda ya en su archivo una nota con cambios. Antes mira el archivo: si cambió fuera de Ant
@@ -110,14 +110,14 @@ export function useNotasAbiertas({
     const cambiosAlEmpezarAGuardar = cantidadDeCambiosPorNota.current.get(idNota) ?? 0;
     if (!aunqueHayaCambiadoFueraDeAnt) {
       // Si el archivo ya no existe (se borró o movió), se vuelve a crear con lo que hay en Ant.
-      const textoQueHayAhoraEnDisco = await leerNota(rutaDelArchivo).catch(() => null);
+      const textoQueHayAhoraEnDisco = await leerNotaDelDisco(rutaDelArchivo).catch(() => null);
       const cambioFueraDeAnt =
         textoQueHayAhoraEnDisco !== null &&
         textoQueHayAhoraEnDisco !== notaAGuardar.textoQueHayEnDisco &&
         textoQueHayAhoraEnDisco !== textoAGuardar;
       if (cambioFueraDeAnt) throw errorCambiadaFueraDeAnt(rutaDelArchivo);
     }
-    await guardarNota(rutaDelArchivo, textoAGuardar);
+    await guardarNotaEnElDisco(rutaDelArchivo, textoAGuardar);
     const seSiguioEscribiendo = (cantidadDeCambiosPorNota.current.get(idNota) ?? 0) !== cambiosAlEmpezarAGuardar;
     cambiarDatosDeNota(idNota, { textoQueHayEnDisco: textoAGuardar, tieneCambiosSinGuardar: seSiguioEscribiendo });
   }, [textoActualDeNota, cambiarDatosDeNota]);
@@ -141,7 +141,7 @@ export function useNotasAbiertas({
   const recargarNotasCambiadasFueraDeAnt = useCallback(async () => {
     for (const notaAbierta of notasAbiertasVigentes.current) {
       if (!notaAbierta.rutaDelArchivo) continue;
-      const textoDelDisco = await leerNota(notaAbierta.rutaDelArchivo).catch(() => null);
+      const textoDelDisco = await leerNotaDelDisco(notaAbierta.rutaDelArchivo).catch(() => null);
       if (textoDelDisco === null || textoDelDisco === notaAbierta.textoQueHayEnDisco) continue;
       if (notaAbierta.tieneCambiosSinGuardar && textoDelDisco !== textoActualDeNota(notaAbierta)) {
         throw errorCambiadaFueraDeAnt(notaAbierta.rutaDelArchivo);
@@ -182,8 +182,8 @@ export function useNotasAbiertas({
 
   /** Lleva el cursor al título `tituloBuscado` de la nota visible, cuyo texto es `textoDeLaNota`. */
   const llevarCursorATitulo = useCallback((textoDeLaNota: string, tituloBuscado: string) => {
-    const titulo = extraerMarcadores(textoDeLaNota).find((marcador) => marcador.texto === tituloBuscado);
-    if (titulo) controlDelEditor.current?.llevarCursorA(titulo.pos);
+    const titulo = extraerTitulosDeLaNota(textoDeLaNota).find((marcador) => marcador.texto === tituloBuscado);
+    if (titulo) controlDelEditor.current?.llevarCursorA(titulo.posicion);
   }, [controlDelEditor]);
 
   // Al cambiar la nota visible, el editor la muestra (o la crea con su texto la primera vez) y, si
@@ -245,7 +245,7 @@ export function useNotasAbiertas({
   const abrirNotaDeArchivo = useCallback(async (rutaDelArchivo: string) => {
     const yaAbierta = notasAbiertasVigentes.current.find((nota) => nota.rutaDelArchivo === rutaDelArchivo);
     if (yaAbierta?.tieneCambiosSinGuardar) return dejarComoUnicaNotaAbierta(yaAbierta);
-    const textoDelDisco = await leerNota(rutaDelArchivo);
+    const textoDelDisco = await leerNotaDelDisco(rutaDelArchivo);
     const idNota = yaAbierta?.id ?? idDeNotaConArchivo(rutaDelArchivo);
     // Si el editor la recuerda de antes, se pone al día con el archivo (pudo cambiar fuera de Ant)
     // sin perder su cursor ni su historial.
@@ -282,13 +282,13 @@ export function useNotasAbiertas({
   const abrirNotaDelDia = useCallback(async (diaElegido: Date) => {
     const carpetaDelHormiguero = carpetaDelHormigueroVigente.current;
     if (!carpetaDelHormiguero) throw new Error(textosVigentes.current.diarioSinCarpeta);
-    await abrirNotaDeArchivo(await abrirDia(carpetaDelHormiguero, diaElegido, textosVigentes.current.locale));
+    await abrirNotaDeArchivo(await abrirOCrearNotaDelDia(carpetaDelHormiguero, diaElegido, textosVigentes.current.locale));
     releerArbolDelHormiguero();
   }, [abrirNotaDeArchivo, releerArbolDelHormiguero]);
 
   /** Muestra el diálogo «Abrir» (empezando en el hormiguero) y abre la nota elegida. */
   const abrirNotaConElDialogo = useCallback(async () => {
-    const rutaElegida = await elegirNota(carpetaDelHormigueroVigente.current, textosVigentes.current.filtroNotas);
+    const rutaElegida = await elegirNotaConElDialogo(carpetaDelHormigueroVigente.current, textosVigentes.current.filtroNotas);
     if (rutaElegida) await abrirNotaDeArchivo(rutaElegida);
   }, [abrirNotaDeArchivo]);
 
@@ -305,16 +305,16 @@ export function useNotasAbiertas({
     if (!notaVisible) return;
     if (notaVisible.rutaDelArchivo && !enOtroArchivo) return guardarNotaEnDiscoAhora(notaVisible.id, true);
     const textos = textosVigentes.current;
-    const nombrePropuesto = notaVisible.rutaDelArchivo ? nombreArchivo(notaVisible.rutaDelArchivo) : textos.notaNueva;
+    const nombrePropuesto = notaVisible.rutaDelArchivo ? nombreDelArchivo(notaVisible.rutaDelArchivo) : textos.notaNueva;
     const carpetaDelHormiguero = carpetaDelHormigueroVigente.current;
-    const rutaElegida = await elegirRutaGuardado(
+    const rutaElegida = await elegirDondeGuardarConElDialogo(
       carpetaDelHormiguero ? unirCarpetaYNombre(carpetaDelHormiguero, nombrePropuesto) : nombrePropuesto,
       textos.filtroNotas,
     );
     if (!rutaElegida) return;
     clearTimeout(temporizadoresDeGuardado.current.get(notaVisible.id));
     const textoGuardado = textoActualDeNota(notaVisible);
-    await guardarNota(rutaElegida, textoGuardado);
+    await guardarNotaEnElDisco(rutaElegida, textoGuardado);
     cambiarDatosDeNota(notaVisible.id, {
       rutaDelArchivo: rutaElegida,
       tieneCambiosSinGuardar: false,

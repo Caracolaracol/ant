@@ -1,10 +1,10 @@
 // Colores de la app. Todo lo que se ve (ventana principal, Ajustes y el editor) usa las variables
 // CSS de `App.css`; aquí están sus nombres, los temas listos para elegir y la función que aplica
-// los colores guardados en los ajustes sobre esas variables. Se llama desde `main.tsx` en cada
-// ventana, al abrirla y cada vez que cambian los ajustes.
+// los colores elegidos en los ajustes sobre esas variables. Se llama desde `main.tsx` al abrir la
+// app y cada vez que cambian los ajustes.
 
 /** Variables de color que se pueden cambiar (sus nombres visibles están en `idioma.tsx`). */
-export const VARIABLES = [
+export const VARIABLES_DE_COLOR = [
   "fondo",
   "fondo-bajo",
   "texto",
@@ -16,13 +16,13 @@ export const VARIABLES = [
   "coincidencia",
 ] as const;
 
-export type Colores = Record<string, string>;
+export type ColoresPorVariable = Record<string, string>;
 
 /**
  * Temas listos: cada uno define todas las variables. El primero es el de siempre (el de
  * `App.css`). Sus nombres visibles están en `idioma.tsx` (`nombresTemas`).
  */
-export const TEMAS: { id: string; colores: Colores }[] = [
+export const TEMAS: { id: string; colores: ColoresPorVariable }[] = [
   {
     id: "oscuro",
     colores: { fondo: "#1d1d20", "fondo-bajo": "#161617", texto: "#e8e8e6", tenue: "#7a7a78", titulo: "#ffffff", acento: "#f9a26c", codigo: "#a9c7f9", seleccion: "#3a3f5c", coincidencia: "#33384d" },
@@ -46,27 +46,27 @@ export const TEMAS: { id: string; colores: Colores }[] = [
 ];
 
 /** Colores por defecto (los del tema «Oscuro»), para mostrar el valor actual de lo que no se cambió. */
-export const COLORES_BASE: Colores = TEMAS[0].colores;
+export const COLORES_POR_DEFECTO: ColoresPorVariable = TEMAS[0].colores;
 
 /**
  * Pone los colores guardados en las variables CSS de la ventana. Las variables que no vienen en
  * `colores` vuelven a su valor de `App.css`. También avisa al sistema si el fondo es claro u
  * oscuro (`color-scheme`), para que las barras de scroll y los controles nativos combinen.
  */
-export function aplicarColores(colores: Colores) {
-  const raiz = document.documentElement.style;
-  for (const id of VARIABLES) {
-    const valor = colores[id];
-    if (valor) raiz.setProperty(`--${id}`, valor);
-    else raiz.removeProperty(`--${id}`);
+export function aplicarColores(coloresElegidos: ColoresPorVariable) {
+  const estiloDelDocumento = document.documentElement.style;
+  for (const nombreDeLaVariable of VARIABLES_DE_COLOR) {
+    const colorElegido = coloresElegidos[nombreDeLaVariable];
+    if (colorElegido) estiloDelDocumento.setProperty(`--${nombreDeLaVariable}`, colorElegido);
+    else estiloDelDocumento.removeProperty(`--${nombreDeLaVariable}`);
   }
-  raiz.colorScheme = esClaro(colores.fondo ?? COLORES_BASE.fondo) ? "light" : "dark";
+  estiloDelDocumento.colorScheme = esColorClaro(coloresElegidos.fondo ?? COLORES_POR_DEFECTO.fondo) ? "light" : "dark";
 }
 
 /** Indica si un color `#rrggbb` es claro (luminancia percibida sobre la mitad). */
-export function esClaro(hex: string): boolean {
-  const n = parseInt(hex.replace("#", "").slice(0, 6), 16);
-  if (Number.isNaN(n)) return false;
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  return 0.299 * r + 0.587 * g + 0.114 * b > 140;
+export function esColorClaro(colorHexadecimal: string): boolean {
+  const valorNumerico = parseInt(colorHexadecimal.replace("#", "").slice(0, 6), 16);
+  if (Number.isNaN(valorNumerico)) return false;
+  const [rojo, verde, azul] = [(valorNumerico >> 16) & 255, (valorNumerico >> 8) & 255, valorNumerico & 255];
+  return 0.299 * rojo + 0.587 * verde + 0.114 * azul > 140;
 }

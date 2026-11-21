@@ -3,50 +3,45 @@
 
 import { useEffect } from "react";
 
-export interface OpcionMenu {
+export interface OpcionDelMenu {
   texto: string;
-  accion(): void;
+  alElegir(): void;
 }
 
 interface Props {
   x: number;
   y: number;
-  opciones: OpcionMenu[];
-  onCerrar(): void;
+  opciones: OpcionDelMenu[];
+  alCerrar(): void;
 }
 
-export function MenuContextual({ x, y, opciones, onCerrar }: Props) {
-  // Cierra el menú ante cualquier clic, scroll, cambio de tamaño o la tecla Escape.
+export function MenuContextual({ x, y, opciones, alCerrar }: Props) {
+  // Se cierra ante cualquier clic, scroll, cambio de tamaño, al salir de la ventana o con Escape.
   useEffect(() => {
-    const cerrar = () => onCerrar();
-    const alTeclear = (e: KeyboardEvent) => e.key === "Escape" && onCerrar();
-    window.addEventListener("mousedown", cerrar);
-    window.addEventListener("blur", cerrar);
-    window.addEventListener("resize", cerrar);
-    window.addEventListener("wheel", cerrar);
-    window.addEventListener("keydown", alTeclear);
+    const cerrarMenu = () => alCerrar();
+    const alPresionarEscape = (evento: KeyboardEvent) => evento.key === "Escape" && alCerrar();
+    const eventosQueCierran = ["mousedown", "blur", "resize", "wheel"] as const;
+    for (const nombreDelEvento of eventosQueCierran) window.addEventListener(nombreDelEvento, cerrarMenu);
+    window.addEventListener("keydown", alPresionarEscape);
     return () => {
-      window.removeEventListener("mousedown", cerrar);
-      window.removeEventListener("blur", cerrar);
-      window.removeEventListener("resize", cerrar);
-      window.removeEventListener("wheel", cerrar);
-      window.removeEventListener("keydown", alTeclear);
+      for (const nombreDelEvento of eventosQueCierran) window.removeEventListener(nombreDelEvento, cerrarMenu);
+      window.removeEventListener("keydown", alPresionarEscape);
     };
-  }, [onCerrar]);
+  }, [alCerrar]);
 
   return (
-    // Detiene el mousedown para que hacer clic en una opción no cierre el menú antes de ejecutarla.
-    <div className="menu-contextual" style={{ left: x, top: y }} onMouseDown={(e) => e.stopPropagation()}>
-      {opciones.map((o, i) => (
+    // Detiene el mousedown para que hacer clic en una opción no cierre el menú antes de elegirla.
+    <div className="menu-contextual" style={{ left: x, top: y }} onMouseDown={(evento) => evento.stopPropagation()}>
+      {opciones.map((opcion) => (
         <div
-          key={i}
+          key={opcion.texto}
           className="menu-opcion"
           onClick={() => {
-            o.accion();
-            onCerrar();
+            opcion.alElegir();
+            alCerrar();
           }}
         >
-          {o.texto}
+          {opcion.texto}
         </div>
       ))}
     </div>

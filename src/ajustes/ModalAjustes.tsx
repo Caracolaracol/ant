@@ -3,72 +3,80 @@
 // derecha las opciones del área elegida:
 //   General (idioma y hormigueros) · Editor (modo escritor) · Diario (calendario y notas
 //   diarias) · Apariencia (colores).
-// Los cambios se aplican y guardan al instante (`cambiar`, de App); se cierra con Escape, Cmd+W,
-// la × o un clic fuera. Los textos salen de `idioma.tsx`, así cambia de idioma apenas se elige otro.
-// Para agregar un área nueva: sumarla a `AREAS` (y su nombre a `areas` en `idioma.tsx`), crear
-// su panel y mostrarlo en `ModalAjustes`.
+// Los cambios se aplican y guardan al instante (`cambiarAjustes`, de App); se cierra con Escape,
+// Cmd+W, la × o un clic fuera. Los textos salen de `idioma.tsx`, así cambia de idioma apenas se
+// elige otro. Para agregar un área nueva: sumarla a `AREAS_DE_AJUSTES` (y su nombre a `areas` en
+// `idioma.tsx`), crear su panel y mostrarlo en `ModalAjustes`.
 
 import { useEffect, useState } from "react";
-import { Ajustes, OpcionesEscritor } from "../ajustes";
-import { COLORES_BASE, TEMAS, VARIABLES } from "../colores";
-import { CARPETA_DIARIO } from "../diario";
-import { sinHormiguero } from "../hormigueros/hormigueros";
-import { IDIOMAS, Idioma, idiomaDe, useTextos } from "../idioma";
-import { nombreArchivo } from "../notas";
-import { ltr } from "../carpeta";
+import { Ajustes, OpcionesDelModoEscritor } from "../ajustes";
+import { COLORES_POR_DEFECTO, TEMAS, VARIABLES_DE_COLOR } from "../colores";
+import { NOMBRE_DE_LA_CARPETA_DEL_DIARIO } from "../diario";
+import { cambiosParaQuitarHormigueroDeLaLista } from "../hormigueros/hormigueros";
+import { IDIOMAS, Idioma, idiomaValido, useTextos } from "../idioma";
+import { nombreDelArchivo } from "../archivosDeNotas";
+import { marcarComoTextoDeIzquierdaADerecha } from "../arbolDeCarpetas";
 import "./ModalAjustes.css";
 
 /** Áreas de ajustes que aparecen en la columna izquierda (sus nombres están en `idioma.tsx`). */
-const AREAS = ["general", "editor", "diario", "apariencia"] as const;
-type IdArea = (typeof AREAS)[number];
+const AREAS_DE_AJUSTES = ["general", "editor", "diario", "apariencia"] as const;
+type AreaDeAjustes = (typeof AREAS_DE_AJUSTES)[number];
 
-interface PanelProps {
+interface PropsDeUnPanel {
   ajustes: Ajustes;
-  cambiar(cambios: Partial<Ajustes>): void;
+  cambiarAjustes(cambios: Partial<Ajustes>): void;
 }
 
 /**
  * Área «General»: idioma de la interfaz y la lista de hormigueros, con el abierto marcado. Desde
  * aquí se abre otro, se quita uno de la lista (su carpeta queda en el disco) o se cava uno nuevo.
  */
-function PanelGeneral({ ajustes, cambiar, onNuevoHormiguero }: PanelProps & { onNuevoHormiguero(): void }) {
-  const tx = useTextos();
+function PanelGeneral({ ajustes, cambiarAjustes, alPedirHormigueroNuevo }: PropsDeUnPanel & { alPedirHormigueroNuevo(): void }) {
+  const textosDeLaInterfaz = useTextos();
   return (
     <>
-      <h1>{tx.areas.general}</h1>
+      <h1>{textosDeLaInterfaz.areas.general}</h1>
       <div className="ajuste">
-        <div className="ajuste-titulo">{tx.idioma}</div>
-        <p className="ajuste-ayuda">{tx.idiomaAyuda}</p>
+        <div className="ajuste-titulo">{textosDeLaInterfaz.idioma}</div>
+        <p className="ajuste-ayuda">{textosDeLaInterfaz.idiomaAyuda}</p>
         <select
           className="ajuste-select"
-          value={idiomaDe(ajustes.idioma)}
-          onChange={(e) => cambiar({ idioma: e.target.value as Idioma })}
+          value={idiomaValido(ajustes.idioma)}
+          onChange={(evento) => cambiarAjustes({ idioma: evento.target.value as Idioma })}
         >
-          {IDIOMAS.map((i) => (
-            <option key={i.id} value={i.id}>{i.nombre}</option>
+          {IDIOMAS.map((idiomaDisponible) => (
+            <option key={idiomaDisponible.id} value={idiomaDisponible.id}>{idiomaDisponible.nombre}</option>
           ))}
         </select>
       </div>
       <div className="ajuste">
-        <div className="ajuste-titulo">{tx.hormigueros}</div>
-        <p className="ajuste-ayuda">{tx.hormiguerosAyuda}</p>
+        <div className="ajuste-titulo">{textosDeLaInterfaz.hormigueros}</div>
+        <p className="ajuste-ayuda">{textosDeLaInterfaz.hormiguerosAyuda}</p>
         <div className="ajuste-hormigueros">
-          {ajustes.hormigueros.map((ruta) => (
-            <div key={ruta} className={`ajuste-hormiguero${ruta === ajustes.carpeta ? " actual" : ""}`}>
-              <div className="ajuste-hormiguero-nombre">
-                <b>{nombreArchivo(ruta)}</b>
-                <code title={ruta}>{ltr(ruta)}</code>
+          {ajustes.hormigueros.map((carpetaDelHormiguero) => {
+            const estaAbierto = carpetaDelHormiguero === ajustes.hormiguero_abierto;
+            return (
+              <div key={carpetaDelHormiguero} className={`ajuste-hormiguero${estaAbierto ? " actual" : ""}`}>
+                <div className="ajuste-hormiguero-nombre">
+                  <b>{nombreDelArchivo(carpetaDelHormiguero)}</b>
+                  <code title={carpetaDelHormiguero}>{marcarComoTextoDeIzquierdaADerecha(carpetaDelHormiguero)}</code>
+                </div>
+                {estaAbierto ? (
+                  <span className="ajuste-hormiguero-abierto">{textosDeLaInterfaz.abierto}</span>
+                ) : (
+                  <button onClick={() => cambiarAjustes({ hormiguero_abierto: carpetaDelHormiguero })}>{textosDeLaInterfaz.abrir}</button>
+                )}
+                <button
+                  title={textosDeLaInterfaz.quitarHormigueroAyuda}
+                  onClick={() => cambiarAjustes(cambiosParaQuitarHormigueroDeLaLista(ajustes, carpetaDelHormiguero))}
+                >
+                  {textosDeLaInterfaz.quitar}
+                </button>
               </div>
-              {ruta === ajustes.carpeta ? (
-                <span className="ajuste-hormiguero-abierto">{tx.abierto}</span>
-              ) : (
-                <button onClick={() => cambiar({ carpeta: ruta })}>{tx.abrir}</button>
-              )}
-              <button title={tx.quitarHormigueroAyuda} onClick={() => cambiar(sinHormiguero(ajustes, ruta))}>{tx.quitar}</button>
-            </div>
-          ))}
+            );
+          })}
         </div>
-        <button className="ajuste-boton" onClick={onNuevoHormiguero}>{tx.nuevoHormigueroBoton}</button>
+        <button className="ajuste-boton" onClick={alPedirHormigueroNuevo}>{textosDeLaInterfaz.nuevoHormigueroBoton}</button>
       </div>
     </>
   );
@@ -78,77 +86,94 @@ function PanelGeneral({ ajustes, cambiar, onNuevoHormiguero }: PanelProps & { on
  * Área «Editor»: arriba de todo, el interruptor del modo escritor; con el modo activo aparecen
  * debajo sus opciones (tipografía al escribir y página). Con el modo apagado, por ahora, nada más.
  */
-function PanelEditor({ ajustes, cambiar }: PanelProps) {
-  const tx = useTextos();
-  const o = ajustes.opciones_escritor;
-  /** Cambia una opción del modo escritor. */
-  const opcion = (cambios: Partial<OpcionesEscritor>) => cambiar({ opciones_escritor: { ...o, ...cambios } });
-  /** Ejemplo de las comillas que se usarán, según el estilo elegido y el idioma de la app. */
-  const latinas = o.estilo_comillas === "latinas" || (o.estilo_comillas === "auto" && idiomaDe(ajustes.idioma) === "es");
+function PanelEditor({ ajustes, cambiarAjustes }: PropsDeUnPanel) {
+  const textosDeLaInterfaz = useTextos();
+  const opcionesDelModoEscritor = ajustes.opciones_del_modo_escritor;
+  /** Cambia algunas opciones del modo escritor. */
+  const cambiarOpcionesDelModoEscritor = (cambios: Partial<OpcionesDelModoEscritor>) =>
+    cambiarAjustes({ opciones_del_modo_escritor: { ...opcionesDelModoEscritor, ...cambios } });
+  /** Si se usarán comillas latinas, para mostrar el ejemplo según el estilo elegido y el idioma de la app. */
+  const seUsanComillasLatinas =
+    opcionesDelModoEscritor.estilo_de_comillas === "latinas" ||
+    (opcionesDelModoEscritor.estilo_de_comillas === "auto" && idiomaValido(ajustes.idioma) === "es");
 
   /** Fila con casilla, nombre y, a la derecha, el ejemplo de lo que se teclea → lo que queda. */
-  const fila = (clave: keyof OpcionesEscritor, nombre: string, de: string, a: string) => (
+  const filaDeReemplazo = (opcion: keyof OpcionesDelModoEscritor, nombreVisible: string, loQueSeTeclea: string, loQueQueda: string) => (
     <label className="ajuste-casilla ajuste-reemplazo">
-      <input type="checkbox" checked={o[clave] as boolean} onChange={(e) => opcion({ [clave]: e.target.checked })} />
-      <span>{nombre}</span>
-      <code>{de} → {a}</code>
+      <input
+        type="checkbox"
+        checked={opcionesDelModoEscritor[opcion] as boolean}
+        onChange={(evento) => cambiarOpcionesDelModoEscritor({ [opcion]: evento.target.checked })}
+      />
+      <span>{nombreVisible}</span>
+      <code>{loQueSeTeclea} → {loQueQueda}</code>
     </label>
   );
 
   return (
     <>
-      <h1>{tx.areas.editor}</h1>
+      <h1>{textosDeLaInterfaz.areas.editor}</h1>
       {/* El modo escritor no es un ajuste más: va destacado, con un interruptor. */}
-      <label className={`ajuste-modo${ajustes.escritor ? " activo" : ""}`}>
+      <label className={`ajuste-modo${ajustes.modo_escritor ? " activo" : ""}`}>
         <div>
-          <div className="ajuste-modo-titulo">{tx.modoEscritor}</div>
-          <p className="ajuste-ayuda">{tx.modoEscritorAyuda}</p>
+          <div className="ajuste-modo-titulo">{textosDeLaInterfaz.modoEscritor}</div>
+          <p className="ajuste-ayuda">{textosDeLaInterfaz.modoEscritorAyuda}</p>
         </div>
         <input
           type="checkbox"
           className="interruptor"
           role="switch"
-          checked={ajustes.escritor}
-          onChange={(e) => cambiar({ escritor: e.target.checked })}
+          checked={ajustes.modo_escritor}
+          onChange={(evento) => cambiarAjustes({ modo_escritor: evento.target.checked })}
         />
       </label>
 
-      {ajustes.escritor && (
+      {ajustes.modo_escritor && (
         <>
           <div className="ajuste">
-            <div className="ajuste-titulo">{tx.tipografia}</div>
-            <p className="ajuste-ayuda">{tx.tipografiaAyuda}</p>
+            <div className="ajuste-titulo">{textosDeLaInterfaz.tipografia}</div>
+            <p className="ajuste-ayuda">{textosDeLaInterfaz.tipografiaAyuda}</p>
             <div className="ajuste-lista">
               <div className="ajuste-con-opcion">
-                {fila("comillas", tx.comillas, '"hola"', latinas ? "«hola»" : "“hola”")}
-                {o.comillas && (
+                {filaDeReemplazo("comillas_tipograficas", textosDeLaInterfaz.comillas, '"hola"', seUsanComillasLatinas ? "«hola»" : "“hola”")}
+                {opcionesDelModoEscritor.comillas_tipograficas && (
                   <select
                     className="ajuste-select"
-                    value={o.estilo_comillas}
-                    onChange={(e) => opcion({ estilo_comillas: e.target.value as OpcionesEscritor["estilo_comillas"] })}
+                    value={opcionesDelModoEscritor.estilo_de_comillas}
+                    onChange={(evento) =>
+                      cambiarOpcionesDelModoEscritor({ estilo_de_comillas: evento.target.value as OpcionesDelModoEscritor["estilo_de_comillas"] })
+                    }
                   >
-                    {(["auto", "curvas", "latinas"] as const).map((v) => (
-                      <option key={v} value={v}>{tx.estiloComillas[v]}</option>
+                    {(["auto", "curvas", "latinas"] as const).map((estiloDeComillas) => (
+                      <option key={estiloDeComillas} value={estiloDeComillas}>{textosDeLaInterfaz.estiloComillas[estiloDeComillas]}</option>
                     ))}
                   </select>
                 )}
               </div>
-              {fila("rayas", tx.rayas, "--", "—")}
-              {fila("puntos", tx.puntos, "...", "…")}
-              {fila("angulares", tx.angulares, "<< >>", "« »")}
-              {fila("flechas", tx.flechas, "-> <-", "→ ←")}
+              {filaDeReemplazo("rayas_de_dialogo", textosDeLaInterfaz.rayas, "--", "—")}
+              {filaDeReemplazo("puntos_suspensivos", textosDeLaInterfaz.puntos, "...", "…")}
+              {filaDeReemplazo("comillas_angulares", textosDeLaInterfaz.angulares, "<< >>", "« »")}
+              {filaDeReemplazo("flechas", textosDeLaInterfaz.flechas, "-> <-", "→ ←")}
             </div>
           </div>
           <div className="ajuste">
-            <div className="ajuste-titulo">{tx.pagina}</div>
+            <div className="ajuste-titulo">{textosDeLaInterfaz.pagina}</div>
             <div className="ajuste-lista">
               <label className="ajuste-casilla ajuste-casilla-ayuda">
-                <input type="checkbox" checked={o.letra_libro} onChange={(e) => opcion({ letra_libro: e.target.checked })} />
-                <span>{tx.letraLibro}<small>{tx.letraLibroAyuda}</small></span>
+                <input
+                  type="checkbox"
+                  checked={opcionesDelModoEscritor.letra_de_libro}
+                  onChange={(evento) => cambiarOpcionesDelModoEscritor({ letra_de_libro: evento.target.checked })}
+                />
+                <span>{textosDeLaInterfaz.letraLibro}<small>{textosDeLaInterfaz.letraLibroAyuda}</small></span>
               </label>
               <label className="ajuste-casilla ajuste-casilla-ayuda">
-                <input type="checkbox" checked={o.corrector} onChange={(e) => opcion({ corrector: e.target.checked })} />
-                <span>{tx.corrector}<small>{tx.correctorAyuda}</small></span>
+                <input
+                  type="checkbox"
+                  checked={opcionesDelModoEscritor.corrector_ortografico}
+                  onChange={(evento) => cambiarOpcionesDelModoEscritor({ corrector_ortografico: evento.target.checked })}
+                />
+                <span>{textosDeLaInterfaz.corrector}<small>{textosDeLaInterfaz.correctorAyuda}</small></span>
               </label>
             </div>
           </div>
@@ -159,20 +184,27 @@ function PanelEditor({ ajustes, cambiar }: PanelProps) {
 }
 
 /** Área «Diario»: activa el calendario de la barra lateral y las notas diarias en `Daily/`. */
-function PanelDiario({ ajustes, cambiar }: PanelProps) {
-  const tx = useTextos();
+function PanelDiario({ ajustes, cambiarAjustes }: PropsDeUnPanel) {
+  const textosDeLaInterfaz = useTextos();
   return (
     <>
-      <h1>{tx.areas.diario}</h1>
+      <h1>{textosDeLaInterfaz.areas.diario}</h1>
       <div className="ajuste">
         <label className="ajuste-casilla">
-          <input type="checkbox" checked={ajustes.diario} onChange={(e) => cambiar({ diario: e.target.checked })} />
-          <span className="ajuste-titulo">{tx.activarDiario}</span>
+          <input
+            type="checkbox"
+            checked={ajustes.modo_diario}
+            onChange={(evento) => cambiarAjustes({ modo_diario: evento.target.checked })}
+          />
+          <span className="ajuste-titulo">{textosDeLaInterfaz.activarDiario}</span>
         </label>
         <p className="ajuste-ayuda">
-          {tx.diarioAyuda(<code>{CARPETA_DIARIO}/2026-11-20.md</code>, <code>{CARPETA_DIARIO}</code>)}
+          {textosDeLaInterfaz.diarioAyuda(
+            <code>{NOMBRE_DE_LA_CARPETA_DEL_DIARIO}/2026-11-20.md</code>,
+            <code>{NOMBRE_DE_LA_CARPETA_DEL_DIARIO}</code>,
+          )}
         </p>
-        {ajustes.diario && !ajustes.carpeta && <p className="ajuste-aviso">{tx.diarioAviso}</p>}
+        {ajustes.modo_diario && !ajustes.hormiguero_abierto && <p className="ajuste-aviso">{textosDeLaInterfaz.diarioAviso}</p>}
       </div>
     </>
   );
@@ -180,52 +212,57 @@ function PanelDiario({ ajustes, cambiar }: PanelProps) {
 
 /**
  * Área «Apariencia»: temas listos y cada color por separado. Los colores se guardan en
- * `ajustes.colores` y `main.tsx` los aplica al instante en todas las ventanas.
+ * `Ajustes.colores_elegidos` y `main.tsx` los aplica al instante.
  */
-function PanelApariencia({ ajustes, cambiar }: PanelProps) {
-  const tx = useTextos();
-  /** Color que se ve ahora para una variable: el cambiado por el usuario o el de por defecto. */
-  const actual = (id: string) => ajustes.colores[id] ?? COLORES_BASE[id];
-  /** El tema elegido es el que coincide en todos sus colores con los actuales (o ninguno, si se retocó). */
-  const temaActual = TEMAS.find((t) => VARIABLES.every((id) => t.colores[id] === actual(id)))?.id;
+function PanelApariencia({ ajustes, cambiarAjustes }: PropsDeUnPanel) {
+  const textosDeLaInterfaz = useTextos();
+  /** Color que se ve ahora para una variable: el elegido por el usuario o el de por defecto. */
+  const colorQueSeVe = (nombreDeLaVariable: string) =>
+    ajustes.colores_elegidos[nombreDeLaVariable] ?? COLORES_POR_DEFECTO[nombreDeLaVariable];
+  /** El tema elegido es el que coincide en todos sus colores con los que se ven (o ninguno, si se retocó). */
+  const temaQueCoincide = TEMAS.find((tema) =>
+    VARIABLES_DE_COLOR.every((nombreDeLaVariable) => tema.colores[nombreDeLaVariable] === colorQueSeVe(nombreDeLaVariable)),
+  )?.id;
 
   return (
     <>
-      <h1>{tx.areas.apariencia}</h1>
+      <h1>{textosDeLaInterfaz.areas.apariencia}</h1>
       <div className="ajuste">
-        <div className="ajuste-titulo">{tx.tema}</div>
-        <p className="ajuste-ayuda">{tx.temaAyuda}</p>
+        <div className="ajuste-titulo">{textosDeLaInterfaz.tema}</div>
+        <p className="ajuste-ayuda">{textosDeLaInterfaz.temaAyuda}</p>
         <div className="ajuste-temas">
-          {TEMAS.map((t, i) => (
+          {TEMAS.map((tema, posicion) => (
             <button
-              key={t.id}
-              className={`ajuste-tema${t.id === temaActual ? " elegido" : ""}`}
-              style={{ background: t.colores.fondo, color: t.colores.texto }}
+              key={tema.id}
+              className={`ajuste-tema${tema.id === temaQueCoincide ? " elegido" : ""}`}
+              style={{ background: tema.colores.fondo, color: tema.colores.texto }}
               // El primer tema es el de `App.css`: elegirlo deja los colores sin cambios guardados.
-              onClick={() => cambiar({ colores: i === 0 ? {} : { ...t.colores } })}
+              onClick={() => cambiarAjustes({ colores_elegidos: posicion === 0 ? {} : { ...tema.colores } })}
             >
-              <span className="ajuste-tema-punto" style={{ background: t.colores.acento }} />
-              {tx.nombresTemas[t.id]}
+              <span className="ajuste-tema-punto" style={{ background: tema.colores.acento }} />
+              {textosDeLaInterfaz.nombresTemas[tema.id]}
             </button>
           ))}
         </div>
       </div>
       <div className="ajuste">
-        <div className="ajuste-titulo">{tx.colores}</div>
+        <div className="ajuste-titulo">{textosDeLaInterfaz.colores}</div>
         <div className="ajuste-colores">
-          {VARIABLES.map((id) => (
-            <label key={id} className="ajuste-color">
+          {VARIABLES_DE_COLOR.map((nombreDeLaVariable) => (
+            <label key={nombreDeLaVariable} className="ajuste-color">
               <input
                 type="color"
-                value={actual(id)}
-                onChange={(e) => cambiar({ colores: { ...ajustes.colores, [id]: e.target.value } })}
+                value={colorQueSeVe(nombreDeLaVariable)}
+                onChange={(evento) =>
+                  cambiarAjustes({ colores_elegidos: { ...ajustes.colores_elegidos, [nombreDeLaVariable]: evento.target.value } })
+                }
               />
-              <span>{tx.nombresColores[id]}</span>
-              <code>{actual(id)}</code>
+              <span>{textosDeLaInterfaz.nombresColores[nombreDeLaVariable]}</span>
+              <code>{colorQueSeVe(nombreDeLaVariable)}</code>
             </label>
           ))}
         </div>
-        <button className="ajuste-boton" onClick={() => cambiar({ colores: {} })}>{tx.restablecerColores}</button>
+        <button className="ajuste-boton" onClick={() => cambiarAjustes({ colores_elegidos: {} })}>{textosDeLaInterfaz.restablecerColores}</button>
       </div>
     </>
   );
@@ -234,46 +271,50 @@ function PanelApariencia({ ajustes, cambiar }: PanelProps) {
 interface Props {
   ajustes: Ajustes;
   /** Aplica y guarda un cambio al instante (no hay botón «Aceptar», como en macOS). */
-  cambiar(cambios: Partial<Ajustes>): void;
+  cambiarAjustes(cambios: Partial<Ajustes>): void;
   /** Abre la ventanita «Hormiguero nuevo» encima de los Ajustes. */
-  onNuevoHormiguero(): void;
-  onCerrar(): void;
+  alPedirHormigueroNuevo(): void;
+  alCerrar(): void;
 }
 
-export function ModalAjustes({ ajustes, cambiar, onNuevoHormiguero, onCerrar }: Props) {
-  const tx = useTextos();
-  const [area, setArea] = useState<IdArea>("general");
+export function ModalAjustes({ ajustes, cambiarAjustes, alPedirHormigueroNuevo, alCerrar }: Props) {
+  const textosDeLaInterfaz = useTextos();
+  const [areaElegida, setAreaElegida] = useState<AreaDeAjustes>("general");
 
   // Escape y Cmd+W cierran los Ajustes (Cmd+W no cierra la ventana principal). Si hay una
   // ventanita encima (hormiguero nuevo), Escape la cierra a ella primero.
   useEffect(() => {
-    const alTeclear = (e: KeyboardEvent) => {
-      const encima = document.querySelector(".modal-encima");
-      if ((e.key === "Escape" && !encima) || (e.metaKey && e.key.toLowerCase() === "w")) {
-        e.preventDefault();
-        onCerrar();
+    const alPresionarTecla = (evento: KeyboardEvent) => {
+      const hayOtraVentanitaEncima = document.querySelector(".modal-encima");
+      const esEscape = evento.key === "Escape" && !hayOtraVentanitaEncima;
+      const esCmdW = evento.metaKey && evento.key.toLowerCase() === "w";
+      if (esEscape || esCmdW) {
+        evento.preventDefault();
+        alCerrar();
       }
     };
-    window.addEventListener("keydown", alTeclear);
-    return () => window.removeEventListener("keydown", alTeclear);
-  }, [onCerrar]);
+    window.addEventListener("keydown", alPresionarTecla);
+    return () => window.removeEventListener("keydown", alPresionarTecla);
+  }, [alCerrar]);
 
   return (
-    <div className="modal-fondo" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
-      <div className="modal ajustes" role="dialog" aria-label={tx.ajustes}>
+    <div className="modal-fondo" onMouseDown={(evento) => evento.target === evento.currentTarget && alCerrar()}>
+      <div className="modal ajustes" role="dialog" aria-label={textosDeLaInterfaz.ajustes}>
         <nav className="ajustes-areas">
-          {AREAS.map((a) => (
-            <div key={a} className={`ajustes-area${a === area ? " activa" : ""}`} onClick={() => setArea(a)}>
-              {tx.areas[a]}
+          {AREAS_DE_AJUSTES.map((area) => (
+            <div key={area} className={`ajustes-area${area === areaElegida ? " activa" : ""}`} onClick={() => setAreaElegida(area)}>
+              {textosDeLaInterfaz.areas[area]}
             </div>
           ))}
         </nav>
         <section className="ajustes-panel">
-          <button className="modal-cerrar" aria-label={tx.cerrar} onClick={onCerrar}>×</button>
-          {area === "general" && <PanelGeneral ajustes={ajustes} cambiar={cambiar} onNuevoHormiguero={onNuevoHormiguero} />}
-          {area === "editor" && <PanelEditor ajustes={ajustes} cambiar={cambiar} />}
-          {area === "diario" && <PanelDiario ajustes={ajustes} cambiar={cambiar} />}
-          {area === "apariencia" && <PanelApariencia ajustes={ajustes} cambiar={cambiar} />}
+          <button className="modal-cerrar" aria-label={textosDeLaInterfaz.cerrar} onClick={alCerrar}>×</button>
+          {areaElegida === "general" && (
+            <PanelGeneral ajustes={ajustes} cambiarAjustes={cambiarAjustes} alPedirHormigueroNuevo={alPedirHormigueroNuevo} />
+          )}
+          {areaElegida === "editor" && <PanelEditor ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
+          {areaElegida === "diario" && <PanelDiario ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
+          {areaElegida === "apariencia" && <PanelApariencia ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
         </section>
       </div>
     </div>

@@ -5,7 +5,8 @@
 // Generado a partir de los archivos AFM de Adobe (Core 14), que se pueden redistribuir.
 // Un 0 indica que la fuente no tiene ese carácter.
 
-export const ANCHOS = {
+/** Ancho de cada carácter (códigos 32 a 255), por fuente, en milésimas del tamaño de letra. */
+export const ANCHOS_DE_CARACTERES_POR_FUENTE = {
   normal: [
     250, 333, 408, 500, 500, 833, 778, 180, 333, 333, 500, 564, 250, 333, 250, 278,
     500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 278, 278, 564, 564, 564, 444,

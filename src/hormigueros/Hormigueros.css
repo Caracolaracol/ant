@@ -10,25 +10,25 @@
   font-size: 13px;
 }
 
-.eh-nuevo {
+.elegir-hormiguero-nuevo {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.eh-campo {
+.elegir-hormiguero-campo {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.eh-campo > span {
+.elegir-hormiguero-campo > span {
   color: var(--tenue);
   font-size: 12px;
 }
 
-.eh-campo input,
-.eh-donde code {
+.elegir-hormiguero-campo input,
+.elegir-hormiguero-donde code {
   padding: 8px 10px;
   border: 1px solid var(--seleccion);
   border-radius: 7px;
@@ -37,18 +37,18 @@
   font: inherit;
 }
 
-.eh-campo input:focus {
+.elegir-hormiguero-campo input:focus {
   outline: none;
   border-color: var(--acento);
 }
 
-.eh-donde {
+.elegir-hormiguero-donde {
   display: flex;
   gap: 8px;
 }
 
 /* Ruta de la carpeta: si no cabe, se corta el principio y se ve el final. */
-.eh-donde code {
+.elegir-hormiguero-donde code {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -59,8 +59,8 @@
   color: var(--codigo);
 }
 
-.eh-donde button,
-.eh-existente {
+.elegir-hormiguero-donde button,
+.elegir-hormiguero-existente {
   padding: 8px 12px;
   border: 1px solid var(--seleccion);
   border-radius: 7px;
@@ -70,12 +70,12 @@
   cursor: pointer;
 }
 
-.eh-donde button:hover,
-.eh-existente:hover:not(:disabled) {
+.elegir-hormiguero-donde button:hover,
+.elegir-hormiguero-existente:hover:not(:disabled) {
   border-color: var(--acento);
 }
 
-.eh-cavar {
+.elegir-hormiguero-cavar {
   padding: 9px 14px;
   border: none;
   border-radius: 7px;
@@ -86,14 +86,14 @@
   cursor: pointer;
 }
 
-.eh-cavar:disabled,
-.eh-existente:disabled {
+.elegir-hormiguero-cavar:disabled,
+.elegir-hormiguero-existente:disabled {
   opacity: 0.5;
   cursor: default;
 }
 
 /* «o», entre dos líneas. */
-.eh-o {
+.elegir-hormiguero-o {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -101,15 +101,15 @@
   font-size: 12px;
 }
 
-.eh-o::before,
-.eh-o::after {
+.elegir-hormiguero-o::before,
+.elegir-hormiguero-o::after {
   content: "";
   flex: 1;
   height: 1px;
   background: var(--seleccion);
 }
 
-.eh-error {
+.elegir-hormiguero-error {
   margin: 0;
   color: var(--acento);
 }

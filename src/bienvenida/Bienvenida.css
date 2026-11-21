@@ -4,7 +4,7 @@
    colores del sitio y no los del tema de la app: la tierra, los huecos oscuros y el amarillo de
    la hormiga del icono. */
 
-.bv {
+.bienvenida {
   --tierra: #2b2521;
   --tierra-clara: #3a322c;
   --hueco: #1d1d20;
@@ -37,7 +37,7 @@
 
 /* ── Superficie: franja de arriba, con el borde de la tierra como línea de suelo. A la
    izquierda deja lugar a los botones de la ventana de macOS. ── */
-.bv-superficie {
+.bienvenida-superficie {
   flex: none;
   height: 52px;
   display: flex;
@@ -48,18 +48,18 @@
   border-bottom: 2px solid var(--tierra-clara);
 }
 
-.bv-marca {
+.bienvenida-marca {
   display: flex;
   align-items: center;
   gap: 8px;
   font: 700 17px var(--mono);
 }
 
-.bv-marca img {
+.bienvenida-marca img {
   border-radius: 7px;
 }
 
-.bv-nav {
+.bienvenida-navegacion {
   display: flex;
   align-items: center;
   gap: 18px;
@@ -67,7 +67,7 @@
   color: var(--linea);
 }
 
-.bv-nav button {
+.bienvenida-navegacion button {
   padding: 0;
   border: none;
   background: none;
@@ -76,19 +76,19 @@
   cursor: pointer;
 }
 
-.bv-nav button:hover,
-.bv-nav button[aria-current] {
+.bienvenida-navegacion button:hover,
+.bienvenida-navegacion button[aria-current] {
   color: var(--amarillo);
 }
 
-.bv-cerrar {
+.bienvenida-cerrar {
   padding-left: 18px !important;
   border-left: 1px solid var(--linea) !important;
 }
 
 /* ── Nido: la fila de cámaras, que se recorre en horizontal y se ajusta a cada cámara. La
    tierra se desplaza con el contenido (`local`), como en el sitio. ── */
-.bv-nido {
+.bienvenida-nido {
   flex: 1;
   min-height: 0;
   overflow-x: auto;
@@ -99,18 +99,18 @@
   background-attachment: local;
 }
 
-.bv-nido::-webkit-scrollbar {
+.bienvenida-nido::-webkit-scrollbar {
   display: none;
 }
 
-.bv-fila {
+.bienvenida-fila {
   position: relative;
   display: flex;
   width: max-content;
   height: 100%;
 }
 
-.bv-camara {
+.bienvenida-camara {
   flex: none;
   width: 100vw;
   height: 100%;
@@ -123,7 +123,7 @@
 
 /* El hueco de la cámara. Sin JavaScript sería una forma redondeada; `cavar` le pone el borde
    irregular (un SVG detrás) y le agrega la clase `cavado`. */
-.bv .hueco {
+.bienvenida .hueco {
   position: relative;
   max-width: 560px;
   max-height: 100%;
@@ -133,13 +133,13 @@
   user-select: text;
 }
 
-.bv .hueco.cavado {
+.bienvenida .hueco.cavado {
   background: none;
   border-radius: 0;
   isolation: isolate;
 }
 
-.bv .hueco-forma {
+.bienvenida .hueco-forma {
   position: absolute;
   left: -14px;
   top: -14px;
@@ -148,12 +148,12 @@
   pointer-events: none;
 }
 
-.bv .hueco-forma path,
-.bv .tunel path {
+.bienvenida .hueco-forma path,
+.bienvenida .tunel path {
   fill: var(--hueco);
 }
 
-.bv .tunel {
+.bienvenida .tunel {
   position: absolute;
   left: 0;
   top: 50%;
@@ -163,60 +163,60 @@
 }
 
 /* Textos de las cámaras. */
-.bv h1,
-.bv h2 {
+.bienvenida h1,
+.bienvenida h2 {
   margin: 0 0 14px;
   font-family: var(--mono);
   line-height: 1.2;
   color: var(--titulo);
 }
 
-.bv h1 {
+.bienvenida h1 {
   font-size: clamp(54px, 9vw, 96px);
   letter-spacing: -0.03em;
 }
 
-.bv h1 span {
+.bienvenida h1 span {
   color: var(--amarillo);
 }
 
-.bv h2 {
+.bienvenida h2 {
   font-size: clamp(24px, 3.2vw, 34px);
 }
 
-.bv p {
+.bienvenida p {
   margin: 0 0 12px;
 }
 
-.bv-etiqueta {
+.bienvenida-etiqueta {
   font: 12px var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--tenue);
 }
 
-.bv-tenue {
+.bienvenida-tenue {
   color: var(--tenue);
 }
 
-.bv-portada {
+.bienvenida-portada {
   display: flex;
   align-items: center;
   gap: clamp(24px, 4vw, 48px);
   max-width: 760px !important;
 }
 
-.bv-icono {
+.bienvenida-icono {
   flex: none;
   width: clamp(96px, 14vw, 150px);
   height: auto;
 }
 
-.bv-lema {
+.bienvenida-lema {
   font: 600 clamp(18px, 2.2vw, 24px) / 1.3 var(--mono);
 }
 
-.bv-boton {
+.bienvenida-boton {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -230,13 +230,13 @@
   cursor: pointer;
 }
 
-.bv-boton:hover {
+.bienvenida-boton:hover {
   background: var(--amarillo);
   color: var(--hueco);
 }
 
 /* Ejemplos de hormigueros: tres cámaras chicas. */
-.bv-ejemplos {
+.bienvenida-ejemplos {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -245,7 +245,7 @@
   list-style: none;
 }
 
-.bv-ejemplos li {
+.bienvenida-ejemplos li {
   padding: 10px 16px;
   border-radius: 16px 20px 14px 22px;
   background: var(--hueco-hondo);
@@ -253,12 +253,12 @@
   color: var(--amarillo);
 }
 
-.bv-cavar {
+.bienvenida-cavar {
   width: min(460px, 84vw);
 }
 
 /* ── Recorrido: la pista con la hormiga y un hoyo por cámara. ── */
-.bv-recorrido {
+.bienvenida-recorrido {
   flex: none;
   height: 56px;
   display: flex;
@@ -269,7 +269,7 @@
   border-top: 2px solid var(--tierra-clara);
 }
 
-.bv-pista {
+.bienvenida-pista {
   position: relative;
   flex: 1;
   min-width: 0;
@@ -277,7 +277,7 @@
   background: linear-gradient(var(--linea), var(--linea)) center / 100% 2px no-repeat;
 }
 
-.bv-hormiga {
+.bienvenida-hormiga {
   position: absolute;
   left: 0;
   top: 0;
@@ -287,7 +287,7 @@
   transform: translateX(var(--x, 0px));
 }
 
-.bv-hormiga.atras {
+.bienvenida-hormiga.atras {
   transform: translateX(var(--x, 0px)) scaleX(-1);
 }
 
@@ -298,14 +298,14 @@
 }
 
 .caminando .pata-a {
-  animation: bv-paso 0.22s ease-in-out infinite alternate;
+  animation: bienvenida-paso 0.22s ease-in-out infinite alternate;
 }
 
 .caminando .pata-b {
-  animation: bv-paso 0.22s ease-in-out infinite alternate-reverse;
+  animation: bienvenida-paso 0.22s ease-in-out infinite alternate-reverse;
 }
 
-@keyframes bv-paso {
+@keyframes bienvenida-paso {
   from {
     transform: rotate(-9deg);
   }
@@ -314,7 +314,7 @@
   }
 }
 
-.bv-hoyos {
+.bienvenida-hoyos {
   flex: none;
   display: flex;
   gap: 10px;
@@ -323,7 +323,7 @@
   list-style: none;
 }
 
-.bv-hoyos button {
+.bienvenida-hoyos button {
   display: block;
   width: 14px;
   height: 14px;
@@ -334,11 +334,11 @@
   cursor: pointer;
 }
 
-.bv-hoyos button:hover {
+.bienvenida-hoyos button:hover {
   border-color: var(--amarillo);
 }
 
-.bv-hoyos button[aria-current] {
+.bienvenida-hoyos button[aria-current] {
   background: var(--amarillo);
   border-color: var(--amarillo);
 }
@@ -352,7 +352,7 @@
 
 /* Ventanas angostas: el icono de la portada va sobre el texto. */
 @media (max-width: 700px) {
-  .bv-portada {
+  .bienvenida-portada {
     flex-direction: column;
     align-items: flex-start;
   }

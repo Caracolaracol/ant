@@ -21,8 +21,8 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { tema, resaltado } from "./tema";
-import { ConfigEscritor, extensionesEscritor } from "./escritor";
+import { temaDelEditor, resaltadoDelMarkdown } from "./tema";
+import { ConfiguracionModoEscritor, extensionesDelModoEscritor } from "./escritor";
 
 /** Cuántas notas recuerda el editor (cursor e historial) después de cerrarlas. */
 const LIMITE_DE_NOTAS_RECORDADAS = 30;
@@ -61,7 +61,7 @@ interface Props {
   /** Se llama cuando el cursor se mueve, con su posición (para marcar el título actual). */
   alMoverCursor(posicion: number): void;
   /** Configuración del modo escritor, o `null` si está apagado. */
-  configuracionModoEscritor: ConfigEscritor | null;
+  configuracionModoEscritor: ConfiguracionModoEscritor | null;
 }
 
 /**
@@ -120,9 +120,9 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
     keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
     // `codeLanguages` resalta los bloques de código según su lenguaje (se cargan bajo demanda).
     markdown({ base: markdownLanguage, codeLanguages: languages }),
-    tema,
-    resaltado,
-    compartimentoModoEscritor.of(extensionesEscritor(configuracionModoEscritorVigente.current)),
+    temaDelEditor,
+    resaltadoDelMarkdown,
+    compartimentoModoEscritor.of(extensionesDelModoEscritor(configuracionModoEscritorVigente.current)),
     EditorView.updateListener.of((actualizacion) => {
       const vieneDelDisco = actualizacion.transactions.some((transaccion) => transaccion.annotation(cambioQueVieneDelDisco));
       if (actualizacion.docChanged && !vieneDelDisco) callbacksVigentes.current.alCambiarTexto();
@@ -151,7 +151,7 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
   // Al cambiar el modo escritor en Ajustes, la nota visible lo aplica al instante.
   useEffect(() => {
     configuracionModoEscritorVigente.current = configuracionModoEscritor;
-    vistaDelEditor.current?.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesEscritor(configuracionModoEscritor)) });
+    vistaDelEditor.current?.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesDelModoEscritor(configuracionModoEscritor)) });
   }, [configuracionModoEscritorComoTexto]);
 
   useImperativeHandle(referenciaDelControl, () => ({
@@ -165,7 +165,7 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
       idNotaVisible.current = idNota;
       recordarEstado(idNota, vista.state);
       // Una nota recordada pudo quedar con otra configuración del modo escritor: se pone al día.
-      vista.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesEscritor(configuracionModoEscritorVigente.current)) });
+      vista.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesDelModoEscritor(configuracionModoEscritorVigente.current)) });
       callbacksVigentes.current.alMoverCursor(vista.state.selection.main.head);
       vista.focus();
     },

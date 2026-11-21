@@ -4,213 +4,274 @@
 //     sus palabras y flechas para cambiar el orden;
 //   · a la derecha, título, autor, formato, estilo (manuscrito estándar o libro), tamaño de
 //     página, de dónde sale el título de cada capítulo y si se corrige la tipografía.
-// Lo elegido para cada carpeta se recuerda en los ajustes (`compilaciones`), y el autor para
-// todas. Las notas abiertas se compilan con lo que tienen en el editor, aunque no se hayan
-// guardado. Todo se arma aquí mismo, sin depender de programas externos.
+// Lo elegido para cada carpeta se recuerda en los ajustes (`opciones_de_compilacion_por_carpeta`),
+// y el autor para todas. Las notas abiertas se compilan con lo que tienen en el editor, aunque no
+// se hayan guardado. Todo se arma aquí mismo, sin depender de programas externos.
 
 import { useEffect, useMemo, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
-import { Ajustes, ConfigCompilacion, OPCIONES_ESCRITOR } from "../ajustes";
-import { Entrada } from "../carpeta";
-import { entradaDiario } from "../diario";
-import { configEscritor } from "../editor/escritor";
-import { idiomaDe, useTextos } from "../idioma";
-import { guardarBinario, leerNota, mostrarEnCarpeta, nombreArchivo } from "../notas";
-import { analizar, compilar, contarPalabras } from "./modelo";
+import { Ajustes, OpcionesDeCompilacion, OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO } from "../ajustes";
+import { EntradaDelArbol } from "../arbolDeCarpetas";
+import { buscarCarpetaDelDiario } from "../diario";
+import { crearConfiguracionModoEscritor } from "../editor/escritor";
+import { idiomaValido, useTextos } from "../idioma";
+import { guardarArchivoBinarioEnElDisco, leerNotaDelDisco, mostrarArchivoEnSuCarpeta, nombreDelArchivo } from "../archivosDeNotas";
+import { analizarNotaEnBloques, compilarLibro, contarPalabrasDeBloques } from "./modelo";
 import { crearDocx } from "./docx";
 import { crearPdf } from "./pdf";
 import "./Compilar.css";
 
 interface Props {
-  /** Carpeta de trabajo, o `null` si no se eligió. */
-  carpeta: string | null;
-  arbol: Entrada[];
+  /** Carpeta del hormiguero abierto, o `null` si no hay ninguno. */
+  carpetaDelHormiguero: string | null;
+  arbolDelHormiguero: EntradaDelArbol[];
   /** Ruta de la nota visible: su carpeta es la que se propone compilar. */
-  rutaActiva: string | null;
+  rutaDeLaNotaVisible: string | null;
   ajustes: Ajustes;
   /** Texto de una nota abierta en el editor (con sus cambios sin guardar), o `undefined`. */
-  textoAbierto(ruta: string): string | undefined;
-  onGuardarAjustes(cambios: Partial<Ajustes>): void;
-  onCerrar(): void;
+  textoDeNotaAbiertaPorRuta(rutaDelArchivo: string): string | undefined;
+  cambiarAjustes(cambios: Partial<Ajustes>): void;
+  alCerrar(): void;
 }
 
 /** Una carpeta que se puede compilar, con su profundidad para dibujarla con sangría. */
-interface OpcionCarpeta {
+interface CarpetaCompilable {
   ruta: string;
   nombre: string;
-  nivel: number;
-  notas: Entrada[];
+  nivelDeProfundidad: number;
+  notas: EntradaDelArbol[];
 }
 
 /** Una nota de la lista de capítulos. */
-interface Item {
+interface CapituloDeLaLista {
   ruta: string;
   /** Ruta relativa a la carpeta compilada («Parte I / 01 Inicio.md»). */
-  nombre: string;
-  incluida: boolean;
+  nombreVisible: string;
+  vaEnElLibro: boolean;
+}
+
+/** Estado del diálogo mientras exporta. */
+interface EstadoDeLaExportacion {
+  etapa: "listo" | "trabajando" | "hecho" | "error";
+  mensaje?: string;
+  rutaDelArchivoExportado?: string;
 }
 
 /** Notas de unas entradas del árbol, en el orden del árbol y entrando en las subcarpetas. */
-function notasDe(entradas: Entrada[], omitir?: string): Entrada[] {
-  return entradas.flatMap((e) => (e.ruta === omitir ? [] : e.es_carpeta ? notasDe(e.hijos, omitir) : [e]));
+function notasDeLasEntradas(entradas: EntradaDelArbol[], rutaQueSeOmite?: string): EntradaDelArbol[] {
+  return entradas.flatMap((entrada) =>
+    entrada.ruta === rutaQueSeOmite ? [] : entrada.esCarpeta ? notasDeLasEntradas(entrada.hijos, rutaQueSeOmite) : [entrada],
+  );
 }
 
-/** Carpetas que se pueden compilar: la de trabajo y todas sus subcarpetas (menos `Daily`). */
-function carpetasDe(carpeta: string, arbol: Entrada[]): OpcionCarpeta[] {
-  const daily = entradaDiario(arbol)?.ruta;
-  const out: OpcionCarpeta[] = [{ ruta: carpeta, nombre: nombreArchivo(carpeta), nivel: 0, notas: notasDe(arbol, daily) }];
-  const recorrer = (entradas: Entrada[], nivel: number) => {
-    for (const e of entradas) {
-      if (!e.es_carpeta || e.ruta === daily) continue;
-      out.push({ ruta: e.ruta, nombre: e.nombre, nivel, notas: notasDe(e.hijos) });
-      recorrer(e.hijos, nivel + 1);
+/** Carpetas que se pueden compilar: la del hormiguero y todas sus subcarpetas (menos `Daily`). */
+function carpetasCompilables(carpetaDelHormiguero: string, arbolDelHormiguero: EntradaDelArbol[]): CarpetaCompilable[] {
+  const rutaDelDiario = buscarCarpetaDelDiario(arbolDelHormiguero)?.ruta;
+  const carpetas: CarpetaCompilable[] = [
+    {
+      ruta: carpetaDelHormiguero,
+      nombre: nombreDelArchivo(carpetaDelHormiguero),
+      nivelDeProfundidad: 0,
+      notas: notasDeLasEntradas(arbolDelHormiguero, rutaDelDiario),
+    },
+  ];
+  const recorrerSubcarpetas = (entradas: EntradaDelArbol[], nivelDeProfundidad: number) => {
+    for (const entrada of entradas) {
+      if (!entrada.esCarpeta || entrada.ruta === rutaDelDiario) continue;
+      carpetas.push({ ruta: entrada.ruta, nombre: entrada.nombre, nivelDeProfundidad, notas: notasDeLasEntradas(entrada.hijos) });
+      recorrerSubcarpetas(entrada.hijos, nivelDeProfundidad + 1);
     }
   };
-  recorrer(arbol, 1);
-  return out;
+  recorrerSubcarpetas(arbolDelHormiguero, 1);
+  return carpetas;
 }
 
 /** Ruta de la carpeta que contiene `ruta`. */
-const padre = (ruta: string) => ruta.replace(/[\\/][^\\/]*$/, "");
+const carpetaQueContiene = (ruta: string) => ruta.replace(/[\\/][^\\/]*$/, "");
 
 /** Une una carpeta y un nombre de archivo con el separador que use la carpeta. */
-const unir = (carpeta: string, nombre: string) => `${carpeta}${carpeta.includes("\\") ? "\\" : "/"}${nombre}`;
+const unirCarpetaYNombre = (carpeta: string, nombreDelArchivo: string) =>
+  `${carpeta}${carpeta.includes("\\") ? "\\" : "/"}${nombreDelArchivo}`;
 
 /** Quita de un título lo que no puede ir en un nombre de archivo. */
-const nombreSeguro = (t: string) => t.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Ant";
+const nombreDeArchivoSeguro = (titulo: string) => titulo.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Ant";
 
-export function Compilar({ carpeta, arbol, rutaActiva, ajustes, textoAbierto, onGuardarAjustes, onCerrar }: Props) {
-  const tx = useTextos();
-  const idioma = idiomaDe(ajustes.idioma);
-  const carpetas = useMemo(() => (carpeta ? carpetasDe(carpeta, arbol) : []), [carpeta, arbol]);
+export function Compilar({
+  carpetaDelHormiguero,
+  arbolDelHormiguero,
+  rutaDeLaNotaVisible,
+  ajustes,
+  textoDeNotaAbiertaPorRuta,
+  cambiarAjustes,
+  alCerrar,
+}: Props) {
+  const textosDeLaInterfaz = useTextos();
+  const idioma = idiomaValido(ajustes.idioma);
+  const opcionesGuardadasPorCarpeta = ajustes.opciones_de_compilacion_por_carpeta;
+  const carpetas = useMemo(
+    () => (carpetaDelHormiguero ? carpetasCompilables(carpetaDelHormiguero, arbolDelHormiguero) : []),
+    [carpetaDelHormiguero, arbolDelHormiguero],
+  );
 
   // Carpeta propuesta: la de la nota visible (si es una de las que se pueden compilar), si no,
-  // la última que se compiló, y si no, la de trabajo.
-  const [elegida, setElegida] = useState(() => {
-    const deActiva = rutaActiva ? carpetas.find((c) => c.ruta === padre(rutaActiva)) : undefined;
-    const compilada = carpetas.find((c) => ajustes.compilaciones[c.ruta]);
-    return (deActiva ?? compilada ?? carpetas[0])?.ruta ?? "";
+  // la última que se compiló, y si no, la del hormiguero.
+  const [rutaDeLaCarpetaElegida, setRutaDeLaCarpetaElegida] = useState(() => {
+    const carpetaDeLaNotaVisible = rutaDeLaNotaVisible
+      ? carpetas.find((carpeta) => carpeta.ruta === carpetaQueContiene(rutaDeLaNotaVisible))
+      : undefined;
+    const carpetaYaCompilada = carpetas.find((carpeta) => opcionesGuardadasPorCarpeta[carpeta.ruta]);
+    return (carpetaDeLaNotaVisible ?? carpetaYaCompilada ?? carpetas[0])?.ruta ?? "";
   });
-  const opcion = carpetas.find((c) => c.ruta === elegida);
-  const guardada: ConfigCompilacion | undefined = ajustes.compilaciones[elegida];
+  const carpetaElegida = carpetas.find((carpeta) => carpeta.ruta === rutaDeLaCarpetaElegida);
+  const opcionesGuardadas: OpcionesDeCompilacion | undefined = opcionesGuardadasPorCarpeta[rutaDeLaCarpetaElegida];
 
-  const [items, setItems] = useState<Item[]>([]);
-  const [titulo, setTitulo] = useState("");
-  const [autor, setAutor] = useState(ajustes.autor);
-  const [formato, setFormato] = useState<ConfigCompilacion["formato"]>("docx");
-  const [estilo, setEstilo] = useState<ConfigCompilacion["estilo"]>("manuscrito");
-  const [pagina, setPagina] = useState<ConfigCompilacion["pagina"]>(idioma === "es" ? "a4" : "carta");
-  const [origenTitulo, setOrigenTitulo] = useState<ConfigCompilacion["origenTitulo"]>("titulo");
-  const [tipografia, setTipografia] = useState(true);
-  const [textos, setTextos] = useState<Map<string, string>>(new Map());
-  const [estado, setEstado] = useState<{ tipo: "listo" | "trabajando" | "hecho" | "error"; mensaje?: string; ruta?: string }>({ tipo: "listo" });
+  const [capitulos, setCapitulos] = useState<CapituloDeLaLista[]>([]);
+  const [tituloDelLibro, setTituloDelLibro] = useState("");
+  const [nombreDelAutor, setNombreDelAutor] = useState(ajustes.nombre_del_autor);
+  const [formato, setFormato] = useState<OpcionesDeCompilacion["formato"]>("docx");
+  const [estilo, setEstilo] = useState<OpcionesDeCompilacion["estilo"]>("manuscrito");
+  const [tamanoDePagina, setTamanoDePagina] = useState<OpcionesDeCompilacion["pagina"]>(idioma === "es" ? "a4" : "carta");
+  const [origenDelTitulo, setOrigenDelTitulo] = useState<OpcionesDeCompilacion["origenTitulo"]>("titulo");
+  const [corregirTipografia, setCorregirTipografia] = useState(true);
+  const [textoPorRuta, setTextoPorRuta] = useState<Map<string, string>>(new Map());
+  const [estadoDeLaExportacion, setEstadoDeLaExportacion] = useState<EstadoDeLaExportacion>({ etapa: "listo" });
+  const estaExportando = estadoDeLaExportacion.etapa === "trabajando";
 
   // Al cambiar de carpeta: arma la lista de capítulos (con el orden guardado, y las notas nuevas
   // al final) y recupera las demás opciones que se usaron con esa carpeta.
   useEffect(() => {
-    if (!opcion) return;
-    const g = guardada;
-    const rutas = opcion.notas.map((n) => n.ruta);
-    const ordenadas = [...(g?.orden.filter((r) => rutas.includes(r)) ?? []), ...rutas.filter((r) => !g?.orden.includes(r))];
-    const base = opcion.ruta.length + 1;
-    setItems(
-      ordenadas.map((ruta) => ({
+    if (!carpetaElegida) return;
+    const rutasDeLasNotas = carpetaElegida.notas.map((nota) => nota.ruta);
+    const rutasEnOrden = [
+      ...(opcionesGuardadas?.orden.filter((ruta) => rutasDeLasNotas.includes(ruta)) ?? []),
+      ...rutasDeLasNotas.filter((ruta) => !opcionesGuardadas?.orden.includes(ruta)),
+    ];
+    const largoDelPrefijoDeLaCarpeta = carpetaElegida.ruta.length + 1;
+    setCapitulos(
+      rutasEnOrden.map((ruta) => ({
         ruta,
-        nombre: ruta.slice(base).split(/[\\/]/).join(" / "),
-        incluida: !g?.excluidas.includes(ruta),
+        nombreVisible: ruta.slice(largoDelPrefijoDeLaCarpeta).split(/[\\/]/).join(" / "),
+        vaEnElLibro: !opcionesGuardadas?.excluidas.includes(ruta),
       })),
     );
-    setTitulo(g?.titulo ?? opcion.nombre);
-    if (g) {
-      setFormato(g.formato);
-      setEstilo(g.estilo);
-      setPagina(g.pagina);
-      setOrigenTitulo(g.origenTitulo);
-      setTipografia(g.tipografia);
+    setTituloDelLibro(opcionesGuardadas?.titulo ?? carpetaElegida.nombre);
+    if (opcionesGuardadas) {
+      setFormato(opcionesGuardadas.formato);
+      setEstilo(opcionesGuardadas.estilo);
+      setTamanoDePagina(opcionesGuardadas.pagina);
+      setOrigenDelTitulo(opcionesGuardadas.origenTitulo);
+      setCorregirTipografia(opcionesGuardadas.tipografia);
     }
-    setEstado({ tipo: "listo" });
-  }, [elegida, opcion?.notas]);
+    setEstadoDeLaExportacion({ etapa: "listo" });
+  }, [rutaDeLaCarpetaElegida, carpetaElegida?.notas]);
 
   // Lee el texto de cada nota (o el del editor, si está abierta) para contar palabras y compilar.
   useEffect(() => {
-    let vigente = true;
+    let sigueVigente = true;
     Promise.all(
-      (opcion?.notas ?? []).map(async (n) => [n.ruta, textoAbierto(n.ruta) ?? (await leerNota(n.ruta).catch(() => ""))] as const),
-    ).then((pares) => vigente && setTextos(new Map(pares)));
+      (carpetaElegida?.notas ?? []).map(
+        async (nota) => [nota.ruta, textoDeNotaAbiertaPorRuta(nota.ruta) ?? (await leerNotaDelDisco(nota.ruta).catch(() => ""))] as const,
+      ),
+    ).then((rutasYTextos) => sigueVigente && setTextoPorRuta(new Map(rutasYTextos)));
     return () => {
-      vigente = false;
+      sigueVigente = false;
     };
-  }, [opcion?.notas]);
+  }, [carpetaElegida?.notas]);
 
   // Palabras de cada nota (sin marcas de Markdown ni notas %% %%), calculadas una vez por texto.
-  const palabras = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const [ruta, texto] of textos) m.set(ruta, contarPalabras(analizar(texto)));
-    return m;
-  }, [textos]);
-  const incluidas = items.filter((i) => i.incluida);
-  const total = incluidas.reduce((s, i) => s + (palabras.get(i.ruta) ?? 0), 0);
+  const palabrasPorRuta = useMemo(() => {
+    const palabras = new Map<string, number>();
+    for (const [ruta, texto] of textoPorRuta) palabras.set(ruta, contarPalabrasDeBloques(analizarNotaEnBloques(texto)));
+    return palabras;
+  }, [textoPorRuta]);
+  const capitulosQueVanEnElLibro = capitulos.filter((capitulo) => capitulo.vaEnElLibro);
+  const palabrasDelLibro = capitulosQueVanEnElLibro.reduce((total, capitulo) => total + (palabrasPorRuta.get(capitulo.ruta) ?? 0), 0);
 
   // Escape cierra el diálogo (si no está exportando).
   useEffect(() => {
-    const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && estado.tipo !== "trabajando") onCerrar();
+    const alPresionarEscape = (evento: KeyboardEvent) => {
+      if (evento.key === "Escape" && !estaExportando) alCerrar();
     };
-    window.addEventListener("keydown", alTeclear);
-    return () => window.removeEventListener("keydown", alTeclear);
-  }, [estado.tipo, onCerrar]);
+    window.addEventListener("keydown", alPresionarEscape);
+    return () => window.removeEventListener("keydown", alPresionarEscape);
+  }, [estaExportando, alCerrar]);
 
-  /** Mueve un capítulo `paso` lugares (−1 sube, 1 baja). */
-  const mover = (i: number, paso: number) =>
-    setItems((lista) => {
-      const j = i + paso;
-      if (j < 0 || j >= lista.length) return lista;
-      const nueva = [...lista];
-      [nueva[i], nueva[j]] = [nueva[j], nueva[i]];
-      return nueva;
+  /** Mueve el capítulo de `posicion` un lugar (−1 sube, 1 baja). */
+  const moverCapitulo = (posicion: number, paso: -1 | 1) =>
+    setCapitulos((lista) => {
+      const posicionNueva = posicion + paso;
+      if (posicionNueva < 0 || posicionNueva >= lista.length) return lista;
+      const listaNueva = [...lista];
+      [listaNueva[posicion], listaNueva[posicionNueva]] = [listaNueva[posicionNueva], listaNueva[posicion]];
+      return listaNueva;
     });
 
   /** Pide dónde guardar, compila, genera el archivo y recuerda las opciones de esta carpeta. */
-  async function exportar() {
-    const ext = formato;
-    const destino = await save({
-      defaultPath: unir(elegida, `${nombreSeguro(titulo)}.${ext}`),
-      filters: [{ name: tx.formatos[ext], extensions: [ext] }],
+  async function exportarLibro() {
+    const extension = formato;
+    const rutaDeDestino = await save({
+      defaultPath: unirCarpetaYNombre(rutaDeLaCarpetaElegida, `${nombreDeArchivoSeguro(tituloDelLibro)}.${extension}`),
+      filters: [{ name: textosDeLaInterfaz.formatos[extension], extensions: [extension] }],
     });
-    if (!destino) return;
-    setEstado({ tipo: "trabajando" });
+    if (!rutaDeDestino) return;
+    setEstadoDeLaExportacion({ etapa: "trabajando" });
     try {
-      const notas = incluidas.map((i) => ({ nombre: nombreArchivo(i.ruta), texto: textos.get(i.ruta) ?? "" }));
+      const notasParaCompilar = capitulosQueVanEnElLibro.map((capitulo) => ({
+        nombreDelArchivo: nombreDelArchivo(capitulo.ruta),
+        texto: textoPorRuta.get(capitulo.ruta) ?? "",
+      }));
       // La corrección usa las comillas y reglas del modo escritor (o las de por defecto si está apagado).
-      const reglas = tipografia ? configEscritor(ajustes.escritor ? ajustes.opciones_escritor : OPCIONES_ESCRITOR, idioma) : null;
-      const libro = compilar(notas, { titulo, autor, origenTitulo, tipografia: reglas });
-      const opciones = { estilo, pagina, idioma };
-      const datos = ext === "docx" ? await crearDocx(libro, opciones) : await crearPdf(libro, opciones);
-      await guardarBinario(destino, datos);
-      const config: ConfigCompilacion = {
-        orden: items.map((i) => i.ruta),
-        excluidas: items.filter((i) => !i.incluida).map((i) => i.ruta),
-        titulo,
+      const configuracionTipografica = corregirTipografia
+        ? crearConfiguracionModoEscritor(
+            ajustes.modo_escritor ? ajustes.opciones_del_modo_escritor : OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO,
+            idioma,
+          )
+        : null;
+      const libro = compilarLibro(notasParaCompilar, {
+        titulo: tituloDelLibro,
+        nombreDelAutor,
+        origenDelTitulo,
+        configuracionTipografica,
+      });
+      const opcionesDeExportacion = { estilo, tamanoDePagina, idioma };
+      const bytesDelArchivo = extension === "docx" ? await crearDocx(libro, opcionesDeExportacion) : await crearPdf(libro, opcionesDeExportacion);
+      await guardarArchivoBinarioEnElDisco(rutaDeDestino, bytesDelArchivo);
+      const opcionesParaRecordar: OpcionesDeCompilacion = {
+        orden: capitulos.map((capitulo) => capitulo.ruta),
+        excluidas: capitulos.filter((capitulo) => !capitulo.vaEnElLibro).map((capitulo) => capitulo.ruta),
+        titulo: tituloDelLibro,
         formato,
         estilo,
-        pagina,
-        origenTitulo,
-        tipografia,
+        pagina: tamanoDePagina,
+        origenTitulo: origenDelTitulo,
+        tipografia: corregirTipografia,
       };
-      onGuardarAjustes({ autor, compilaciones: { ...ajustes.compilaciones, [elegida]: config } });
-      setEstado({ tipo: "hecho", mensaje: tx.exportado(nombreArchivo(destino)), ruta: destino });
-    } catch (e) {
-      setEstado({ tipo: "error", mensaje: String(e) });
+      cambiarAjustes({
+        nombre_del_autor: nombreDelAutor,
+        opciones_de_compilacion_por_carpeta: { ...opcionesGuardadasPorCarpeta, [rutaDeLaCarpetaElegida]: opcionesParaRecordar },
+      });
+      setEstadoDeLaExportacion({
+        etapa: "hecho",
+        mensaje: textosDeLaInterfaz.exportado(nombreDelArchivo(rutaDeDestino)),
+        rutaDelArchivoExportado: rutaDeDestino,
+      });
+    } catch (error) {
+      setEstadoDeLaExportacion({ etapa: "error", mensaje: String(error) });
     }
   }
 
   /** Botones de una opción con pocas alternativas (formato, estilo). */
-  function segmentos<T extends string>(valor: T, valores: readonly T[], nombres: Record<string, string>, cambiar: (v: T) => void) {
+  function botonesDeOpcion<Valor extends string>(
+    valorElegido: Valor,
+    valoresPosibles: readonly Valor[],
+    nombresVisibles: Record<string, string>,
+    alElegir: (valor: Valor) => void,
+  ) {
     return (
       <div className="segmentos">
-        {valores.map((v) => (
-          <button key={v} className={v === valor ? "elegido" : ""} onClick={() => cambiar(v)}>
-            {nombres[v]}
+        {valoresPosibles.map((valor) => (
+          <button key={valor} className={valor === valorElegido ? "elegido" : ""} onClick={() => alElegir(valor)}>
+            {nombresVisibles[valor]}
           </button>
         ))}
       </div>
@@ -218,106 +279,121 @@ export function Compilar({ carpeta, arbol, rutaActiva, ajustes, textoAbierto, on
   }
 
   return (
-    <div className="compilar-fondo" onMouseDown={(e) => e.target === e.currentTarget && estado.tipo !== "trabajando" && onCerrar()}>
-      <div className="compilar" role="dialog" aria-label={tx.compilarTitulo}>
-        <h1>{tx.compilarTitulo}</h1>
-        {!carpeta ? (
-          <p className="compilar-ayuda">{tx.compilarSinCarpeta}</p>
+    <div className="compilar-fondo" onMouseDown={(evento) => evento.target === evento.currentTarget && !estaExportando && alCerrar()}>
+      <div className="compilar" role="dialog" aria-label={textosDeLaInterfaz.compilarTitulo}>
+        <h1>{textosDeLaInterfaz.compilarTitulo}</h1>
+        {!carpetaDelHormiguero ? (
+          <p className="compilar-ayuda">{textosDeLaInterfaz.compilarSinCarpeta}</p>
         ) : (
           <div className="compilar-columnas">
             <section className="compilar-capitulos">
               <label className="compilar-campo">
-                <span>{tx.carpetaLibro}</span>
-                <select value={elegida} onChange={(e) => setElegida(e.target.value)}>
-                  {carpetas.map((c) => (
-                    <option key={c.ruta} value={c.ruta}>
-                      {"  ".repeat(c.nivel) + c.nombre}
+                <span>{textosDeLaInterfaz.carpetaLibro}</span>
+                <select value={rutaDeLaCarpetaElegida} onChange={(evento) => setRutaDeLaCarpetaElegida(evento.target.value)}>
+                  {carpetas.map((carpeta) => (
+                    <option key={carpeta.ruta} value={carpeta.ruta}>
+                      {"  ".repeat(carpeta.nivelDeProfundidad) + carpeta.nombre}
                     </option>
                   ))}
                 </select>
               </label>
-              <div className="compilar-subtitulo">{tx.capitulos}</div>
-              <p className="compilar-ayuda">{tx.capitulosAyuda}</p>
+              <div className="compilar-subtitulo">{textosDeLaInterfaz.capitulos}</div>
+              <p className="compilar-ayuda">{textosDeLaInterfaz.capitulosAyuda}</p>
               <div className="compilar-lista">
-                {items.length === 0 && <p className="compilar-ayuda">{tx.sinNotas}</p>}
-                {items.map((it, i) => (
-                  <div key={it.ruta} className={`compilar-item${it.incluida ? "" : " fuera"}`}>
+                {capitulos.length === 0 && <p className="compilar-ayuda">{textosDeLaInterfaz.sinNotas}</p>}
+                {capitulos.map((capitulo, posicion) => (
+                  <div key={capitulo.ruta} className={`compilar-item${capitulo.vaEnElLibro ? "" : " fuera"}`}>
                     <input
                       type="checkbox"
-                      checked={it.incluida}
-                      onChange={(e) => setItems((l) => l.map((x) => (x.ruta === it.ruta ? { ...x, incluida: e.target.checked } : x)))}
+                      checked={capitulo.vaEnElLibro}
+                      onChange={(evento) =>
+                        setCapitulos((lista) =>
+                          lista.map((otro) => (otro.ruta === capitulo.ruta ? { ...otro, vaEnElLibro: evento.target.checked } : otro)),
+                        )
+                      }
                     />
-                    <span className="compilar-nombre" title={it.ruta}>{it.nombre.replace(/\.(md|markdown|txt)$/i, "")}</span>
-                    <span className="compilar-palabras">{(palabras.get(it.ruta) ?? 0).toLocaleString(tx.locale)}</span>
-                    <button title={tx.subir} disabled={i === 0} onClick={() => mover(i, -1)}>↑</button>
-                    <button title={tx.bajar} disabled={i === items.length - 1} onClick={() => mover(i, 1)}>↓</button>
+                    <span className="compilar-nombre" title={capitulo.ruta}>{capitulo.nombreVisible.replace(/\.(md|markdown|txt)$/i, "")}</span>
+                    <span className="compilar-palabras">{(palabrasPorRuta.get(capitulo.ruta) ?? 0).toLocaleString(textosDeLaInterfaz.locale)}</span>
+                    <button title={textosDeLaInterfaz.subir} disabled={posicion === 0} onClick={() => moverCapitulo(posicion, -1)}>↑</button>
+                    <button title={textosDeLaInterfaz.bajar} disabled={posicion === capitulos.length - 1} onClick={() => moverCapitulo(posicion, 1)}>↓</button>
                   </div>
                 ))}
               </div>
               <div className="compilar-total">
-                {tx.capitulosN(incluidas.length, items.length)} · {tx.palabrasN(total)}
+                {textosDeLaInterfaz.capitulosN(capitulosQueVanEnElLibro.length, capitulos.length)} · {textosDeLaInterfaz.palabrasN(palabrasDelLibro)}
               </div>
             </section>
 
             <section className="compilar-opciones">
               <label className="compilar-campo">
-                <span>{tx.tituloLibro}</span>
-                <input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+                <span>{textosDeLaInterfaz.tituloLibro}</span>
+                <input value={tituloDelLibro} onChange={(evento) => setTituloDelLibro(evento.target.value)} />
               </label>
               <label className="compilar-campo">
-                <span>{tx.autor}</span>
-                <input value={autor} onChange={(e) => setAutor(e.target.value)} />
+                <span>{textosDeLaInterfaz.autor}</span>
+                <input value={nombreDelAutor} onChange={(evento) => setNombreDelAutor(evento.target.value)} />
               </label>
               <div className="compilar-campo">
-                <span>{tx.formato}</span>
-                {segmentos(formato, ["docx", "pdf"] as const, tx.formatos, setFormato)}
+                <span>{textosDeLaInterfaz.formato}</span>
+                {botonesDeOpcion(formato, ["docx", "pdf"] as const, textosDeLaInterfaz.formatos, setFormato)}
               </div>
               <div className="compilar-campo">
-                <span>{tx.estiloLibro}</span>
-                {segmentos(estilo, ["manuscrito", "libro"] as const, tx.estilos, setEstilo)}
-                <small>{tx.estilosAyuda[estilo]}</small>
+                <span>{textosDeLaInterfaz.estiloLibro}</span>
+                {botonesDeOpcion(estilo, ["manuscrito", "libro"] as const, textosDeLaInterfaz.estilos, setEstilo)}
+                <small>{textosDeLaInterfaz.estilosAyuda[estilo]}</small>
               </div>
               {estilo === "manuscrito" && (
                 <label className="compilar-campo">
-                  <span>{tx.paginaLibro}</span>
-                  <select value={pagina} onChange={(e) => setPagina(e.target.value as ConfigCompilacion["pagina"])}>
-                    {(["a4", "carta"] as const).map((p) => (
-                      <option key={p} value={p}>{tx.paginas[p]}</option>
+                  <span>{textosDeLaInterfaz.paginaLibro}</span>
+                  <select
+                    value={tamanoDePagina}
+                    onChange={(evento) => setTamanoDePagina(evento.target.value as OpcionesDeCompilacion["pagina"])}
+                  >
+                    {(["a4", "carta"] as const).map((tamano) => (
+                      <option key={tamano} value={tamano}>{textosDeLaInterfaz.paginas[tamano]}</option>
                     ))}
                   </select>
                 </label>
               )}
               <label className="compilar-campo">
-                <span>{tx.tituloCapitulos}</span>
-                <select value={origenTitulo} onChange={(e) => setOrigenTitulo(e.target.value as ConfigCompilacion["origenTitulo"])}>
-                  {(["titulo", "archivo", "ninguno"] as const).map((o) => (
-                    <option key={o} value={o}>{tx.origenesTitulo[o]}</option>
+                <span>{textosDeLaInterfaz.tituloCapitulos}</span>
+                <select
+                  value={origenDelTitulo}
+                  onChange={(evento) => setOrigenDelTitulo(evento.target.value as OpcionesDeCompilacion["origenTitulo"])}
+                >
+                  {(["titulo", "archivo", "ninguno"] as const).map((origen) => (
+                    <option key={origen} value={origen}>{textosDeLaInterfaz.origenesTitulo[origen]}</option>
                   ))}
                 </select>
               </label>
               <label className="compilar-casilla">
-                <input type="checkbox" checked={tipografia} onChange={(e) => setTipografia(e.target.checked)} />
-                <span>{tx.corregirTipografia}</span>
+                <input type="checkbox" checked={corregirTipografia} onChange={(evento) => setCorregirTipografia(evento.target.checked)} />
+                <span>{textosDeLaInterfaz.corregirTipografia}</span>
               </label>
-              <p className="compilar-ayuda">{tx.notasPropiasAyuda}</p>
+              <p className="compilar-ayuda">{textosDeLaInterfaz.notasPropiasAyuda}</p>
             </section>
           </div>
         )}
 
         <footer className="compilar-pie">
-          <span className={`compilar-estado ${estado.tipo}`}>
-            {estado.tipo === "trabajando" ? tx.exportando : estado.mensaje}
-            {estado.tipo === "hecho" && estado.ruta && (
-              <button className="compilar-enlace" onClick={() => mostrarEnCarpeta(estado.ruta!)}>{tx.mostrarEnFinder}</button>
+          <span className={`compilar-estado ${estadoDeLaExportacion.etapa}`}>
+            {estaExportando ? textosDeLaInterfaz.exportando : estadoDeLaExportacion.mensaje}
+            {estadoDeLaExportacion.etapa === "hecho" && estadoDeLaExportacion.rutaDelArchivoExportado && (
+              <button
+                className="compilar-enlace"
+                onClick={() => mostrarArchivoEnSuCarpeta(estadoDeLaExportacion.rutaDelArchivoExportado!)}
+              >
+                {textosDeLaInterfaz.mostrarEnFinder}
+              </button>
             )}
           </span>
-          <button onClick={onCerrar} disabled={estado.tipo === "trabajando"}>{tx.cerrar}</button>
+          <button onClick={alCerrar} disabled={estaExportando}>{textosDeLaInterfaz.cerrar}</button>
           <button
             className="principal"
-            onClick={exportar}
-            disabled={!carpeta || !incluidas.length || estado.tipo === "trabajando" || textos.size === 0}
+            onClick={exportarLibro}
+            disabled={!carpetaDelHormiguero || !capitulosQueVanEnElLibro.length || estaExportando || textoPorRuta.size === 0}
           >
-            {tx.exportar}
+            {textosDeLaInterfaz.exportar}
           </button>
         </footer>
       </div>
