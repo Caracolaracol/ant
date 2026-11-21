@@ -126,7 +126,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   túnel que se recorre en horizontal (una por página: Ant, archivos, el hormiguero y la primera
   cámara), la hormiga y los hoyos abajo, y EN / ES arriba. Reusa del sitio
   `website/src/lib/cavar.ts` (bordes cavados) y `website/src/assets/tierra.svg`: si se cambian
-  allá, revisar también la bienvenida. `prueba/bienvenida.html` la muestra fuera de Tauri.
+  allá, revisar también la bienvenida. Por eso compilar la app necesita las dependencias del sitio
+  (`website/tsconfig.json` extiende la de Astro); el workflow de publicación las instala. `prueba/bienvenida.html` la muestra fuera de Tauri.
 - `src/barraLateral/` — la barra lateral (el «panel»), minimalista a propósito y sin líneas
   separadoras. De arriba abajo: el selector de cámaras (`SelectorDeCamara.tsx`, el nombre de la
   abierta; al tocarlo, la lista para cambiar y «Cámara nueva…», con `MenuContextual`), el

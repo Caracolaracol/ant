@@ -86,6 +86,11 @@ jobs:
           workspaces: src-tauri -> target
 
       - run: pnpm install --frozen-lockfile
+      # La bienvenida reusa `website/src/lib/cavar.ts`, y al compilarlo Vite lee
+      # `website/tsconfig.json`, que extiende `astro/tsconfigs/strict`: sin las dependencias del
+      # sitio, la compilación falla.
+      - name: Dependencias del sitio
+        run: npm ci --prefix website
 
       # Las pruebas automáticas (lógica de la interfaz y Rust) corren una vez, en Linux: si
       # fallan, no se publica la versión.
