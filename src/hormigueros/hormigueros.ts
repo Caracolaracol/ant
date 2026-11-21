@@ -3,12 +3,27 @@
 // cámaras: cada una un contexto (las notas personales, todo lo de una novela, el trabajo y sus
 // proyectos). La barra lateral muestra una cámara a la vez (`Ajustes.camara_abierta`, guardada por
 // nombre y no por ruta). Se cambia de cámara en Ajustes → General y se cava una nueva con
-// File → New Chamber… Las notas sueltas en la raíz del hormiguero no son de ninguna cámara.
+// File → New Chamber… Las notas sueltas en la raíz del hormiguero son la «Entrada»: una cámara más
+// (la primera de la lista) que solo existe mientras haya notas sueltas.
 
 import { invoke } from "@tauri-apps/api/core";
 import { documentDir, homeDir } from "@tauri-apps/api/path";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { Ajustes } from "../ajustes";
+
+/**
+ * Nombre con que se guarda y se lista la «Entrada», la cámara de las notas sueltas en la raíz del
+ * hormiguero. Es «.» (la carpeta misma), que no puede ser el nombre de una carpeta de verdad; se
+ * muestra como «Entrada». Debe coincidir con `CAMARA_DE_ENTRADA` de `src-tauri/src/carpeta.rs`.
+ */
+export const CAMARA_DE_ENTRADA = ".";
+
+/** Si la cámara `nombreDeLaCamara` es la «Entrada». */
+export const esLaEntrada = (nombreDeLaCamara: string | null) => nombreDeLaCamara === CAMARA_DE_ENTRADA;
+
+/** Nombre que se muestra de una cámara: el de su carpeta, o `nombreDeLaEntrada` para la «Entrada». */
+export const nombreVisibleDeLaCamara = (nombreDeLaCamara: string, nombreDeLaEntrada: string) =>
+  esLaEntrada(nombreDeLaCamara) ? nombreDeLaEntrada : nombreDeLaCamara;
 
 /**
  * Crea la carpeta `nombreDeLaCarpeta` dentro de `carpetaDondeCrearla` y devuelve su ruta: el
@@ -17,7 +32,10 @@ import type { Ajustes } from "../ajustes";
 export const crearCarpetaNueva = (carpetaDondeCrearla: string, nombreDeLaCarpeta: string) =>
   invoke<string>("crear_carpeta_nueva", { carpetaDondeCrearla, nombreDeLaCarpeta });
 
-/** Nombres de las cámaras del hormiguero (sus carpetas de primer nivel, aunque estén vacías). */
+/**
+ * Nombres de las cámaras del hormiguero: sus carpetas de primer nivel, aunque estén vacías, y
+ * antes, si hay notas sueltas en la raíz, la «Entrada» (`CAMARA_DE_ENTRADA`).
+ */
 export const listarCamarasDelHormiguero = (carpetaDelHormiguero: string) =>
   invoke<string[]>("listar_camaras", { carpetaDelHormiguero });
 
@@ -30,10 +48,15 @@ export async function elegirCarpetaConElDialogo(carpetaInicial?: string | null):
   return typeof carpetaElegida === "string" ? carpetaElegida : null;
 }
 
-/** Ruta de la cámara `nombreDeLaCamara` dentro del hormiguero, con el separador que use la ruta del hormiguero. */
+/**
+ * Ruta de la cámara `nombreDeLaCamara` dentro del hormiguero, con el separador que use la ruta del
+ * hormiguero. La de la «Entrada» es la del hormiguero mismo.
+ */
 export function rutaDeLaCamara(carpetaDelHormiguero: string, nombreDeLaCamara: string): string {
+  const hormigueroSinBarraFinal = carpetaDelHormiguero.replace(/[\\/]+$/, "");
+  if (esLaEntrada(nombreDeLaCamara)) return hormigueroSinBarraFinal;
   const separador = carpetaDelHormiguero.includes("\\") && !carpetaDelHormiguero.includes("/") ? "\\" : "/";
-  return carpetaDelHormiguero.replace(/[\\/]+$/, "") + separador + nombreDeLaCamara;
+  return hormigueroSinBarraFinal + separador + nombreDeLaCamara;
 }
 
 /**

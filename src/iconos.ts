@@ -1,4 +1,4 @@
-// Iconos para los fijados de la barra lateral: una selección de Lucide (https://lucide.dev,
+// Iconos para los fijados de la barra lateral (y los de unos pocos botones): una selección de Lucide (https://lucide.dev,
 // licencia ISC, © Lucide Icons and Contributors; versión 1.69.0). Están copiados aquí (solo el
 // dibujo de cada uno) para no sumar una dependencia: son trazos de 24×24 sin relleno, del color
 // del texto. Para agregar uno: copiar sus nodos de `icon-nodes.json` del paquete `lucide-static`
@@ -107,6 +107,14 @@ export const ICONOS: Record<string, [string, Record<string, string>][]> = {
   "hash": [["line",{x1:"4",x2:"20",y1:"9",y2:"9"}],["line",{x1:"4",x2:"20",y1:"15",y2:"15"}],["line",{x1:"10",x2:"8",y1:"3",y2:"21"}],["line",{x1:"16",x2:"14",y1:"3",y2:"21"}]],
   "tag": [["path",{d:"M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"}],["circle",{cx:"7.5",cy:"7.5",r:".5",fill:"currentColor"}]],
   "anchor": [["path",{d:"M12 6v16"}],["path",{d:"m19 13 2-1a9 9 0 0 1-18 0l2 1"}],["path",{d:"M9 11h6"}],["circle",{cx:"12",cy:"4",r:"2"}]],
+  // Iconos de los botones de la interfaz (arriba, junto a los de la ventana, y el selector de
+  // cámaras). No están en `GRUPOS_ICONOS`: no se ofrecen para los fijados.
+  "panel-left-close": [["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2"}],["path",{d:"M9 3v18"}],["path",{d:"m16 15-3-3 3-3"}]],
+  "panel-left-open": [["rect",{width:"18",height:"18",x:"3",y:"3",rx:"2"}],["path",{d:"M9 3v18"}],["path",{d:"m14 9 3 3-3 3"}]],
+  "square-pen": [["path",{d:"M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"}],["path",{d:"M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"}]],
+  "folder-plus": [["path",{d:"M12 10v6"}],["path",{d:"M9 13h6"}],["path",{d:"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"}]],
+  "chevrons-up-down": [["path",{d:"m7 15 5 5 5-5"}],["path",{d:"m7 9 5-5 5 5"}]],
+  "check": [["path",{d:"M20 6 9 17l-5-5"}]],
 };
 
 /** Iconos agrupados, en el orden en que aparecen al elegir uno. */

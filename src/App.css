@@ -2,15 +2,16 @@
    ventana (editor arriba, barra de estado abajo). */
 
 :root {
+  /* Tema «Ant», el de por defecto (debe coincidir con el primero de `TEMAS` en colores.ts). */
   --fondo: #1d1d20;
-  --fondo-bajo: #161617;
-  --texto: #e8e8e6;
-  --tenue: #7a7a78;
+  --fondo-bajo: #141415;
+  --texto: #e6e6dc;
+  --tenue: #7d7d70;
   --titulo: #ffffff;
-  --acento: #f9a26c;
-  --codigo: #a9c7f9;
-  --seleccion: #3a3f5c;
-  --coincidencia: #33384d;
+  --acento: #e5ea15;
+  --codigo: #c9d48a;
+  --seleccion: #3d3e26;
+  --coincidencia: #33341f;
   --fuente: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 15px;
 }
@@ -41,6 +42,35 @@ body,
 .arrastre {
   height: 28px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 8px;
+}
+
+/* En macOS los botones cerrar/minimizar/maximizar ocupan los primeros ~70 px de la franja. */
+.arrastre.con-botones-de-mac {
+  padding-left: 78px;
+}
+
+/* Botones de la franja (panel, nota nueva, cámara nueva): solo el icono, tenue hasta pasar el mouse. */
+.barra-superior-boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.barra-superior-boton:hover {
+  color: var(--texto);
+  background: var(--coincidencia);
 }
 
 /* Fila central: barra lateral a la izquierda y editor ocupando el resto. */
@@ -75,7 +105,7 @@ body,
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 24px 0 24px 16px;
+  padding: 10px 0 24px 16px;
 }
 
 /* Borde derecho para cambiar el ancho: no se ve, solo cambia el puntero a ↔ al pasar por encima. */
@@ -197,7 +227,44 @@ body,
   margin-top: 16px;
 }
 
-/* Título de cada sección: «Abiertas», el nombre del hormiguero o el de una carpeta fijada desplegada. */
+/* Selector de cámaras, arriba de la barra: el nombre de la cámara abierta (en negrita, como un
+   título) y las flechitas que dicen que se puede desplegar. */
+.selector-de-camara {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: calc(100% - 12px);
+  margin: 0 0 14px;
+  padding: 3px 6px 3px 4px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.selector-de-camara:hover,
+.selector-de-camara[aria-expanded="true"] {
+  background: var(--coincidencia);
+}
+
+.selector-de-camara-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.selector-de-camara .icono {
+  flex-shrink: 0;
+  color: var(--tenue);
+}
+
+/* Título de cada sección: «Abiertas» o el nombre de una carpeta fijada desplegada. */
 .barra-encabezado {
   padding-left: 4px;
   font-weight: 700;
@@ -415,6 +482,32 @@ body,
 
 .menu-opcion:hover {
   background: var(--seleccion);
+}
+
+/* Opción con lugar para la marca ✓ (las cámaras del selector), y la línea que separa un grupo. */
+.menu-opcion-marca {
+  display: inline-flex;
+  width: 18px;
+  vertical-align: -1px;
+  color: var(--acento);
+}
+
+.menu-opcion.marcada {
+  font-weight: 700;
+}
+
+.menu-opcion.separada {
+  position: relative;
+  margin-top: 9px;
+}
+
+.menu-opcion.separada::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 6px;
+  right: 6px;
+  border-top: 1px solid var(--seleccion);
 }
 
 .barra-vacia {

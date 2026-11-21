@@ -13,9 +13,12 @@ export interface EntradaDelArbol {
   hijos: EntradaDelArbol[];
 }
 
-/** Devuelve el árbol de notas (.md, .markdown, .txt) de una carpeta, con las carpetas primero. */
-export const leerArbolDeCarpeta = (rutaDeLaCarpeta: string) =>
-  invoke<EntradaDelArbol[]>("leer_arbol_de_carpeta", { rutaDeLaCarpeta });
+/**
+ * Devuelve el árbol de notas (.md, .markdown, .txt) de una carpeta, con las carpetas primero. Con
+ * `soloNotasSueltas` (la «Entrada» del hormiguero) devuelve solo las notas de su primer nivel.
+ */
+export const leerArbolDeCarpeta = (rutaDeLaCarpeta: string, soloNotasSueltas = false) =>
+  invoke<EntradaDelArbol[]>("leer_arbol_de_carpeta", { rutaDeLaCarpeta, soloNotasSueltas });
 
 /** Quita las barras del final de una ruta de carpeta. */
 const sinBarraFinal = (rutaDeLaCarpeta: string) => rutaDeLaCarpeta.replace(/[\\/]+$/, "");
@@ -24,6 +27,23 @@ const sinBarraFinal = (rutaDeLaCarpeta: string) => rutaDeLaCarpeta.replace(/[\\/
 export function estaDentroDe(ruta: string, rutaDeLaCarpeta: string): boolean {
   const carpeta = sinBarraFinal(rutaDeLaCarpeta);
   return ruta === carpeta || ruta.startsWith(carpeta + "/") || ruta.startsWith(carpeta + "\\");
+}
+
+/** Carpeta que contiene a `ruta` (sin la barra del final), o `""` si no tiene. */
+export function carpetaQueContieneA(ruta: string): string {
+  const posicionDeLaUltimaBarra = Math.max(ruta.lastIndexOf("/"), ruta.lastIndexOf("\\"));
+  return posicionDeLaUltimaBarra < 0 ? "" : ruta.slice(0, posicionDeLaUltimaBarra);
+}
+
+/**
+ * Indica si `ruta` es de la cámara abierta: si está dentro de su carpeta o, en la «Entrada»
+ * (`soloNotasSueltas`), si es la raíz del hormiguero o una nota suelta en ella (lo que está en sus
+ * subcarpetas es de las otras cámaras).
+ */
+export function estaEnLaCamara(ruta: string, carpetaDeLaCamara: string, soloNotasSueltas: boolean): boolean {
+  if (!soloNotasSueltas) return estaDentroDe(ruta, carpetaDeLaCamara);
+  const carpeta = sinBarraFinal(carpetaDeLaCamara);
+  return ruta === carpeta || carpetaQueContieneA(ruta) === carpeta;
 }
 
 /**

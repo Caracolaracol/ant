@@ -73,6 +73,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     el foco a la ventana.
   - `src/hormigueros/useArbolDeLaCamara.ts` — árbol de la cámara abierta; se relee al cambiar de
     cámara y al volver el foco a la ventana.
+  - `src/hormigueros/useDatosDeLaCamara.ts` — datos de la cámara abierta en `.ant/` (fijados,
+    iconos, compilaciones): se leen al abrirla y al volver el foco, y se guardan al cambiar.
   - `src/notasAbiertas/useNotasAbiertas.ts` — las notas abiertas (`NotaAbierta`, en
     `notaAbierta.ts`): una sola con archivo a la vez (`dejarComoUnicaNotaAbierta`), guardado
     automático (`guardarNotaEnDiscoAhora`, tras `PAUSA_ANTES_DE_GUARDAR`, al cambiar de nota, al
@@ -81,21 +83,41 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     volver el foco se recargan las que cambiaron) y el último texto conocido para contar
     (`ultimoTextoConocido`, al día tras `PAUSA_ANTES_DE_CONTAR`). Las notas con archivo tienen
     id fijo por ruta (`idDeNotaConArchivo`), así el editor las reconoce al volver a abrirlas.
-  - `src/useAtajosDeTeclado.ts` — Cmd+N, Cmd+O, Cmd+S, Cmd+Shift+S, Cmd+Shift+] / [ y `Cmd+\`.
+  - `src/useAtajosDeTeclado.ts` — Cmd+N (ventanita «Nota nueva»), Cmd+O, Cmd+S, Cmd+Shift+S,
+    Cmd+Shift+] / [ y `Cmd+\`.
+- `src/BarraSuperior.tsx` — franja de arriba (reemplaza la barra de título; arrastra la ventana)
+  con tres botones de icono a la altura de los de la ventana: mostrar u ocultar el panel, nota
+  nueva y cámara nueva. En macOS deja 78 px a la izquierda para cerrar/minimizar/maximizar.
+- `src/notasAbiertas/NuevaNota.tsx` — ventanita «Nota nueva»: pide el nombre y crea el archivo
+  vacío (`crear_nota_nueva`) junto a la nota visible si es de la cámara, o en la cámara.
 - `src/BarraDeEstado.tsx` — nombre de la nota visible y conteo de palabras, líneas y caracteres
   (o el último error); el conteo está en `src/conteoDelTexto.ts`.
 - **Hormiguero y cámaras**: el hormiguero es una sola carpeta con todas las notas del usuario (lo
   que en Obsidian es la bóveda), en `Ajustes.hormiguero`. Sus carpetas de primer nivel son las
   **cámaras**: cada una un contexto (notas personales, una novela, el trabajo y sus proyectos). La
   barra lateral, los fijados, el diario (`Daily/`) y «Compilar y exportar» trabajan sobre la cámara
-  abierta (`Ajustes.camara_abierta`, guardada por nombre, no por ruta). Se cambia de cámara (o de
-  hormiguero) en Ajustes → General y se cava una cámara con File → New Chamber… o desde ahí. Las
-  notas sueltas en la raíz del hormiguero no son de ninguna cámara (se abren con Cmd+O). Si la
-  cámara abierta falta o ya no existe, la bienvenida se abre en su página de cámaras. Los ajustes
+  abierta (`Ajustes.camara_abierta`, guardada por nombre, no por ruta). Se cambia de cámara con el
+  selector de arriba de la barra lateral (o en Ajustes → General, donde también se cambia de
+  hormiguero) y se cava una con el botón de arriba, File → New Chamber… (Cmd+Shift+N) o desde
+  ahí. Las notas sueltas en la raíz del hormiguero son la **Entrada** (`CAMARA_DE_ENTRADA = "."`,
+  la primera de la lista): una cámara más que solo aparece mientras haya notas sueltas; su árbol
+  son solo esas notas, sin diario, y lo de las subcarpetas es de las otras cámaras
+  (`estaEnLaCamara`). Si la cámara abierta falta o ya no existe, la bienvenida se abre en su
+  página de cámaras. Los ajustes
   de antes (`carpeta`, o `hormiguero_abierto` con la lista `hormigueros`) pasan a ser el hormiguero.
   Más adelante, algunas cámaras podrán protegerse con contraseña.
+  - **Carpeta `.ant/`** en la raíz del hormiguero (como `.obsidian/`): lo que es de las notas y no
+    de este computador, para que viaje con el hormiguero. Un archivo por cámara,
+    `.ant/camaras/<nombre>.json` (`.entrada.json` para la Entrada), con fijados, iconos y opciones
+    de compilación, y rutas **relativas a la cámara con `/`** (`.` es la cámara). En la app se usan
+    completas: `src/hormigueros/datosDeLaCamara.ts` convierte en los dos sentidos y pasa al archivo
+    lo que cada cámara tenía en `ajustes.json` la primera vez que se abre (y lo quita de ahí). En
+    `ajustes.json` queda solo lo de este computador. Rust: `src-tauri/src/datos_del_hormiguero.rs`
+    (un archivo dañado se deja a un lado como `….ilegible.json`). Lo nuevo que sea de una cámara
+    (por ejemplo, su contraseña) va ahí, no en los ajustes.
   - `src/hormigueros/hormigueros.ts` — crear carpetas (`crear_carpeta_nueva`), listar las cámaras
-    (`listar_camaras`), elegir una carpeta, la ruta de una cámara y la carpeta de la cámara abierta.
+    (`listar_camaras`), elegir una carpeta, la «Entrada» (`esLaEntrada`, `nombreVisibleDeLaCamara`),
+    la ruta de una cámara y la carpeta de la cámara abierta.
   - `src/hormigueros/ElegirHormiguero.tsx` — formulario: crear la carpeta del hormiguero (nombre y
     dónde, «Hormiguero» en Documentos por defecto) o usar una que existe. Lo usa la bienvenida.
   - `src/hormigueros/ElegirCamara.tsx` — formulario para cavar una cámara (nombre con ejemplos que
@@ -106,10 +128,11 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   cámara), la hormiga y los hoyos abajo, y EN / ES arriba. Reusa del sitio
   `website/src/lib/cavar.ts` (bordes cavados) y `website/src/assets/tierra.svg`: si se cambian
   allá, revisar también la bienvenida. `prueba/bienvenida.html` la muestra fuera de Tauri.
-- `src/barraLateral/` — la barra lateral, minimalista a propósito (cambiar de cámara va en
-  Ajustes, no aquí) y sin líneas separadoras. De arriba abajo: el calendario si hay modo
-  diario, los fijados, «Abiertas» (notas fuera de la cámara o nuevas ya con algo escrito) y la
-  cámara abierta con su nombre y su árbol. Bajo la nota visible, sus títulos.
+- `src/barraLateral/` — la barra lateral (el «panel»), minimalista a propósito y sin líneas
+  separadoras. De arriba abajo: el selector de cámaras (`SelectorDeCamara.tsx`, el nombre de la
+  abierta; al tocarlo, la lista para cambiar y «Cámara nueva…», con `MenuContextual`), el
+  calendario si hay modo diario, los fijados, «Abiertas» (notas fuera de la cámara o nuevas ya con
+  algo escrito) y el árbol de la cámara. Bajo la nota visible, sus títulos.
   - `BarraLateral.tsx` — junta las secciones y provee `ContextoDeLaBarraLateral`
     (`contextoDeLaBarraLateral.ts`): nota visible, carpetas desplegadas, qué está fijado, menú de
     clic derecho… que leen las filas con `useBarraLateral()`.
@@ -117,9 +140,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     `EntradasDelArbol` (recursivo, se salta lo fijado).
   - `Fijados.tsx` — grilla de iconos sin texto, al estilo de Zen/Arc, con el nombre en un globo
     (`src/GloboDeAyuda.tsx`); clic derecho → Cambiar icono… (`ElegirIconoDeFijado.tsx`). Una carpeta
-    fijada se despliega bajo la grilla (sola, si contiene la nota visible). Se guardan en
-    `Ajustes.fijados` (claves: ruta, o `ruta#título` para un capítulo, ver `clavesDeFijados.ts`)
-    con su icono en `Ajustes.iconos_de_fijados`, y solo se muestran los de la cámara abierta.
+    fijada se despliega bajo la grilla (sola, si contiene la nota visible). Se guardan con su icono
+    en los datos de la cámara (`.ant/`; claves: ruta, o `ruta#título` para un capítulo, ver
+    `clavesDeFijados.ts`), y solo se muestran los de la cámara abierta.
   - `Calendario.tsx` — calendario del modo diario: un mes, semana desde el lunes, punto en los
     días con nota. Con el modo diario activo, `Daily/` no aparece en el árbol y la nota diaria
     abierta va bajo el calendario.
@@ -127,15 +150,18 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     invisible, puntero `col-resize`); se guarda en `Ajustes.ancho_de_la_barra_lateral` al soltar.
   `prueba/barra.html` la muestra con fijados de ejemplo (y los Ajustes, `?ajustes`).
 - `src/iconos.ts` — iconos que se pueden elegir para los fijados: una selección de Lucide
-  (ISC) copiada aquí, por grupos; `src/Icono.tsx` los dibuja.
+  (ISC) copiada aquí, por grupos, más los de los botones (fuera de los grupos); `src/Icono.tsx`
+  los dibuja.
 - `src/diario.ts` — fechas `AAAA-MM-DD`, título inicial de cada nota diaria, días con nota
   (desde el árbol) y llamada a `abrir_o_crear_nota_del_dia`. Las notas diarias van en `Daily/` de la cámara abierta.
 - `src/idioma.tsx` — textos de la interfaz en inglés (por defecto) y español. Los componentes
   los leen con `useTextos()`; `main.tsx` provee `ContextoTextos` según `Ajustes.idioma`. Todo
   texto visible nuevo va aquí, en los dos idiomas (los comentarios del código siguen en español).
-- `src/colores.ts` — variables de color que se pueden cambiar, temas listos (`TEMAS`) y
+- `src/colores.ts` — variables de color que se pueden cambiar, temas listos (`TEMAS`; el primero,
+  «Ant», es el de por defecto y el de `App.css`) y
   `aplicarColores`, que `main.tsx` llama al abrir la app y al cambiar los ajustes.
-- `src/MenuContextual.tsx` — menú de clic derecho propio (se cierra con clic fuera, scroll o Escape).
+- `src/MenuContextual.tsx` — menú de clic derecho propio (se cierra con clic fuera, scroll o
+  Escape); también la lista del selector de cámaras (opciones con ✓ y separadas).
 - `src/titulosDeLaNota.ts` — extrae los títulos `#`…`######` de una nota (ignorando bloques de
   código) y dice en qué título está el cursor.
 - `src/arbolDeCarpetas.ts` — tipo `EntradaDelArbol` y llamada a `leer_arbol_de_carpeta`;
@@ -167,7 +193,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/compilar/` — «Compilar y exportar» (menú File, Cmd+Shift+E; Rust emite
   `abrir-compilar` y `App` abre el diálogo). Sin dependencias ni programas externos:
   - `Compilar.tsx` y `.css` — el diálogo: carpeta, capítulos (incluir, ordenar), título, autor,
-    formato, estilo y opciones; recuerda todo por carpeta en `Ajustes.opciones_de_compilacion_por_carpeta`.
+    formato, estilo y opciones; recuerda todo por carpeta en los datos de la cámara (`.ant/`).
   - `modelo.ts` — Markdown → libro (capítulos, párrafos con estilos, títulos, escenas) con el
     analizador de Lezer; cada línea es un párrafo, `%% %%` y YAML se omiten, tipografía opcional.
   - `docx.ts` — Word escrito a mano (WordprocessingML), con estilos de Word (Title, Heading 1…).
@@ -188,7 +214,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   enseguida: emite `antes-de-salir` para que la interfaz guarde, y sale cuando llama a `salir`
   (o a los 3 s).
 - `src-tauri/src/menu.rs` — menú propio en inglés o español según `Ajustes.idioma` (Ant con
-  «Welcome to Ant…» y «Settings…» Cmd+, · File con «New Chamber…» y «Compile and Export…»
+  «Welcome to Ant…» y «Settings…» Cmd+, · File con «New Chamber…» Cmd+Shift+N y «Compile and Export…»
   Cmd+Shift+E · Edit · Window); `EVENTOS` dice qué evento emite cada ítem y `cambiar_idioma`
   lo rehace al guardar otro idioma. No incluye «Cerrar ventana»: Cmd+W no cierra la ventana
   principal.
@@ -198,15 +224,21 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   campos que cambiaron de nombre se siguen leyendo con su nombre anterior (`#[serde(alias)]`:
   `carpeta` y `hormiguero_abierto` → `hormiguero`, `iconos` → `iconos_de_fijados`, `autor` →
   `nombre_del_autor`, `compilaciones` → `opciones_de_compilacion_por_carpeta`…; la lista
-  `hormigueros` de antes se ignora), con tests.
+  `hormigueros` de antes se ignora), con tests. `fijados`, `iconos_de_fijados` y
+  `opciones_de_compilacion_por_carpeta` quedan solo para pasarlos a `.ant/` de cada cámara.
 - `src-tauri/src/diario.rs` — `abrir_o_crear_nota_del_dia`: usa la carpeta `Daily` que ya exista (sin importar
   mayúsculas) o la crea, y crea `AAAA-MM-DD.md` si no existe
   (nunca pisa una nota) y devuelve la ruta. Solo acepta fechas `AAAA-MM-DD`. Tiene tests (`cargo test`).
+- `src-tauri/src/datos_del_hormiguero.rs` — `leer_datos_de_la_camara` y
+  `guardar_datos_de_la_camara`: el archivo de cada cámara en `.ant/camaras/` del hormiguero (ver
+  «Carpeta `.ant/`» arriba), con tests.
 - `src-tauri/src/carpeta.rs` — `leer_arbol_de_carpeta`: árbol de notas (.md, .markdown, .txt),
   sin ocultas, `node_modules` ni `target`, omitiendo carpetas sin notas (`EntradaDelArbol`, en
-  camelCase hacia la interfaz). `listar_camaras`: las carpetas de primer nivel del hormiguero,
-  aunque estén vacías. `crear_carpeta_nueva`: crea la carpeta del hormiguero o de una cámara
-  (nunca usa una que ya existe; con tests).
+  camelCase hacia la interfaz), o solo las notas sueltas (`solo_notas_sueltas`, la «Entrada»).
+  `listar_camaras`: las carpetas de primer nivel del hormiguero, aunque estén vacías, y antes
+  «.» si hay notas sueltas en la raíz. `crear_carpeta_nueva`: crea la carpeta del hormiguero o de
+  una cámara (nunca usa una que ya existe). `crear_nota_nueva`: crea una nota vacía sin pisar
+  otra (`create_new`). Con tests.
 - `src-tauri/tauri.conf.json` — nombre, identificador y ventana principal. La barra de título
   nativa está oculta (`titleBarStyle: "Overlay"`, `hiddenTitle`): los botones de la ventana
   flotan sobre la franja `.arrastre`, que sirve para arrastrarla.
@@ -264,7 +296,10 @@ Mantener esta sección al día cuando se agreguen carpetas o módulos.
 
 - Simple y minimalista: la ventana principal es para escribir. Lo que no es escribir (cambiar
   de hormiguero, opciones, modos) va en Ajustes o en el menú, no como botones en la barra
-  lateral, el editor o la barra de estado. No agregar barras de herramientas ni selectores.
+  lateral, el editor o la barra de estado. No agregar barras de herramientas.
+- Excepciones pedidas a propósito: los tres botones chicos de la franja de arriba, junto a los de
+  la ventana (panel, nota nueva, cámara nueva; `BarraSuperior.tsx`), y el selector de cámaras
+  arriba de la barra lateral. No sumar más sin pedirlo.
 
 ## Nombres en el código
 

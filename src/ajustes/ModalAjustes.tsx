@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { Ajustes, OpcionesDelModoEscritor } from "../ajustes";
 import { COLORES_POR_DEFECTO, TEMAS, VARIABLES_DE_COLOR } from "../colores";
 import { NOMBRE_DE_LA_CARPETA_DEL_DIARIO } from "../diario";
-import { cambiosParaElegirHormiguero, elegirCarpetaConElDialogo } from "../hormigueros/hormigueros";
+import { cambiosParaElegirHormiguero, elegirCarpetaConElDialogo, esLaEntrada, nombreVisibleDeLaCamara } from "../hormigueros/hormigueros";
 import { IDIOMAS, Idioma, idiomaValido, useTextos } from "../idioma";
 import { nombreDelArchivo } from "../archivosDeNotas";
 import { marcarComoTextoDeIzquierdaADerecha } from "../arbolDeCarpetas";
@@ -88,7 +88,8 @@ function PanelGeneral({
               return (
                 <div key={nombreDeLaCamara} className={`ajuste-camara${estaAbierta ? " actual" : ""}`}>
                   <div className="ajuste-camara-nombre">
-                    <b>{nombreDeLaCamara}</b>
+                    <b>{nombreVisibleDeLaCamara(nombreDeLaCamara, textosDeLaInterfaz.entrada)}</b>
+                    {esLaEntrada(nombreDeLaCamara) && <span className="ajuste-camara-detalle">{textosDeLaInterfaz.entradaAyuda}</span>}
                   </div>
                   {estaAbierta ? (
                     <span className="ajuste-camara-abierta">{textosDeLaInterfaz.abierta}</span>

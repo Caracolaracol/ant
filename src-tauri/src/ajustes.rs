@@ -1,5 +1,5 @@
-// Ajustes de la app (idioma, modo escritor, el hormiguero y la cámara abierta, fijados con sus
-// iconos, ancho de la barra lateral, modo diario y colores), guardados como JSON en la carpeta de
+// Ajustes de la app: lo que es de este computador (idioma, modo escritor, el hormiguero y la cámara
+// abierta, ancho de la barra lateral, modo diario y colores), guardados como JSON en la carpeta de
 // configuración de la app (en macOS, ~/Library/Application Support/cl.agus.ant/ajustes.json).
 // Cada vez que se guardan, se avisa a la interfaz con el evento `ajustes-cambiados`. Si cambió el
 // idioma, además se rehace el menú de la app en el idioma nuevo.
@@ -37,12 +37,12 @@ pub struct Ajustes {
     /// nombre y no la ruta, así sigue sirviendo si el hormiguero se mueve.
     #[serde(default)]
     pub camara_abierta: Option<String>,
-    /// Notas, carpetas y capítulos fijados arriba en la barra lateral, en el orden en que se
-    /// fijaron: la ruta, o `ruta#título` para un capítulo (un título `#` dentro de una nota).
+    /// De antes: fijados con rutas completas (la ruta, o `ruta#título` para un capítulo). Ahora
+    /// van en `.ant/` de cada cámara (`datos_del_hormiguero.rs`); la interfaz pasa allá los de una
+    /// cámara la primera vez que se abre y los quita de aquí.
     #[serde(default)]
     pub fijados: Vec<String>,
-    /// Icono elegido para cada fijado (nombre de un icono de `src/iconos.ts`), por su clave en
-    /// `fijados`. Los que no están aquí usan el de su tipo (carpeta, nota o capítulo).
+    /// De antes (ahora en `.ant/`): icono elegido para cada fijado, por su clave en `fijados`.
     #[serde(default, alias = "iconos")]
     pub iconos_de_fijados: BTreeMap<String, String>,
     /// Modo diario: muestra un calendario en la barra lateral y cada día abre su nota en `Daily/`.
@@ -67,8 +67,7 @@ pub struct Ajustes {
     /// Nombre del autor para las portadas al compilar y exportar.
     #[serde(default, alias = "autor")]
     pub nombre_del_autor: String,
-    /// Opciones de «Compilar y exportar» de cada carpeta (orden de los capítulos, formato,
-    /// estilo…), por ruta de la carpeta. Su forma la define la interfaz (`OpcionesDeCompilacion`).
+    /// De antes (ahora en `.ant/`): opciones de «Compilar y exportar» de cada carpeta, por ruta.
     #[serde(default, alias = "compilaciones")]
     pub opciones_de_compilacion_por_carpeta: BTreeMap<String, serde_json::Value>,
 }

@@ -1,4 +1,5 @@
-// Formato de los ajustes de la app y cómo leerlos, guardarlos y enterarse cuando cambian. Los
+// Formato de los ajustes de la app (lo que es de este computador; lo que es de cada cámara va en
+// `.ant/` del hormiguero, ver `hormigueros/datosDeLaCamara.ts`) y cómo leerlos, guardarlos y enterarse cuando cambian. Los
 // guarda y lee Rust (`src-tauri/src/ajustes.rs`) en `ajustes.json`, y avisa a la interfaz con el
 // evento `ajustes-cambiados`. Los nombres de los campos son los del archivo: si se cambia uno, Rust
 // tiene que seguir leyendo el nombre anterior (`#[serde(alias = …)]`).
@@ -19,11 +20,11 @@ export interface Ajustes {
    */
   camara_abierta: string | null;
   /**
-   * Notas, carpetas y capítulos fijados arriba en la barra lateral, en orden de fijado: la ruta
-   * completa, o `ruta#título` para un capítulo (ver `barraLateral/clavesDeFijados.ts`).
+   * De antes: fijados con rutas completas. Ahora van en `.ant/` de cada cámara
+   * (`hormigueros/datosDeLaCamara.ts`); al abrir una cámara se pasan allá los suyos y se quitan de aquí.
    */
   fijados: string[];
-  /** Icono elegido para cada fijado (un nombre de `iconos.ts`), por su clave en `fijados`. */
+  /** De antes (ahora en `.ant/`): icono elegido para cada fijado, por su clave en `fijados`. */
   iconos_de_fijados: Record<string, string>;
   /** Modo diario: calendario en la barra lateral; cada día abre o crea `Daily/AAAA-MM-DD.md`. */
   modo_diario: boolean;
@@ -39,7 +40,7 @@ export interface Ajustes {
   opciones_del_modo_escritor: OpcionesDelModoEscritor;
   /** Nombre del autor para las portadas de «Compilar y exportar». */
   nombre_del_autor: string;
-  /** Opciones de «Compilar y exportar» de cada carpeta, por su ruta. */
+  /** De antes (ahora en `.ant/`): opciones de «Compilar y exportar» de cada carpeta, por su ruta. */
   opciones_de_compilacion_por_carpeta: Record<string, OpcionesDeCompilacion>;
 }
 

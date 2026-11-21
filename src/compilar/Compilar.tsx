@@ -4,8 +4,8 @@
 //     sus palabras y flechas para cambiar el orden;
 //   · a la derecha, título, autor, formato, estilo (manuscrito estándar o libro), tamaño de
 //     página, de dónde sale el título de cada capítulo y si se corrige la tipografía.
-// Lo elegido para cada carpeta se recuerda en los ajustes (`opciones_de_compilacion_por_carpeta`),
-// y el autor para todas. Las notas abiertas se compilan con lo que tienen en el editor, aunque no
+// Lo elegido para cada carpeta se recuerda en los datos de la cámara, en `.ant/` del hormiguero
+// (`alRecordarOpciones`), y el autor para todas en los ajustes. Las notas abiertas se compilan con lo que tienen en el editor, aunque no
 // se hayan guardado. Todo se arma aquí mismo, sin depender de programas externos.
 
 import { useEffect, useMemo, useState } from "react";
@@ -28,6 +28,10 @@ interface Props {
   /** Ruta de la nota visible: su carpeta es la que se propone compilar. */
   rutaDeLaNotaVisible: string | null;
   ajustes: Ajustes;
+  /** Lo elegido antes para cada carpeta de la cámara (de sus datos en `.ant/`), por ruta. */
+  opcionesGuardadasPorCarpeta: Record<string, OpcionesDeCompilacion>;
+  /** Recuerda lo elegido para una carpeta, tras exportar. */
+  alRecordarOpciones(rutaDeLaCarpeta: string, opciones: OpcionesDeCompilacion): void;
   /** Texto de una nota abierta en el editor (con sus cambios sin guardar), o `undefined`. */
   textoDeNotaAbiertaPorRuta(rutaDelArchivo: string): string | undefined;
   cambiarAjustes(cambios: Partial<Ajustes>): void;
@@ -103,11 +107,12 @@ export function Compilar({
   ajustes,
   textoDeNotaAbiertaPorRuta,
   cambiarAjustes,
+  opcionesGuardadasPorCarpeta,
+  alRecordarOpciones,
   alCerrar,
 }: Props) {
   const textosDeLaInterfaz = useTextos();
   const idioma = idiomaValido(ajustes.idioma);
-  const opcionesGuardadasPorCarpeta = ajustes.opciones_de_compilacion_por_carpeta;
   const carpetas = useMemo(
     () => (carpetaDeLaCamara ? carpetasCompilables(carpetaDeLaCamara, arbolDeLaCamara) : []),
     [carpetaDeLaCamara, arbolDeLaCamara],
@@ -246,10 +251,8 @@ export function Compilar({
         origenTitulo: origenDelTitulo,
         tipografia: corregirTipografia,
       };
-      cambiarAjustes({
-        nombre_del_autor: nombreDelAutor,
-        opciones_de_compilacion_por_carpeta: { ...opcionesGuardadasPorCarpeta, [rutaDeLaCarpetaElegida]: opcionesParaRecordar },
-      });
+      cambiarAjustes({ nombre_del_autor: nombreDelAutor });
+      alRecordarOpciones(rutaDeLaCarpetaElegida, opcionesParaRecordar);
       setEstadoDeLaExportacion({
         etapa: "hecho",
         mensaje: textosDeLaInterfaz.exportado(nombreDelArchivo(rutaDeDestino)),

@@ -1,5 +1,5 @@
 // Dibuja un icono de `iconos.ts` como SVG en línea, del color del texto que lo rodea. Lo usan
-// los fijados de la barra lateral y el selector de iconos.
+// los fijados de la barra lateral, el selector de iconos, los botones de arriba y el selector de cámaras.
 
 import { createElement } from "react";
 import { ICONOS } from "./iconos";

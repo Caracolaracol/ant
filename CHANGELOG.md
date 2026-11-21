@@ -19,10 +19,21 @@ release with that section as its notes, so this file is always written in Englis
 - **Anthill and chambers**: all your notes live in one anthill, a folder on your computer (a new
   one, or one you already have, like an Obsidian vault). Inside it, each chamber is a folder for
   one context: your personal notes, everything about one novel, your work and its projects. The
-  sidebar shows one chamber at a time, with its own pins and its own Daily folder. Dig a new
-  chamber with File → New Chamber…, and switch chambers or change the anthill in Settings →
-  General. If you already had a working folder, it becomes your anthill and Ant asks you to pick
-  or dig its first chamber.
+  sidebar shows one chamber at a time, with its own pins and its own Daily folder. Switch chambers
+  from the chamber name at the top of the sidebar (or in Settings → General, where you can also
+  change the anthill), and dig a new one with the button at the top, File → New Chamber…
+  (Cmd+Shift+N) or from that list. Loose notes at the root of the anthill are the **Entrance**, a
+  chamber that only shows up while there are loose notes. If you already had a working folder, it
+  becomes your anthill and Ant asks you to pick or dig its first chamber.
+- **The `.ant` folder**: pins, their icons and the Compile and Export options now live inside the
+  anthill, in a hidden `.ant/` folder (like `.obsidian/` in a vault) with one file per chamber and
+  paths relative to it. They travel with your notes when you move, sync or back up the anthill.
+  What you had pinned before moves there by itself the first time you open each chamber.
+- **Buttons at the top**: next to the window buttons, three small icons to hide or show the
+  sidebar (Cmd+\\), create a new note (Cmd+N) and dig a new chamber (Cmd+Shift+N).
+- **New note**: asks for a name and creates the note right away next to the note you are reading
+  (or in the chamber), so it is saved automatically from the first word. It never overwrites a
+  note with the same name.
 - **Pinned icons**: pins are now a grid of icons, like pinned tabs in Zen or Arc, with the name
   in a tooltip when you hover. Each one starts with the icon of its kind (folder, note or
   chapter); right-click → Change icon… to pick another from about a hundred (Lucide icons). A
@@ -31,6 +42,8 @@ release with that section as its notes, so this file is always written in Englis
   the pin opens the note at that heading.
 
 ### Changed
+
+- **Ant theme by default**: the yellow-on-dark theme of the app icon is now the default one.
 
 - **Automatic saving**: notes are saved a moment after you stop typing, and also when you open
   another note, leave the window or quit Ant. Only a new note that was never saved still needs

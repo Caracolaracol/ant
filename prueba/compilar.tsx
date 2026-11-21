@@ -5,7 +5,7 @@
 
 import ReactDOM from "react-dom/client";
 import "../src/App.css";
-import { AJUSTES_POR_DEFECTO, type Ajustes } from "../src/ajustes";
+import { AJUSTES_POR_DEFECTO, type Ajustes, type OpcionesDeCompilacion } from "../src/ajustes";
 import type { EntradaDelArbol } from "../src/arbolDeCarpetas";
 import { Compilar } from "../src/compilar/Compilar";
 import { ContextoDeTextos, textosDelIdioma } from "../src/idioma";
@@ -21,10 +21,11 @@ const arbol: EntradaDelArbol[] = [
 const texto = "# Capítulo\n\n" + "La hormiga caminaba por el borde de la mesa pensando en la lluvia. ".repeat(60);
 const enEspanol = location.search.includes("es");
 const ajustes: Ajustes = { ...AJUSTES_POR_DEFECTO, idioma: enEspanol ? "es" : "en", nombre_del_autor: "Agustín Rojas", hormiguero: "/Users/yo/Hormiguero", camara_abierta: "Novela" };
+const opcionesGuardadasPorCarpeta: Record<string, OpcionesDeCompilacion> = {};
 if (location.search.includes("libro")) {
-  ajustes.opciones_de_compilacion_por_carpeta = {
+  Object.assign(opcionesGuardadasPorCarpeta, {
     [`${base}/Libro I`]: { orden: [], excluidas: [`${base}/Libro I/Notas de investigación.md`], titulo: "La colonia", formato: "pdf", estilo: "libro", pagina: "a4", origenTitulo: "titulo", tipografia: true },
-  };
+  });
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -37,6 +38,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       ajustes={ajustes}
       textoDeNotaAbiertaPorRuta={() => texto}
       cambiarAjustes={() => {}}
+      opcionesGuardadasPorCarpeta={opcionesGuardadasPorCarpeta}
+      alRecordarOpciones={() => {}}
       alCerrar={() => {}}
     />
   </ContextoDeTextos.Provider>,

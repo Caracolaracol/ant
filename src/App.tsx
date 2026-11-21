@@ -2,12 +2,15 @@
 // archivo solo junta las piezas; cada una vive en su lugar:
 //   · ajustes: `ajustes/useAjustesGuardados.ts`
 //   · cámaras del hormiguero: `hormigueros/useCamarasDelHormiguero.ts`; árbol de la cámara
-//     abierta: `hormigueros/useArbolDeLaCamara.ts`
+//     abierta: `hormigueros/useArbolDeLaCamara.ts`; sus datos en `.ant/` (fijados, iconos,
+//     compilaciones): `hormigueros/useDatosDeLaCamara.ts`
 //   · notas abiertas, guardado automático y cambios hechos fuera de Ant: `notasAbiertas/useNotasAbiertas.ts`
 //   · atajos de teclado: `useAtajosDeTeclado.ts`
+//   · franja de arriba con sus botones (panel, nota nueva, cámara nueva): `BarraSuperior.tsx`
 //   · barra lateral: `barraLateral/` · barra de estado: `BarraDeEstado.tsx`
 // Encima se abren, cuando toca: la bienvenida (sin hormiguero o sin cámara, o desde el menú), los
-// Ajustes (Cmd+,), «Cámara nueva» y «Compilar y exportar» (Cmd+Shift+E). Los ítems del menú los maneja
+// Ajustes (Cmd+,), «Nota nueva» (Cmd+N), «Cámara nueva» (Cmd+Shift+N) y «Compilar y exportar»
+// (Cmd+Shift+E). Los ítems del menú los maneja
 // Rust, que avisa con un evento (`EVENTOS_DE_RUST`) y aquí se abre lo que corresponda.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -17,19 +20,23 @@ import { crearConfiguracionModoEscritor } from "./editor/escritor";
 import { BarraLateral } from "./barraLateral/BarraLateral";
 import { ANCHO_DE_LA_BARRA_POR_DEFECTO } from "./barraLateral/useArrastreDelBorde";
 import { BarraDeEstado } from "./BarraDeEstado";
+import { BarraSuperior } from "./BarraSuperior";
 import type { Ajustes } from "./ajustes";
 import { ModalAjustes } from "./ajustes/ModalAjustes";
 import { useAjustesGuardados } from "./ajustes/useAjustesGuardados";
 import { Bienvenida } from "./bienvenida/Bienvenida";
 import { Compilar } from "./compilar/Compilar";
-import { cambiosParaElegirHormiguero, carpetaDeLaCamaraAbierta } from "./hormigueros/hormigueros";
+import { carpetaQueContieneA, estaEnLaCamara } from "./arbolDeCarpetas";
+import { cambiosParaElegirHormiguero, carpetaDeLaCamaraAbierta, esLaEntrada, nombreVisibleDeLaCamara } from "./hormigueros/hormigueros";
 import { NuevaCamara } from "./hormigueros/NuevaCamara";
 import { useArbolDeLaCamara } from "./hormigueros/useArbolDeLaCamara";
 import { useCamarasDelHormiguero } from "./hormigueros/useCamarasDelHormiguero";
+import { useDatosDeLaCamara } from "./hormigueros/useDatosDeLaCamara";
 import { idiomaValido, useTextos } from "./idioma";
 import { extraerTitulosDeLaNota, indiceDelTituloEnLaPosicion } from "./titulosDeLaNota";
 import { nombreDelArchivo } from "./archivosDeNotas";
 import { esperaQueLaGuarden } from "./notasAbiertas/notaAbierta";
+import { NuevaNota } from "./notasAbiertas/NuevaNota";
 import { useNotasAbiertas } from "./notasAbiertas/useNotasAbiertas";
 import { useAtajosDeTeclado } from "./useAtajosDeTeclado";
 import { EVENTOS_DE_RUST, useEventoDeRust } from "./useEventoDeRust";
@@ -53,7 +60,18 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   const carpetaDelHormiguero = ajustes.hormiguero;
   const { camarasDelHormiguero, releerCamarasDelHormiguero } = useCamarasDelHormiguero(carpetaDelHormiguero);
   const carpetaDeLaCamara = carpetaDeLaCamaraAbierta(ajustes, camarasDelHormiguero);
-  const { arbolDeLaCamara, releerArbolDeLaCamara } = useArbolDeLaCamara(carpetaDeLaCamara, mostrarError);
+  // En la «Entrada» (las notas sueltas de la raíz) el árbol y lo que es de la cámara cambian: lo
+  // que está en las subcarpetas del hormiguero es de las otras cámaras.
+  const laCamaraEsLaEntrada = esLaEntrada(ajustes.camara_abierta);
+  const { arbolDeLaCamara, releerArbolDeLaCamara } = useArbolDeLaCamara(carpetaDeLaCamara, laCamaraEsLaEntrada, mostrarError);
+  const { datosDeLaCamara, cambiarDatosDeLaCamara } = useDatosDeLaCamara({
+    carpetaDelHormiguero,
+    nombreDeLaCamara: ajustes.camara_abierta,
+    carpetaDeLaCamara,
+    ajustesVigentes,
+    cambiarAjustes,
+    mostrarError,
+  });
   const notas = useNotasAbiertas({
     controlDelEditor,
     carpetaDeLaCamaraAbierta: carpetaDeLaCamara,
@@ -62,9 +80,20 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   });
   const { notaVisible } = notas;
 
+  // «Nota nueva» (botón de arriba o Cmd+N): la carpeta donde se creará, o null si está cerrada.
+  // Se crea junto a la nota visible si es de la cámara (así los capítulos de «Libro I» quedan
+  // juntos) o, si no, en la cámara misma.
+  const [carpetaParaLaNotaNueva, setCarpetaParaLaNotaNueva] = useState<string | null>(null);
+  const pedirNotaNueva = () => {
+    if (!carpetaDeLaCamara) return notas.abrirNotaEnBlanco();
+    const rutaDeLaNotaVisible = notaVisible.rutaDelArchivo;
+    const laNotaVisibleEsDeLaCamara = rutaDeLaNotaVisible && estaEnLaCamara(rutaDeLaNotaVisible, carpetaDeLaCamara, laCamaraEsLaEntrada);
+    setCarpetaParaLaNotaNueva(laNotaVisibleEsDeLaCamara ? carpetaQueContieneA(rutaDeLaNotaVisible) : carpetaDeLaCamara);
+  };
+
   useAtajosDeTeclado(
     {
-      abrirNotaEnBlanco: notas.abrirNotaEnBlanco,
+      pedirNotaNueva,
       abrirNotaConElDialogo: notas.abrirNotaConElDialogo,
       guardarNotaVisible: notas.guardarNotaVisible,
       pasarANotaVecina: notas.pasarANotaVecina,
@@ -103,25 +132,30 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     setBienvenidaPedida(false);
   }, [cambiarAjustes, releerCamarasDelHormiguero]);
 
+  // Fijados de la cámara abierta: se guardan en su archivo de `.ant/`, no en los ajustes.
+
   /** Fija una carpeta, nota o capítulo arriba de la barra lateral. */
   const fijar = useCallback((clave: string) => {
-    const { fijados } = ajustesVigentes.current;
-    if (!fijados.includes(clave)) cambiarAjustes({ fijados: [...fijados, clave] });
-  }, [cambiarAjustes, ajustesVigentes]);
+    cambiarDatosDeLaCamara(({ fijados }) => (fijados.includes(clave) ? {} : { fijados: [...fijados, clave] }));
+  }, [cambiarDatosDeLaCamara]);
 
   /** Quita un fijado, y su icono si tenía uno elegido. */
   const quitarFijado = useCallback((clave: string) => {
-    const { [clave]: _iconoQueSeQuita, ...iconosQueQuedan } = ajustesVigentes.current.iconos_de_fijados;
-    cambiarAjustes({ fijados: ajustesVigentes.current.fijados.filter((claveFijada) => claveFijada !== clave), iconos_de_fijados: iconosQueQuedan });
-  }, [cambiarAjustes, ajustesVigentes]);
+    cambiarDatosDeLaCamara(({ fijados, iconos_de_fijados }) => {
+      const { [clave]: _iconoQueSeQuita, ...iconosQueQuedan } = iconos_de_fijados;
+      return { fijados: fijados.filter((claveFijada) => claveFijada !== clave), iconos_de_fijados: iconosQueQuedan };
+    });
+  }, [cambiarDatosDeLaCamara]);
 
   /** Cambia el icono de un fijado; `null` vuelve al de su tipo. */
   const cambiarIconoDeFijado = useCallback((clave: string, icono: string | null) => {
-    const iconosDeFijados = { ...ajustesVigentes.current.iconos_de_fijados };
-    if (icono) iconosDeFijados[clave] = icono;
-    else delete iconosDeFijados[clave];
-    cambiarAjustes({ iconos_de_fijados: iconosDeFijados });
-  }, [cambiarAjustes, ajustesVigentes]);
+    cambiarDatosDeLaCamara(({ iconos_de_fijados }) => {
+      const iconosDeFijados = { ...iconos_de_fijados };
+      if (icono) iconosDeFijados[clave] = icono;
+      else delete iconosDeFijados[clave];
+      return { iconos_de_fijados: iconosDeFijados };
+    });
+  }, [cambiarDatosDeLaCamara]);
 
   // Títulos de la nota visible y el título donde está el cursor. La posición del cursor va en una
   // ref y no en el estado: cambia en cada movimiento del mouse al seleccionar, y si cada cambio
@@ -154,18 +188,31 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   /** Devuelve el foco al editor al cerrar una ventanita. */
   const enfocarElEditor = () => controlDelEditor.current?.enfocar();
 
+  /** Una carpeta de la cámara como se muestra: el nombre de la cámara y las subcarpetas («Novela / Libro I»). */
+  const lugarVisibleDentroDeLaCamara = (rutaDeLaCarpeta: string) => {
+    const nombreDeLaCamara = nombreVisibleDeLaCamara(ajustes.camara_abierta ?? "", textosDeLaInterfaz.entrada);
+    const subcarpetas = carpetaDeLaCamara ? rutaDeLaCarpeta.slice(carpetaDeLaCamara.length).split(/[\\/]/).filter(Boolean) : [];
+    return [nombreDeLaCamara, ...subcarpetas].join(" / ");
+  };
+
   return (
     <main className="app">
-      {/* Franja superior que reemplaza la barra de título nativa (oculta en tauri.conf.json):
-          deja espacio a los botones de la ventana y permite arrastrarla. */}
-      <div className="arrastre" data-tauri-drag-region />
+      <BarraSuperior
+        barraLateralVisible={barraLateralVisible}
+        alMostrarUOcultarBarraLateral={() => setBarraLateralVisible((visible) => !visible)}
+        alPedirNotaNueva={pedirNotaNueva}
+        alPedirCamaraNueva={() => setCavandoCamaraNueva(true)}
+      />
       <div className="cuerpo">
         {barraLateralVisible && (
           <BarraLateral
             carpetaDeLaCamara={carpetaDeLaCamara}
+            nombreDeLaCamaraAbierta={ajustes.camara_abierta}
+            laCamaraEsLaEntrada={laCamaraEsLaEntrada}
+            camarasDelHormiguero={camarasDelHormiguero ?? []}
             arbolDeLaCamara={arbolDeLaCamara}
-            clavesDeFijados={ajustes.fijados}
-            iconosElegidosPorFijado={ajustes.iconos_de_fijados}
+            clavesDeFijados={datosDeLaCamara.fijados}
+            iconosElegidosPorFijado={datosDeLaCamara.iconos_de_fijados}
             modoDiarioActivo={ajustes.modo_diario}
             notasAbiertas={notas.notasAbiertas}
             idNotaVisible={notaVisible.id}
@@ -182,6 +229,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
             alFijar={fijar}
             alQuitarFijado={quitarFijado}
             alCambiarIconoDeFijado={cambiarIconoDeFijado}
+            alAbrirCamara={(nombreDeLaCamara) => ejecutarMostrandoErrores(abrirCamara(nombreDeLaCamara))}
+            alPedirCamaraNueva={() => setCavandoCamaraNueva(true)}
           />
         )}
         <Editor
@@ -199,6 +248,12 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           ajustes={ajustes}
           textoDeNotaAbiertaPorRuta={notas.textoDeNotaAbiertaPorRuta}
           cambiarAjustes={cambiarAjustes}
+          opcionesGuardadasPorCarpeta={datosDeLaCamara.opciones_de_compilacion_por_carpeta}
+          alRecordarOpciones={(rutaDeLaCarpeta, opciones) =>
+            cambiarDatosDeLaCamara(({ opciones_de_compilacion_por_carpeta }) => ({
+              opciones_de_compilacion_por_carpeta: { ...opciones_de_compilacion_por_carpeta, [rutaDeLaCarpeta]: opciones },
+            }))
+          }
           alCerrar={() => {
             setCompilarAbierto(false);
             enfocarElEditor();
@@ -227,6 +282,24 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           alElegirCamara={abrirCamara}
           empezarEnLasCamaras={Boolean(carpetaDelHormiguero) && faltaElegirLaCamara}
           alCerrar={faltaElegirLaCamara ? undefined : () => setBienvenidaPedida(false)}
+        />
+      )}
+      {carpetaParaLaNotaNueva && carpetaDeLaCamara && !bienvenidaVisible && (
+        <NuevaNota
+          carpetaDondeCrearla={carpetaParaLaNotaNueva}
+          lugarVisible={lugarVisibleDentroDeLaCamara(carpetaParaLaNotaNueva)}
+          alCrearNota={async (rutaDeLaNota) => {
+            setCarpetaParaLaNotaNueva(null);
+            await notas.abrirNotaDeArchivo(rutaDeLaNota).catch(mostrarError);
+            // La nota nueva aparece en el árbol; si es la primera suelta en la raíz, también la «Entrada».
+            releerArbolDeLaCamara();
+            void releerCamarasDelHormiguero();
+            enfocarElEditor();
+          }}
+          alCerrar={() => {
+            setCarpetaParaLaNotaNueva(null);
+            enfocarElEditor();
+          }}
         />
       )}
       {cavandoCamaraNueva && carpetaDelHormiguero && !bienvenidaVisible && (

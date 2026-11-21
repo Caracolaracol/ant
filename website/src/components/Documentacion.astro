@@ -95,8 +95,9 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
         </ol>
         <h3>{t('More chambers', 'Más cámaras')}</h3>
         <ul>
-          <li>{t('Dig as many as you want with', 'Cava todas las que quieras con')} <b>{t('File → New Chamber…', 'Archivo → Cámara nueva…')}</b>.</li>
-          <li>{t('In', 'En')} <b>{t('Settings → General', 'Ajustes → General')}</b> {t('you see them all and switch from one to another. Every top-level folder of the anthill is a chamber, so a folder you create in Finder shows up there too.', 'las ves todas y pasas de una a otra. Cada carpeta de primer nivel del hormiguero es una cámara, así que una carpeta que crees en Finder también aparece ahí.')}</li>
+          <li>{t('Dig as many as you want with the folder button at the top of the window, next to the window buttons, with', 'Cava todas las que quieras con el botón de la carpeta arriba de la ventana, junto a los botones de la ventana, con')} <b>{t('File → New Chamber…', 'Archivo → Cámara nueva…')}</b> {t('or with', 'o con')} <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>N</kbd>.</li>
+          <li>{t('To switch chambers, click the name of the open one at the top of the sidebar: the list of chambers unfolds. You also see them all in', 'Para cambiar de cámara, haz clic en el nombre de la abierta arriba de la barra lateral: se despliega la lista de cámaras. También las ves todas en')} <b>{t('Settings → General', 'Ajustes → General')}</b>{t('. Every top-level folder of the anthill is a chamber, so a folder you create in Finder shows up there too.', '. Cada carpeta de primer nivel del hormiguero es una cámara, así que una carpeta que crees en Finder también aparece ahí.')}</li>
+          <li>{t('Loose notes at the root of the anthill are the', 'Las notas sueltas en la raíz del hormiguero son la')} <b>{t('Entrance', 'Entrada')}</b>{t(', the first chamber in the list. It only shows up while there are loose notes, and it has no diary.', ', la primera cámara de la lista. Solo aparece mientras haya notas sueltas, y no tiene diario.')}</li>
           <li>{t('There you can also change the anthill for another folder; nothing is moved or deleted.', 'Ahí también puedes cambiar el hormiguero por otra carpeta; nada se mueve ni se borra.')}</li>
           <li>{t('The welcome can be seen again from', 'La bienvenida se puede ver de nuevo desde')} <b>{t('Ant → Welcome to Ant…', 'Ant → Bienvenida a Ant…')}</b>.</li>
         </ul>
@@ -106,7 +107,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
           <li>{t('Hidden folders,', 'Se saltan las carpetas ocultas,')} <code>node_modules</code>, <code>target</code> {t('and folders without notes are skipped.', 'y las carpetas sin notas.')}</li>
           <li>{t('It is read again when you save and every time you come back to the window, in case you moved something from Finder or another app.', 'Se vuelve a leer al guardar y cada vez que vuelves a la ventana, por si moviste algo desde Finder u otra app.')}</li>
         </ul>
-        <p class="tenue">{t('Notes outside the open chamber open too (for example, loose notes at the root of the anthill): use', 'También se abren notas fuera de la cámara abierta (por ejemplo, notas sueltas en la raíz del hormiguero): usa')} <kbd>⌘</kbd> <kbd>O</kbd>.</p>
+        <p class="tenue">{t('Notes outside the anthill open too: use', 'También se abren notas fuera del hormiguero: usa')} <kbd>⌘</kbd> <kbd>O</kbd>.</p>
       </section>
 
       <section class="tema" id={escribir.id} data-nombre={escribir.nombre}>
@@ -117,8 +118,8 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
           'Las notas se guardan exactamente como las escribes, en Markdown. Ant colorea los títulos, el énfasis, los enlaces y los bloques de código, pero nunca cambia el archivo.',
         )}</p>
         <ul>
-          <li><kbd>⌘</kbd> <kbd>N</kbd> {t('creates a new note.', 'crea una nota nueva.')}</li>
-          <li><kbd>⌘</kbd> <kbd>S</kbd> {t('saves a new note the first time, suggesting the open chamber. After that, Ant saves it for you.', 'guarda una nota nueva la primera vez, proponiendo la cámara abierta. Después, Ant la guarda sola.')}</li>
+          <li><kbd>⌘</kbd> <kbd>N</kbd> {t('or the pencil button at the top of the window creates a new note: give it a name (or keep “Untitled”) and press Enter. It is created next to the note you are reading, or in the chamber, and Ant saves it for you from the first word. It never overwrites a note with the same name.', 'o el botón del lápiz arriba de la ventana crea una nota nueva: ponle nombre (o deja «Sin título») y pulsa Enter. Se crea junto a la nota que estás leyendo, o en la cámara, y Ant la guarda sola desde la primera palabra. Nunca pisa una nota con el mismo nombre.')}</li>
+          <li><kbd>⌘</kbd> <kbd>S</kbd> {t('saves right away (Ant already saves on its own).', 'guarda al instante (Ant ya guarda sola).')}</li>
           <li><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd> {t('saves it under another name.', 'la guarda con otro nombre.')}</li>
         </ul>
         <div class="columnas">
@@ -141,10 +142,12 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
       <section class="tema" id={lateral.id} data-nombre={lateral.nombre}>
         <p class="etiqueta">04</p>
         <h2>{t('From top to bottom', 'De arriba hacia abajo')}</h2>
+        <p>{t('At the very top, next to the window buttons, three small icons: hide or show the sidebar, new note and new chamber. Hover over one to see its name and shortcut.', 'Arriba de todo, junto a los botones de la ventana, tres iconos chicos: ocultar o mostrar la barra lateral, nota nueva y cámara nueva. Al pasar el mouse se ve su nombre y su atajo.')}</p>
         <ol>
+          <li><b>{t('The chamber', 'La cámara')}</b>{t(': the name of the open chamber. Click it to switch to another or dig a new one.', ': el nombre de la cámara abierta. Haz clic para pasar a otra o cavar una nueva.')}</li>
           <li><b>{t('Pinned', 'Fijados')}</b>{t(': a row of icons with what you pinned (see the next section).', ': una fila de iconos con lo que fijaste (ver la siguiente sección).')}</li>
           <li><b>{t('Open', 'Abiertas')}</b>{t(': open notes that are not in the chamber, such as a new unsaved one.', ': notas abiertas que no están en la cámara, como una nueva sin guardar.')}</li>
-          <li><b>{t('The chamber', 'La cámara')}</b>{t(': its name and the tree of its subfolders and notes. Folders fold and unfold with a click.', ': su nombre y el árbol de sus subcarpetas y notas. Las carpetas se pliegan con un clic.')}</li>
+          <li><b>{t('Its notes', 'Sus notas')}</b>{t(': the tree of the chamber’s subfolders and notes. Folders fold and unfold with a click.', ': el árbol de subcarpetas y notas de la cámara. Las carpetas se pliegan con un clic.')}</li>
         </ol>
         <p><kbd>⌘</kbd> <kbd>\</kbd> {t('shows or hides it. To make it wider or narrower, drag its right edge: the pointer changes to ↔ when you are over it. Double-click the edge to go back to the default width.', 'la muestra u oculta. Para ensancharla o achicarla, arrastra su borde derecho: el puntero cambia a ↔ al pasar por encima. Doble clic en el borde la deja con el ancho de siempre.')}</p>
         <div class="columnas">
@@ -168,7 +171,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
           <li>{t('A pinned note opens with a click. A pinned folder unfolds below the icons. A pinned heading (a chapter) opens its note right there.', 'Una nota fijada se abre con un clic. Una carpeta fijada se despliega bajo los iconos. Un título fijado (un capítulo) abre su nota justo ahí.')}</li>
           <li>{t('Each one starts with the icon of its kind. To choose another: right-click →', 'Cada uno empieza con el icono de su tipo. Para elegir otro: clic derecho →')} <b>{t('Change icon…', 'Cambiar icono…')}</b> {t('(about a hundred, from', '(cerca de cien, de')} <a href="https://lucide.dev">Lucide</a>).</li>
           <li>{t('To unpin it: right-click →', 'Para soltarlo: clic derecho →')} <b>{t('Unpin', 'Quitar de fijados')}</b>.</li>
-          <li>{t('Each chamber has its own pins: when you switch chambers, you see that chamber’s pins.', 'Cada cámara tiene sus propios fijados: si cambias de cámara, ves los de esa.')}</li>
+          <li>{t('Each chamber has its own pins: when you switch chambers, you see that chamber’s pins. They are saved inside the anthill, in', 'Cada cámara tiene sus propios fijados: si cambias de cámara, ves los de esa. Se guardan dentro del hormiguero, en')} <code>.ant/</code>{t(', so they travel with your notes.', ', así viajan con tus notas.')}</li>
           <li>{t('If something pinned is deleted or moved outside Ant, its icon stays, dimmed, until you remove it.', 'Si borras o mueves algo fijado fuera de Ant, su icono queda atenuado hasta que lo quites.')}</li>
         </ul>
       </section>
@@ -219,6 +222,7 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
         <h2>{t('All shortcuts', 'Todos los atajos')}</h2>
         <dl class="atajos dos">
           <dt><kbd>⌘</kbd> <kbd>N</kbd></dt><dd>{t('New note', 'Nueva nota')}</dd>
+          <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>N</kbd></dt><dd>{t('New chamber', 'Cámara nueva')}</dd>
           <dt><kbd>⌘</kbd> <kbd>O</kbd></dt><dd>{t('Open note', 'Abrir nota')}</dd>
           <dt><kbd>⌘</kbd> <kbd>S</kbd></dt><dd>{t('Save', 'Guardar')}</dd>
           <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd></dt><dd>{t('Save as', 'Guardar como')}</dd>
@@ -243,22 +247,29 @@ const [instalar, primeros, escribir, lateral, fijados, buscar, exportar, atajos,
           <li><b>General</b>{t(': the language (English by default, or Spanish), your anthill (you can change it for another folder) and its chambers: open one or dig a new one.', ': el idioma (inglés por defecto, o español), tu hormiguero (puedes cambiarlo por otra carpeta) y sus cámaras: abrir una o cavar una nueva.')}</li>
           <li><b>Editor</b>{t(': at the top, ', ': arriba de todo, el ')}<b>{t('Writer mode', 'Modo escritor')}</b>{t(', on by default. It adapts the editor to prose: smart quotes (“ ” or « », depending on the language) and', ', activado por defecto. Adapta el editor a la prosa: comillas tipográficas (“ ” o « », según el idioma) y')} <code>--</code> → <code>—</code>, <code>...</code> → <code>…</code>, <code>&lt;&lt; &gt;&gt;</code> → <code>« »</code>, <code>-&gt;</code> → <code>→</code> {t('as you type (Backspace right after undoes the change; nothing changes inside code), a serif book font in a narrower column, and spell checking. Each part can be turned off.', 'al escribir (Backspace justo después deshace el cambio; nada cambia dentro del código), letra de libro con serifa en una columna más angosta y corrector ortográfico. Cada parte se puede apagar.')}</li>
           <li><b>{t('Diary', 'Diario')}</b>{t(': shows a calendar at the top of the sidebar. Click a day to open its note,', ': muestra un calendario arriba de la barra lateral. Al hacer clic en un día se abre su nota,')} <code>Daily/2026-11-20.md</code>{t(', inside the open chamber. If the note or the Daily folder do not exist yet, Ant creates them; if the chamber already has a Daily folder, Ant uses it. Days that already have a note show a dot. In this mode the Daily folder is hidden from the tree: you reach daily notes through the calendar, and the open ones are listed below it.', ', dentro de la cámara abierta. Si la nota o la carpeta Daily aún no existen, Ant las crea; si la cámara ya tiene una carpeta Daily, Ant usa esa. Los días que ya tienen nota llevan un punto. En este modo la carpeta Daily no aparece en el árbol: a las notas diarias se llega desde el calendario, y las abiertas se listan bajo él.')}</li>
-          <li><b>{t('Appearance', 'Apariencia')}</b>{t(': ready-made themes (Dark, Ant, Night, Paper, Sepia) and every color one by one.', ': temas listos (Oscuro, Hormiga, Noche, Papel, Sepia) y cada color por separado.')}</li>
+          <li><b>{t('Appearance', 'Apariencia')}</b>{t(': ready-made themes (Ant, the default one, Dark, Night, Paper, Sepia) and every color one by one.', ': temas listos (Ant, el de por defecto, Oscuro, Noche, Papel, Sepia) y cada color por separado.')}</li>
         </ul>
         <h3>{t('Where they are stored', 'Dónde se guardan')}</h3>
-        <p>{t('In a JSON file, in the app’s configuration folder:', 'En un archivo JSON, en la carpeta de configuración de la app:')}</p>
+        <p>{t('What belongs to this computer (language, colors, where your anthill is) goes in a JSON file, in the app’s configuration folder:', 'Lo que es de este computador (idioma, colores, dónde está tu hormiguero) va en un archivo JSON, en la carpeta de configuración de la app:')}</p>
 <pre><code>~/Library/Application Support/cl.agus.ant/ajustes.json</code></pre>
 <pre><code>{"{"}
   "hormiguero": "{t('/Users/you/Documents/Anthill', '/Users/tu/Documents/Hormiguero')}",
   "camara_abierta": "{t('Novel', 'Novela')}",
-  "fijados": ["{t('/Users/you/Documents/Anthill/Novel/Book I', '/Users/tu/Documents/Hormiguero/Novela/Libro I')}"],
-  "iconos_de_fijados": {"{"} "{t('/Users/you/Documents/Anthill/Novel/Book I', '/Users/tu/Documents/Hormiguero/Novela/Libro I')}": "book-open" {"}"},
   "modo_diario": true,
   "colores_elegidos": {"{"} "acento": "#e5ea15" {"}"},
   "idioma": "{t('en', 'es')}",
   "modo_escritor": true
 {"}"}</code></pre>
         <p class="tenue">{t('On Windows it lives in', 'En Windows queda en')} <code>%APPDATA%\cl.agus.ant\</code> {t('and on Linux in', 'y en Linux en')} <code>~/.config/cl.agus.ant/</code>.</p>
+        <p>{t('What belongs to your notes goes inside the anthill, in a hidden', 'Lo que es de tus notas va dentro del hormiguero, en una carpeta oculta')} <code>.ant/</code> {t('folder (like', '(como')} <code>.obsidian/</code> {t('in a vault), with one file per chamber: its pins, their icons and the Compile and Export options. So they travel with your notes when you move, sync or back up the anthill. Paths inside are relative to the chamber.', 'en una bóveda), con un archivo por cámara: sus fijados, sus iconos y las opciones de Compilar y exportar. Así viajan con tus notas al mover, sincronizar o respaldar el hormiguero. Las rutas de adentro son relativas a la cámara.')}</p>
+<pre><code>{t('Anthill', 'Hormiguero')}/.ant/camaras/{t('Novel', 'Novela')}.json
+{"{"}
+  "version": 1,
+  "fijados": ["{t('Book I', 'Libro I')}", "{t('Book I/01 - The anthill.md#The rain', 'Libro I/01 - El hormiguero.md#La lluvia')}"],
+  "iconos_de_fijados": {"{"} "{t('Book I', 'Libro I')}": "book-open" {"}"},
+  "opciones_de_compilacion_por_carpeta": {"{"} {"}"}
+{"}"}</code></pre>
+        <p class="tenue">{t('The Entrance (loose notes at the root) uses', 'La Entrada (las notas sueltas de la raíz) usa')} <code>.ant/camaras/.entrada.json</code>. {t('If you rename a chamber’s folder outside Ant, rename its file in', 'Si renombras la carpeta de una cámara fuera de Ant, renombra también su archivo en')} <code>.ant/camaras/</code> {t('too, to keep its pins.', 'para conservar sus fijados.')}</p>
       </section>
 
       <section class="tema" id={desarrollo.id} data-nombre={desarrollo.nombre}>

@@ -19,17 +19,17 @@ export const VARIABLES_DE_COLOR = [
 export type ColoresPorVariable = Record<string, string>;
 
 /**
- * Temas listos: cada uno define todas las variables. El primero es el de siempre (el de
- * `App.css`). Sus nombres visibles están en `idioma.tsx` (`nombresTemas`).
+ * Temas listos: cada uno define todas las variables. El primero, «Ant» (amarillo de la hormiga
+ * sobre oscuro, como el icono), es el de por defecto: el de `App.css`. Sus nombres visibles están en `idioma.tsx` (`nombresTemas`).
  */
 export const TEMAS: { id: string; colores: ColoresPorVariable }[] = [
   {
-    id: "oscuro",
-    colores: { fondo: "#1d1d20", "fondo-bajo": "#161617", texto: "#e8e8e6", tenue: "#7a7a78", titulo: "#ffffff", acento: "#f9a26c", codigo: "#a9c7f9", seleccion: "#3a3f5c", coincidencia: "#33384d" },
-  },
-  {
     id: "hormiga",
     colores: { fondo: "#1d1d20", "fondo-bajo": "#141415", texto: "#e6e6dc", tenue: "#7d7d70", titulo: "#ffffff", acento: "#e5ea15", codigo: "#c9d48a", seleccion: "#3d3e26", coincidencia: "#33341f" },
+  },
+  {
+    id: "oscuro",
+    colores: { fondo: "#1d1d20", "fondo-bajo": "#161617", texto: "#e8e8e6", tenue: "#7a7a78", titulo: "#ffffff", acento: "#f9a26c", codigo: "#a9c7f9", seleccion: "#3a3f5c", coincidencia: "#33384d" },
   },
   {
     id: "noche",
@@ -45,7 +45,7 @@ export const TEMAS: { id: string; colores: ColoresPorVariable }[] = [
   },
 ];
 
-/** Colores por defecto (los del tema «Oscuro»), para mostrar el valor actual de lo que no se cambió. */
+/** Colores por defecto (los del tema «Ant»), para mostrar el valor actual de lo que no se cambió. */
 export const COLORES_POR_DEFECTO: ColoresPorVariable = TEMAS[0].colores;
 
 /**

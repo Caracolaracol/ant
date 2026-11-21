@@ -1,9 +1,11 @@
 // Núcleo nativo de la app: arma la aplicación Tauri, registra los plugins, el menú y los
 // comandos que la interfaz (React) llama para leer y guardar notas, ajustes, el hormiguero
-// y sus cámaras (carpetas), notas diarias y los archivos que genera «Compilar y exportar» (Word y PDF).
+// y sus cámaras (carpetas), los datos de cada cámara en `.ant/` (`datos_del_hormiguero.rs`), notas
+// diarias y los archivos que genera «Compilar y exportar» (Word y PDF).
 
 mod ajustes;
 mod carpeta;
+mod datos_del_hormiguero;
 mod diario;
 mod menu;
 
@@ -160,6 +162,9 @@ pub fn run() {
             carpeta::leer_arbol_de_carpeta,
             carpeta::crear_carpeta_nueva,
             carpeta::listar_camaras,
+            carpeta::crear_nota_nueva,
+            datos_del_hormiguero::leer_datos_de_la_camara,
+            datos_del_hormiguero::guardar_datos_de_la_camara,
             salir,
             diario::abrir_o_crear_nota_del_dia
         ])

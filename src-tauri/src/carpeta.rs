@@ -1,7 +1,7 @@
 // Carpetas del hormiguero y sus cámaras: las cámaras que tiene el hormiguero (sus carpetas de
-// primer nivel), el árbol de la cámara abierta para la barra lateral (subcarpetas y notas .md,
-// .markdown, .txt, con las carpetas primero y luego por nombre) y la creación de la carpeta de un
-// hormiguero o una cámara nuevos.
+// primer nivel y, si hay notas sueltas en la raíz, la «Entrada»), el árbol de la cámara abierta
+// para la barra lateral (subcarpetas y notas .md, .markdown, .txt, con las carpetas primero y luego
+// por nombre), la creación de la carpeta de un hormiguero o una cámara nuevos y la de una nota nueva.
 
 use serde::Serialize;
 use std::fs;
@@ -11,6 +11,10 @@ use std::path::Path;
 const EXTENSIONES_DE_NOTAS: [&str; 3] = ["md", "markdown", "txt"];
 /// Carpetas que nunca se muestran (dependencias de proyectos), además de las ocultas (que empiezan con «.»).
 const CARPETAS_IGNORADAS: [&str; 2] = ["node_modules", "target"];
+/// Nombre con que se lista la «Entrada»: la cámara de las notas sueltas en la raíz del hormiguero.
+/// Es «.» (la carpeta misma) porque ninguna carpeta de verdad puede llamarse así; la interfaz lo
+/// muestra como «Entrada» (`CAMARA_DE_ENTRADA` en `src/hormigueros/hormigueros.ts`).
+pub const CAMARA_DE_ENTRADA: &str = ".";
 /// Profundidad máxima del árbol, para no quedar recorriendo carpetas enormes sin fin.
 const PROFUNDIDAD_MAXIMA_DEL_ARBOL: usize = 12;
 
@@ -70,33 +74,71 @@ fn es_carpeta_ignorada(nombre: &str) -> bool {
     nombre.starts_with('.') || CARPETAS_IGNORADAS.contains(&nombre)
 }
 
-/// Devuelve el árbol de notas de una carpeta. Corre en un hilo aparte (`en_segundo_plano`): un
-/// hormiguero con miles de notas no traba la ventana mientras se lee.
+/// Si el archivo es una nota (por su extensión, sin distinguir mayúsculas) y no está oculto.
+fn es_archivo_de_nota(ruta: &Path) -> bool {
+    let esta_oculto = ruta.file_name().is_some_and(|nombre| nombre.to_string_lossy().starts_with('.'));
+    let extension = ruta.extension().and_then(|extension| extension.to_str()).map(str::to_lowercase);
+    !esta_oculto && extension.is_some_and(|extension| EXTENSIONES_DE_NOTAS.contains(&extension.as_str()))
+}
+
+/// Notas sueltas de una carpeta: solo sus archivos de notas, sin entrar en las subcarpetas. Es el
+/// árbol de la «Entrada» (las de la raíz del hormiguero; las subcarpetas son las otras cámaras).
+fn notas_sueltas_de(carpeta: &Path) -> Vec<EntradaDelArbol> {
+    let Ok(contenido_de_la_carpeta) = fs::read_dir(carpeta) else { return Vec::new() };
+    let mut notas: Vec<EntradaDelArbol> = contenido_de_la_carpeta
+        .filter_map(Result::ok)
+        .map(|elemento| elemento.path())
+        .filter(|ruta| ruta.is_file() && es_archivo_de_nota(ruta))
+        .map(|ruta| EntradaDelArbol {
+            nombre: ruta.file_name().unwrap_or_default().to_string_lossy().into_owned(),
+            ruta: ruta.to_string_lossy().into_owned(),
+            es_carpeta: false,
+            hijos: Vec::new(),
+        })
+        .collect();
+    notas.sort_by_key(|nota| nota.nombre.to_lowercase());
+    notas
+}
+
+/// Devuelve el árbol de notas de una carpeta o, con `solo_notas_sueltas` (la «Entrada»), solo las
+/// notas de su primer nivel. Corre en un hilo aparte (`en_segundo_plano`): un hormiguero con miles
+/// de notas no traba la ventana mientras se lee.
 #[tauri::command]
-pub async fn leer_arbol_de_carpeta(ruta_de_la_carpeta: String) -> Result<Vec<EntradaDelArbol>, String> {
+pub async fn leer_arbol_de_carpeta(ruta_de_la_carpeta: String, solo_notas_sueltas: Option<bool>) -> Result<Vec<EntradaDelArbol>, String> {
     crate::en_segundo_plano(move || {
         let carpeta = Path::new(&ruta_de_la_carpeta);
         if !carpeta.is_dir() {
             return Err(format!("The folder {ruta_de_la_carpeta} does not exist"));
         }
-        Ok(leer_arbol(carpeta, 0))
+        Ok(if solo_notas_sueltas.unwrap_or(false) { notas_sueltas_de(carpeta) } else { leer_arbol(carpeta, 0) })
     })
     .await
 }
 
 /// Cámaras del hormiguero: los nombres de sus carpetas de primer nivel (sin las ocultas ni las de
 /// dependencias), en orden alfabético sin distinguir mayúsculas. A diferencia del árbol, incluye
-/// las carpetas vacías: una cámara recién cavada todavía no tiene notas.
+/// las carpetas vacías: una cámara recién cavada todavía no tiene notas. Si en la raíz hay notas
+/// sueltas, la primera es la «Entrada» (`CAMARA_DE_ENTRADA`); sin notas sueltas, no aparece.
 fn camaras_de(carpeta_del_hormiguero: &Path) -> Result<Vec<String>, String> {
     let contenido = fs::read_dir(carpeta_del_hormiguero)
         .map_err(|error| format!("Could not read the anthill {}: {error}", carpeta_del_hormiguero.display()))?;
-    let mut nombres_de_las_camaras: Vec<String> = contenido
-        .filter_map(Result::ok)
-        .filter(|elemento| elemento.path().is_dir())
-        .map(|elemento| elemento.file_name().to_string_lossy().into_owned())
-        .filter(|nombre| !es_carpeta_ignorada(nombre))
-        .collect();
+    let mut hay_notas_sueltas = false;
+    let mut nombres_de_las_camaras: Vec<String> = Vec::new();
+    for elemento in contenido.filter_map(Result::ok) {
+        let ruta = elemento.path();
+        if ruta.is_dir() {
+            let nombre = elemento.file_name().to_string_lossy().into_owned();
+            if !es_carpeta_ignorada(&nombre) {
+                nombres_de_las_camaras.push(nombre);
+            }
+        } else if es_archivo_de_nota(&ruta) {
+            hay_notas_sueltas = true;
+        }
+    }
     nombres_de_las_camaras.sort_by_key(|nombre| nombre.to_lowercase());
+    if hay_notas_sueltas {
+        nombres_de_las_camaras.insert(0, CAMARA_DE_ENTRADA.to_string());
+    }
     Ok(nombres_de_las_camaras)
 }
 
@@ -128,6 +170,32 @@ pub fn crear_carpeta_nueva(carpeta_donde_crearla: String, nombre_de_la_carpeta: 
     Ok(carpeta_nueva.to_string_lossy().into_owned())
 }
 
+/// Crea una nota vacía `nombre_de_la_nota` dentro de `carpeta_donde_crearla` (le agrega `.md` si
+/// no termina en una extensión de notas) y devuelve su ruta. Es el botón «Nota nueva» (y Cmd+N).
+/// Nunca pisa una nota que ya existe: si el nombre está tomado, falla con un aviso.
+#[tauri::command]
+pub fn crear_nota_nueva(carpeta_donde_crearla: String, nombre_de_la_nota: String) -> Result<String, String> {
+    let nombre = nombre_de_la_nota.trim();
+    if nombre.is_empty() || nombre.starts_with('.') || nombre.contains(['/', '\\', ':']) {
+        return Err(format!("“{nombre}” cannot be a note name"));
+    }
+    let carpeta = Path::new(&carpeta_donde_crearla);
+    if !carpeta.is_dir() {
+        return Err(format!("The folder {} does not exist", carpeta.display()));
+    }
+    let nombre_del_archivo = if es_archivo_de_nota(Path::new(nombre)) { nombre.to_string() } else { format!("{nombre}.md") };
+    let ruta_de_la_nota = carpeta.join(&nombre_del_archivo);
+    // `create_new` falla si el archivo ya existe, sin la carrera de mirar primero y crear después.
+    fs::OpenOptions::new().write(true).create_new(true).open(&ruta_de_la_nota).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::AlreadyExists {
+            format!("There is already a note “{nombre_del_archivo}” in {}", carpeta.display())
+        } else {
+            format!("Could not create {}: {error}", ruta_de_la_nota.display())
+        }
+    })?;
+    Ok(ruta_de_la_nota.to_string_lossy().into_owned())
+}
+
 #[cfg(test)]
 mod pruebas {
     use super::*;
@@ -153,10 +221,33 @@ mod pruebas {
         for carpeta in ["trabajo", "Novela/Capítulos", "Personal", ".ant", "node_modules"] {
             fs::create_dir_all(hormiguero.join(carpeta)).unwrap();
         }
-        fs::write(hormiguero.join("suelta.md"), "nota fuera de las cámaras").unwrap();
+        fs::write(hormiguero.join("imagen.png"), "no es una nota").unwrap();
         assert_eq!(camaras_de(&hormiguero).unwrap(), vec!["Novela", "Personal", "trabajo"]);
+        // Con una nota suelta en la raíz aparece la «Entrada», primera, y su árbol tiene solo esa nota.
+        fs::write(hormiguero.join("Suelta.MD"), "nota fuera de las cámaras").unwrap();
+        assert_eq!(camaras_de(&hormiguero).unwrap(), vec![CAMARA_DE_ENTRADA, "Novela", "Personal", "trabajo"]);
+        let notas_de_la_entrada = notas_sueltas_de(&hormiguero);
+        assert_eq!(notas_de_la_entrada.len(), 1);
+        assert_eq!(notas_de_la_entrada[0].nombre, "Suelta.MD");
         fs::remove_dir_all(&hormiguero).unwrap();
         assert!(camaras_de(&hormiguero).is_err());
+    }
+
+    #[test]
+    fn crea_la_nota_nueva_sin_pisar_otra() {
+        let carpeta_de_prueba = std::env::temp_dir().join(format!("ant-nota-nueva-{}", std::process::id()));
+        fs::create_dir_all(&carpeta_de_prueba).unwrap();
+        let carpeta = carpeta_de_prueba.to_string_lossy().into_owned();
+        let nota_creada = crear_nota_nueva(carpeta.clone(), " Capítulo 1 ".into()).unwrap();
+        assert!(nota_creada.ends_with("Capítulo 1.md"));
+        assert_eq!(fs::read_to_string(&nota_creada).unwrap(), "");
+        fs::write(&nota_creada, "texto que no se pisa").unwrap();
+        assert!(crear_nota_nueva(carpeta.clone(), "Capítulo 1".into()).is_err());
+        assert_eq!(fs::read_to_string(&nota_creada).unwrap(), "texto que no se pisa");
+        assert!(crear_nota_nueva(carpeta.clone(), "ideas.txt".into()).unwrap().ends_with("ideas.txt"));
+        assert!(crear_nota_nueva(carpeta.clone(), "a/b".into()).is_err());
+        assert!(crear_nota_nueva(carpeta, "".into()).is_err());
+        fs::remove_dir_all(carpeta_de_prueba).unwrap();
     }
 
     #[test]

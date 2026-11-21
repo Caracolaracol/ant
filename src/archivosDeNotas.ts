@@ -1,6 +1,7 @@
 // Archivos de notas desde la interfaz: los diálogos del sistema para abrir y guardar (plugin de
 // Tauri), leer y guardar notas con los comandos de Rust (`src-tauri/src/lib.rs`), guardar los
-// archivos binarios de «Compilar y exportar» (Word, PDF) y mostrarlos en su carpeta.
+// archivos binarios de «Compilar y exportar» (Word, PDF), crear una nota nueva vacía y mostrar un
+// archivo en su carpeta.
 
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -24,6 +25,13 @@ export const elegirDondeGuardarConElDialogo = (rutaPropuesta: string, nombreDelF
   save({ defaultPath: rutaPropuesta, filters: filtrosDeNotas(nombreDelFiltro) });
 
 /** Lee el texto de una nota. */
+/**
+ * Crea una nota vacía `nombreDeLaNota` (con `.md` si no trae extensión) en la carpeta y devuelve
+ * su ruta (`crear_nota_nueva`, en `src-tauri/src/carpeta.rs`). Falla si ya hay una con ese nombre.
+ */
+export const crearNotaNueva = (carpetaDondeCrearla: string, nombreDeLaNota: string) =>
+  invoke<string>("crear_nota_nueva", { carpetaDondeCrearla, nombreDeLaNota });
+
 export const leerNotaDelDisco = (rutaDelArchivo: string) => invoke<string>("leer_nota_del_disco", { rutaDelArchivo });
 
 /** Guarda el texto de una nota (Rust escribe un archivo temporal y lo renombra: nunca queda a medias). */

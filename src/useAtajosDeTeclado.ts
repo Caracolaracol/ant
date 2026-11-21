@@ -1,14 +1,14 @@
 // Atajos de teclado de la ventana principal que no están en el menú de la app:
-//   Cmd+N nota nueva · Cmd+O abrir · Cmd+S guardar · Cmd+Shift+S guardar como
+//   Cmd+N nota nueva (la ventanita «Nota nueva») · Cmd+O abrir · Cmd+S guardar · Cmd+Shift+S guardar como
 //   Cmd+Shift+] / Cmd+Shift+[ nota abierta siguiente / anterior · Cmd+\ mostrar u ocultar la barra lateral
-// (Cmd+, y Cmd+Shift+E los maneja el menú, en Rust.) Los errores de cada acción (permisos, disco
+// (Cmd+,, Cmd+Shift+N y Cmd+Shift+E los maneja el menú, en Rust.) Los errores de cada acción (permisos, disco
 // lleno…) van a la barra de estado.
 
 import { useEffect, useRef } from "react";
 
 /** Lo que hace cada atajo. Cada acción puede devolver una promesa; si falla, se muestra el error. */
 export interface AccionesDeLosAtajos {
-  abrirNotaEnBlanco(): Promise<void> | void;
+  pedirNotaNueva(): Promise<void> | void;
   abrirNotaConElDialogo(): Promise<void> | void;
   guardarNotaVisible(enOtroArchivo: boolean): Promise<void> | void;
   pasarANotaVecina(paso: 1 | -1): void;
@@ -32,7 +32,8 @@ export function useAtajosDeTeclado(
       let accionDelAtajo: (() => Promise<void> | void) | null = null;
       if (tecla === "s") accionDelAtajo = () => accionesDeAhora.guardarNotaVisible(evento.shiftKey);
       else if (tecla === "o") accionDelAtajo = accionesDeAhora.abrirNotaConElDialogo;
-      else if (tecla === "n") accionDelAtajo = accionesDeAhora.abrirNotaEnBlanco;
+      // Cmd+Shift+N es «Cámara nueva…», del menú.
+      else if (tecla === "n" && !evento.shiftKey) accionDelAtajo = accionesDeAhora.pedirNotaNueva;
       else if (tecla === "\\") accionDelAtajo = accionesDeAhora.mostrarUOcultarBarraLateral;
       // Con Shift, las teclas [ y ] cambian de carácter según el teclado; se usa la tecla física.
       else if (evento.shiftKey && evento.code === "BracketRight") accionDelAtajo = () => accionesDeAhora.pasarANotaVecina(1);

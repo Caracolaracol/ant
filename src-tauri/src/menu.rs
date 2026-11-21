@@ -68,7 +68,7 @@ pub fn crear<R: Runtime>(app: &AppHandle<R>, idioma: &str) -> tauri::Result<Menu
         ID_CAMARA_NUEVA,
         texto(idioma, "New Chamber…", "Cámara nueva…"),
         true,
-        None::<&str>,
+        Some("CmdOrCtrl+Shift+N"),
     )?;
     let compilar = MenuItem::with_id(
         app,

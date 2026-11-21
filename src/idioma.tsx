@@ -61,6 +61,19 @@ const en = {
   usarCarpeta: "Use a folder you already have…",
   bordeBarra: "Drag to resize · double-click to reset",
 
+  // Botones de arriba (junto a los de la ventana), selector de cámaras y «Nota nueva».
+  ocultarPanel: "Hide sidebar",
+  mostrarPanel: "Show sidebar",
+  notaNuevaBoton: "New note",
+  cambiarDeCamara: "Switch chamber",
+  entrada: "Entrance",
+  entradaAyuda: "Loose notes at the root of your anthill",
+  notaNuevaTitulo: "New note",
+  nombreDeLaNota: "Name",
+  nombrePropuestoDeLaNota: "Untitled",
+  seCrearaEn: "It will be created in",
+  crearNota: "Create note",
+
   // Calendario del modo diario.
   diasSemana: ["M", "T", "W", "T", "F", "S", "S"],
   mesAnterior: "Previous month",
@@ -221,6 +234,18 @@ const es: TextosDeLaInterfaz = {
   usarCarpeta: "Usar una carpeta que ya tengo…",
   bordeBarra: "Arrastra para cambiar el ancho · doble clic para restablecerlo",
 
+  ocultarPanel: "Ocultar el panel",
+  mostrarPanel: "Mostrar el panel",
+  notaNuevaBoton: "Nota nueva",
+  cambiarDeCamara: "Cambiar de cámara",
+  entrada: "Entrada",
+  entradaAyuda: "Las notas sueltas en la raíz de tu hormiguero",
+  notaNuevaTitulo: "Nota nueva",
+  nombreDeLaNota: "Nombre",
+  nombrePropuestoDeLaNota: "Sin título",
+  seCrearaEn: "Se creará en",
+  crearNota: "Crear la nota",
+
   diasSemana: ["L", "M", "M", "J", "V", "S", "D"],
   mesAnterior: "Mes anterior",
   mesSiguiente: "Mes siguiente",
@@ -267,7 +292,7 @@ const es: TextosDeLaInterfaz = {
   temaAyuda: "Un punto de partida; después puedes cambiar cada color abajo.",
   colores: "Colores",
   restablecerColores: "Restablecer colores",
-  nombresTemas: { oscuro: "Oscuro", hormiga: "Hormiga", noche: "Noche", papel: "Papel", sepia: "Sepia" },
+  nombresTemas: { oscuro: "Oscuro", hormiga: "Ant", noche: "Noche", papel: "Papel", sepia: "Sepia" },
   nombresColores: {
     fondo: "Fondo",
     "fondo-bajo": "Fondo de barras",

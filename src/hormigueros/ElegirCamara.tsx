@@ -1,11 +1,12 @@
 // Formulario para cavar una cámara dentro del hormiguero: su nombre (con ejemplos que se pueden
-// tocar para usarlos) y, en la bienvenida, la lista de las que ya hay para abrir una de ellas. Lo usan la última cámara de la bienvenida y la ventanita «Cámara nueva» (menú File
-// o Ajustes → General). Entrega el nombre con `alElegirCamara` cuando la carpeta ya existe;
+// tocar para usarlos) y, en la bienvenida, la lista de las que ya hay para abrir una de ellas (con
+// la «Entrada» si hay notas sueltas en la raíz). Lo usan la última cámara de la bienvenida y la
+// ventanita «Cámara nueva» (botón de arriba, menú File o Ajustes → General). Entrega el nombre con `alElegirCamara` cuando la carpeta ya existe;
 // guardarlo en los ajustes le toca a quien lo usa.
 
 import { FormEvent, useState } from "react";
 import { useTextos } from "../idioma";
-import { crearCarpetaNueva } from "./hormigueros";
+import { crearCarpetaNueva, nombreVisibleDeLaCamara } from "./hormigueros";
 import "./Hormigueros.css";
 
 interface Props {
@@ -74,7 +75,7 @@ export function ElegirCamara(props: Props) {
           <div className="elegir-camara-existentes">
             {camarasQueYaExisten.map((camaraQueExiste) => (
               <button key={camaraQueExiste} disabled={estaTrabajando} onClick={() => alElegirCamara(camaraQueExiste)}>
-                {camaraQueExiste}
+                {nombreVisibleDeLaCamara(camaraQueExiste, textosDeLaInterfaz.entrada)}
               </button>
             ))}
           </div>
