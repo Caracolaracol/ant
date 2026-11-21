@@ -11,6 +11,8 @@ release with that section as its notes, so this file is always written in Englis
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-21
+
 ### Added
 
 - **Welcome**: the first time you open Ant, a short tour in the style of the website, chamber by
@@ -128,6 +130,7 @@ First public release.
 - Website and documentation in English and Spanish: https://caracolaracol.github.io/ant/
 - MIT license.
 
-[Unreleased]: https://github.com/Caracolaracol/ant/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Caracolaracol/ant/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Caracolaracol/ant/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Caracolaracol/ant/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Caracolaracol/ant/releases/tag/v0.1.0
