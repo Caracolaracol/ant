@@ -23,6 +23,13 @@ export const temaDelEditor = EditorView.theme(
     // Panel de búsqueda (Cmd+F) con los colores de la app.
     ".cm-panels": { backgroundColor: "var(--fondo-bajo)", color: "var(--texto)" },
     ".cm-panels input, .cm-panels button": { fontFamily: "inherit", color: "inherit" },
+    // Imágenes de la nota (`imagenes.ts`), debajo de su línea: a lo ancho de la columna como
+    // máximo, sin pasar de media pantalla de alto. Si no se encuentra, su nombre tenue.
+    ".cm-imagen": { padding: "6px 0 10px" },
+    ".cm-imagen img": { display: "block", maxWidth: "100%", maxHeight: "60vh", borderRadius: "6px" },
+    ".cm-imagen.no-encontrada": { color: "var(--tenue)", fontSize: "0.85em" },
+    // Líneas de los bloques de código en el modo programador (`programador.ts`).
+    ".cm-linea-de-codigo": { backgroundColor: "var(--fondo-bajo)" },
   },
   { dark: true },
 );

@@ -11,6 +11,30 @@ release with that section as its notes, so this file is always written in Englis
 
 ## [Unreleased]
 
+### Added
+
+- **Images in notes**: drag images onto a note or paste them (a screenshot, a copied image), and
+  they show up right below their line. Images from outside the anthill are copied to an `Images`
+  folder next to the note; one that is already in the anthill is linked where it is. The note
+  keeps a plain Markdown link (`![](Images/photo.png)`). Obsidian-style `![[photo.png]]` embeds
+  show too. Dropping a note file on the window opens it.
+- **Shortcuts in Settings**: a new Shortcuts area lists every action with its shortcut. Click one
+  and press the new keys to change it; Ant warns when the keys are already taken by another action,
+  the editor or the system, and each change can go back to the default. The editor's fixed
+  shortcuts are listed too.
+
+### Changed
+
+- **Editor mode per chamber**: each chamber has its own editor settings (Settings → Editor). Besides
+  **Writer**, there is a new **Programmer** mode for code and technical notes: type ``` and Enter and
+  the code block closes itself, brackets and quotes close themselves, code blocks stand out, and
+  there are no typographic changes. **Simple** shows Markdown exactly as you type it.
+- **Writer mode hides the `#` of headings**: headings look like headings, without their marks.
+  The marks show again on the line where the cursor is, so you can still change the level.
+- **No empty note out of nowhere**: Ant opens the last note you had open. If there is none (or you
+  close the last one), the editor shows an invitation to start a new note, with a button that
+  creates it at the root of the open chamber.
+
 ## [0.3.0] - 2026-11-21
 
 ### Added
@@ -27,6 +51,13 @@ release with that section as its notes, so this file is always written in Englis
   Cmd+Shift+N. Loose notes at the root of the anthill are the **Entrance**, a
   chamber that only shows up while there are loose notes. If you already had a working folder, it
   becomes your anthill and Ant asks you to pick or dig its first chamber.
+- **Encrypted chambers**: a chamber can be encrypted with a password (Settings → General →
+  Chambers → Encrypt…), for example to keep passwords. Every note and image in it is stored
+  encrypted on disk with the standard age format, so whoever uses your computer or gets into the
+  cloud where you sync it can't read them. Ant asks for the password to open it and locks it again
+  when you close Ant, switch chambers or choose Lock now. Before encrypting, Ant warns clearly:
+  if you forget the password, everything in that chamber is lost. Encryption can be removed later
+  with the password. Note and folder names stay visible on disk.
 - **The `.ant` folder**: pins, their icons and the Compile and Export options now live inside the
   anthill, in a hidden `.ant/` folder (like `.obsidian/` in a vault) with one file per chamber and
   paths relative to it. They travel with your notes when you move, sync or back up the anthill.

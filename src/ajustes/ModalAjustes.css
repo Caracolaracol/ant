@@ -318,3 +318,123 @@
   color: var(--tenue);
 }
 
+
+/* Área «Atajos» (PanelAtajos.tsx): una fila por acción, con su nombre a la izquierda y el atajo a
+   la derecha como una tecla. Al hacer clic, la tecla espera las nuevas (con el borde de acento);
+   si se cambió, aparece la flecha para volver al de por defecto. */
+.ajuste-atajos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.ajuste-atajo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.ajuste-atajo-nombre {
+  flex: 1;
+  min-width: 0;
+}
+
+.ajuste-atajo-teclas {
+  min-width: 74px;
+  padding: 5px 10px;
+  border: 1px solid var(--seleccion);
+  border-radius: 7px;
+  background: var(--fondo-bajo);
+  color: var(--texto);
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.ajuste-atajo-teclas:hover,
+.ajuste-atajo-teclas.esperando {
+  border-color: var(--acento);
+}
+
+.ajuste-atajo-teclas.esperando {
+  color: var(--acento);
+}
+
+.ajuste-atajo-teclas.cambiado {
+  color: var(--titulo);
+  font-weight: 700;
+}
+
+/* Los del editor no se cambian: sin borde de botón. */
+.ajuste-atajo-teclas.fijo {
+  border-color: transparent;
+  color: var(--tenue);
+  cursor: default;
+}
+
+.ajuste-atajo-restablecer {
+  display: flex;
+  padding: 4px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.ajuste-atajo-restablecer:hover {
+  color: var(--texto);
+  background: var(--coincidencia);
+}
+
+/* Aviso bajo la fila cuando la combinación ya la usa otra acción o el sistema. */
+.ajuste-atajo-aviso {
+  flex-basis: 100%;
+  text-align: right;
+  font-size: 12px;
+  color: var(--acento);
+}
+
+/* Cifrar o quitar el cifrado de una cámara: un botón más discreto que «Abrir», y la marca de
+   «Cifrada» con su candado bajo el nombre. */
+.ajuste-camara button.ajuste-camara-secundario {
+  border-color: transparent;
+  background: none;
+  color: var(--tenue);
+}
+
+.ajuste-camara button.ajuste-camara-secundario:hover {
+  border-color: var(--seleccion);
+  color: var(--texto);
+}
+
+.ajuste-camara-cifrada {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--acento);
+}
+
+/* Modos del editor (escritor, programador, simple): tarjetas una bajo otra, con un círculo para
+   elegir; la elegida con el borde de acento. */
+.ajuste-modos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.ajuste-modos .ajuste-modo {
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.ajuste-modos .ajuste-modo input {
+  margin-top: 4px;
+  accent-color: var(--acento);
+}

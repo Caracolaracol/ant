@@ -36,6 +36,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       arbolDeLaCamara={arbol}
       rutaDeLaNotaVisible={`${base}/Libro I/02 - La lluvia.md`}
       ajustes={ajustes}
+      opcionesDelModoEscritor={ajustes.opciones_del_modo_escritor}
       textoDeNotaAbiertaPorRuta={() => texto}
       cambiarAjustes={() => {}}
       opcionesGuardadasPorCarpeta={opcionesGuardadasPorCarpeta}

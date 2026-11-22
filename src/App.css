@@ -57,6 +57,108 @@ body,
   min-height: 0;
 }
 
+/* Sin ninguna nota abierta, el editor se esconde y en su lugar va la invitación a crear una. */
+.editor.oculto {
+  display: none;
+}
+
+/* Invitación a crear una nota (InvitacionANotaNueva.tsx): centrada en el lugar del editor, con un
+   icono en una cajita como los fijados y un botón con el color de acento. */
+.invitacion {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  font-family: var(--fuente);
+  text-align: center;
+  color: var(--tenue);
+}
+
+.invitacion-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 52px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  background: var(--fondo-bajo);
+  color: var(--acento);
+}
+
+.invitacion h1 {
+  margin: 0;
+  font-size: 17px;
+  color: var(--titulo);
+}
+
+.invitacion p {
+  max-width: 40ch;
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.invitacion-boton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--acento);
+  color: var(--fondo);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.invitacion-boton:hover {
+  filter: brightness(1.08);
+}
+
+/* Desbloquear una cámara cifrada (DesbloquearCamara.tsx): el campo de la contraseña junto al botón. */
+.desbloquear {
+  display: flex;
+  gap: 8px;
+}
+
+.desbloquear input {
+  width: 220px;
+  padding: 9px 12px;
+  border: 1px solid var(--seleccion);
+  border-radius: 8px;
+  background: var(--fondo-bajo);
+  color: var(--texto);
+  font: inherit;
+  font-size: 13px;
+}
+
+.desbloquear input:focus {
+  outline: none;
+  border-color: var(--acento);
+}
+
+.invitacion-boton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.desbloquear-error {
+  color: var(--acento);
+}
+
+.invitacion-boton kbd {
+  font: inherit;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
 /* Barra lateral: notas abiertas y, bajo la activa, sus títulos. Texto tenue salvo lo seleccionado.
    El ancho lo pone BarraLateral (se cambia arrastrando el borde derecho); el contenido va en
    `.barra-contenido`, que es el que tiene scroll, para que el borde no se desplace con él. */
@@ -233,6 +335,15 @@ body,
 .selector-de-camara .icono {
   flex-shrink: 0;
   color: var(--tenue);
+}
+
+/* Candado de una cámara cifrada junto a su nombre: cerrado si está bloqueada, abierto si no. */
+.selector-de-camara-candado {
+  display: inline-flex;
+}
+
+.selector-de-camara-candado .icono {
+  color: var(--acento);
 }
 
 /* Título de cada sección: «Abiertas» o el nombre de una carpeta fijada desplegada. */

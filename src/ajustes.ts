@@ -19,6 +19,8 @@ export interface Ajustes {
    * personales, una novela, el trabajo), o `null`. La barra lateral muestra su contenido.
    */
   camara_abierta: string | null;
+  /** Ruta de la última nota abierta: al volver a entrar se abre esa (`null`: arranca sin notas). */
+  ultima_nota_abierta: string | null;
   /**
    * De antes: fijados con rutas completas. Ahora van en `.ant/` de cada cámara
    * (`hormigueros/datosDeLaCamara.ts`); al abrir una cámara se pasan allá los suyos y se quitan de aquí.
@@ -34,14 +36,22 @@ export interface Ajustes {
   ancho_de_la_barra_lateral: number | null;
   /** Idioma de la interfaz: inglés (por defecto) o español. */
   idioma: Idioma;
-  /** Modo escritor del editor (activo por defecto): tipografía al escribir, letra de libro, corrector. */
+  /**
+   * Modo escritor (activo por defecto) y sus opciones, para las cámaras que todavía no eligieron su
+   * propia configuración del editor (ver `ConfiguracionDelEditor`).
+   */
   modo_escritor: boolean;
-  /** Opciones del modo escritor (ver `editor/escritor.ts`). */
+  /** Opciones del modo escritor de esas cámaras (ver `editor/escritor.ts`). */
   opciones_del_modo_escritor: OpcionesDelModoEscritor;
   /** Nombre del autor para las portadas de «Compilar y exportar». */
   nombre_del_autor: string;
   /** De antes (ahora en `.ant/`): opciones de «Compilar y exportar» de cada carpeta, por su ruta. */
   opciones_de_compilacion_por_carpeta: Record<string, OpcionesDeCompilacion>;
+  /**
+   * Atajos de teclado que el usuario cambió (Ajustes → Atajos), por id de acción (`atajos.ts`),
+   * como `CmdOrCtrl+Shift+KeyN`. Las acciones que no están aquí usan su atajo por defecto.
+   */
+  atajos_de_teclado: Record<string, string>;
 }
 
 /** Lo que se recuerda de cada carpeta compilada, para no volver a armarla cada vez. */
@@ -57,6 +67,29 @@ export interface OpcionesDeCompilacion {
   origenTitulo: OrigenDelTituloDeCadaCapitulo;
   tipografia: boolean;
 }
+
+/**
+ * Modo del editor de una cámara: «escritor» (prosa: tipografía, letra de libro, títulos sin `#`),
+ * «programador» (código: bloques de código cómodos, paréntesis que se cierran solos) o «simple»
+ * (Markdown tal cual, sin nada más).
+ */
+export type ModoDelEditor = "escritor" | "programador" | "simple";
+
+/**
+ * Configuración del editor de una cámara (Ajustes → Editor): cada cámara tiene la suya, guardada
+ * en sus datos de `.ant/` (`hormigueros/datosDeLaCamara.ts`). Una cámara que todavía no la tiene
+ * usa la de `modo_escritor` y `opciones_del_modo_escritor` de los ajustes.
+ */
+export interface ConfiguracionDelEditor {
+  modo: ModoDelEditor;
+  opciones_del_modo_escritor: OpcionesDelModoEscritor;
+}
+
+/** Configuración del editor de una cámara que todavía no eligió la suya: la de los ajustes generales. */
+export const configuracionDelEditorPorDefecto = (ajustes: Ajustes): ConfiguracionDelEditor => ({
+  modo: ajustes.modo_escritor ? "escritor" : "simple",
+  opciones_del_modo_escritor: ajustes.opciones_del_modo_escritor,
+});
 
 /** Opciones del modo escritor. Debe coincidir con `OpcionesDelModoEscritor` de Rust. */
 export interface OpcionesDelModoEscritor {
@@ -94,6 +127,7 @@ export const OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO: OpcionesDelModoEscritor = {
 export const AJUSTES_POR_DEFECTO: Ajustes = {
   hormiguero: null,
   camara_abierta: null,
+  ultima_nota_abierta: null,
   fijados: [],
   iconos_de_fijados: {},
   modo_diario: false,
@@ -104,6 +138,7 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   opciones_del_modo_escritor: OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO,
   nombre_del_autor: "",
   opciones_de_compilacion_por_carpeta: {},
+  atajos_de_teclado: {},
 };
 
 /** Lee los ajustes guardados (o los valores por defecto si no hay). */

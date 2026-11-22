@@ -1,7 +1,8 @@
 // Modo diario: cada día del calendario de la barra lateral tiene su nota en la carpeta `Daily`
 // dentro del hormiguero abierto, con la fecha como nombre (`Daily/2026-11-20.md`). Este módulo
 // crea la carpeta y la nota la primera vez que se pide un día, y si ya existen no las toca. Si el
-// hormiguero ya tiene una carpeta `Daily` (aunque esté escrita `daily` o `DAILY`), se usa esa.
+// hormiguero ya tiene una carpeta `Daily` (aunque esté escrita `daily` o `DAILY`), se usa esa. En
+// una cámara cifrada la nota se crea cifrada (ver `camaras_cifradas.rs`).
 
 use std::fs::{self, OpenOptions};
 use std::io::{ErrorKind, Write};
@@ -39,7 +40,12 @@ fn es_una_clave_de_dia_valida(clave_del_dia: &str) -> bool {
 /// nota no existe la crea con `texto_inicial` (el título con la fecha, que arma la interfaz).
 /// Una nota que ya existe no se modifica.
 #[tauri::command]
-pub fn abrir_o_crear_nota_del_dia(carpeta_del_hormiguero: String, clave_del_dia: String, texto_inicial: String) -> Result<String, String> {
+pub fn abrir_o_crear_nota_del_dia(app: tauri::AppHandle, carpeta_del_hormiguero: String, clave_del_dia: String, texto_inicial: String) -> Result<String, String> {
+    nota_del_dia(&crate::camaras_cifradas::llaves_de(&app), carpeta_del_hormiguero, clave_del_dia, texto_inicial)
+}
+
+/// Lo que hace `abrir_o_crear_nota_del_dia`, con las llaves de las cámaras cifradas a mano (para probarlo).
+fn nota_del_dia(llaves: &crate::camaras_cifradas::LlavesAbiertas, carpeta_del_hormiguero: String, clave_del_dia: String, texto_inicial: String) -> Result<String, String> {
     if !es_una_clave_de_dia_valida(&clave_del_dia) {
         return Err(format!("Invalid date: {clave_del_dia}"));
     }
@@ -50,6 +56,12 @@ pub fn abrir_o_crear_nota_del_dia(carpeta_del_hormiguero: String, clave_del_dia:
     let carpeta_del_diario = carpeta_del_diario(hormiguero);
     fs::create_dir_all(&carpeta_del_diario).map_err(|error| format!("Could not create {}: {error}", carpeta_del_diario.display()))?;
     let ruta_de_la_nota = carpeta_del_diario.join(format!("{clave_del_dia}.md"));
+    if crate::camaras_cifradas::camara_cifrada_que_contiene(&ruta_de_la_nota).is_some() {
+        if !crate::camaras_cifradas::existe(&ruta_de_la_nota) {
+            crate::camaras_cifradas::escribir_archivo(llaves, &ruta_de_la_nota, texto_inicial.as_bytes())?;
+        }
+        return Ok(ruta_de_la_nota.to_string_lossy().into_owned());
+    }
     // `create_new` falla si el archivo ya existe: así nunca se pisa una nota escrita.
     match OpenOptions::new().write(true).create_new(true).open(&ruta_de_la_nota) {
         Ok(mut archivo_nuevo) => archivo_nuevo
@@ -78,11 +90,11 @@ mod pruebas {
     #[test]
     fn crea_carpeta_y_nota_y_no_la_pisa() {
         let hormiguero = carpeta_temporal("crear");
-        let ruta_de_la_nota = abrir_o_crear_nota_del_dia(hormiguero.clone(), "2026-11-20".into(), "# Hoy\n".into()).unwrap();
+        let ruta_de_la_nota = nota_del_dia(&Default::default(), hormiguero.clone(), "2026-11-20".into(), "# Hoy\n".into()).unwrap();
         assert!(ruta_de_la_nota.ends_with("Daily/2026-11-20.md"));
         assert_eq!(fs::read_to_string(&ruta_de_la_nota).unwrap(), "# Hoy\n");
         fs::write(&ruta_de_la_nota, "escrito").unwrap();
-        abrir_o_crear_nota_del_dia(hormiguero, "2026-11-20".into(), "# Otro\n".into()).unwrap();
+        nota_del_dia(&Default::default(), hormiguero, "2026-11-20".into(), "# Otro\n".into()).unwrap();
         assert_eq!(fs::read_to_string(&ruta_de_la_nota).unwrap(), "escrito");
     }
 
@@ -90,7 +102,7 @@ mod pruebas {
     fn usa_la_carpeta_daily_que_ya_existe() {
         let hormiguero = carpeta_temporal("existente");
         fs::create_dir_all(Path::new(&hormiguero).join("daily")).unwrap();
-        let ruta_de_la_nota = abrir_o_crear_nota_del_dia(hormiguero.clone(), "2026-11-21".into(), String::new()).unwrap();
+        let ruta_de_la_nota = nota_del_dia(&Default::default(), hormiguero.clone(), "2026-11-21".into(), String::new()).unwrap();
         assert!(ruta_de_la_nota.ends_with("daily/2026-11-21.md"), "{ruta_de_la_nota}");
         assert_eq!(fs::read_dir(&hormiguero).unwrap().count(), 1);
     }
@@ -99,7 +111,7 @@ mod pruebas {
     fn rechaza_fechas_raras() {
         let hormiguero = carpeta_temporal("raras");
         for fecha_rara in ["../../x.md", "2026-11-2", "2026/11/20", "aaaa-bb-cc"] {
-            assert!(abrir_o_crear_nota_del_dia(hormiguero.clone(), fecha_rara.into(), String::new()).is_err(), "{fecha_rara}");
+            assert!(nota_del_dia(&Default::default(), hormiguero.clone(), fecha_rara.into(), String::new()).is_err(), "{fecha_rara}");
         }
     }
 }

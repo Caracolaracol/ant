@@ -9,7 +9,8 @@ import type { OpcionDelMenu } from "../MenuContextual";
 import type { NotaAbierta } from "../notasAbiertas/notaAbierta";
 
 export interface DatosDeLaBarraLateral {
-  idNotaVisible: string;
+  /** Nota que se ve en el editor, o `null` si no hay ninguna abierta. */
+  idNotaVisible: string | null;
   /** Notas abiertas que tienen archivo, por su ruta. */
   notasAbiertasPorRuta: Map<string, NotaAbierta>;
   /** Títulos (`#`…) de la nota visible. */

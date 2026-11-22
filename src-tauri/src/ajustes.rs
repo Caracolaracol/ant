@@ -37,6 +37,10 @@ pub struct Ajustes {
     /// nombre y no la ruta, así sigue sirviendo si el hormiguero se mueve.
     #[serde(default)]
     pub camara_abierta: Option<String>,
+    /// Ruta de la última nota que se abrió: al volver a entrar a la app se abre esa. `None` si se
+    /// cerró la última nota (la app arranca sin notas, con la invitación a crear una).
+    #[serde(default)]
+    pub ultima_nota_abierta: Option<String>,
     /// De antes: fijados con rutas completas (la ruta, o `ruta#título` para un capítulo). Ahora
     /// van en `.ant/` de cada cámara (`datos_del_hormiguero.rs`); la interfaz pasa allá los de una
     /// cámara la primera vez que se abre y los quita de aquí.
@@ -70,6 +74,11 @@ pub struct Ajustes {
     /// De antes (ahora en `.ant/`): opciones de «Compilar y exportar» de cada carpeta, por ruta.
     #[serde(default, alias = "compilaciones")]
     pub opciones_de_compilacion_por_carpeta: BTreeMap<String, serde_json::Value>,
+    /// Atajos de teclado que el usuario cambió (Ajustes → Atajos), por id de acción (ver
+    /// `src/atajos.ts`), como `CmdOrCtrl+Shift+KeyN`. El menú usa los de `ajustes`,
+    /// `camara_nueva` y `compilar`; los demás, la ventana.
+    #[serde(default)]
+    pub atajos_de_teclado: BTreeMap<String, String>,
 }
 
 /// Opciones del modo escritor (ver `src/editor/escritor.ts`). Los campos que falten en el archivo
@@ -133,6 +142,7 @@ impl Default for Ajustes {
         Ajustes {
             hormiguero: None,
             camara_abierta: None,
+            ultima_nota_abierta: None,
             fijados: Vec::new(),
             iconos_de_fijados: BTreeMap::new(),
             modo_diario: false,
@@ -143,6 +153,7 @@ impl Default for Ajustes {
             opciones_del_modo_escritor: OpcionesDelModoEscritor::default(),
             nombre_del_autor: String::new(),
             opciones_de_compilacion_por_carpeta: BTreeMap::new(),
+            atajos_de_teclado: BTreeMap::new(),
         }
     }
 }
@@ -237,12 +248,12 @@ mod pruebas {
     }
 }
 
-/// Guarda los ajustes en disco y avisa a la interfaz. Si cambió el idioma, traduce el menú de la
-/// app. Escribe con `escribir_atomico` (archivo temporal + renombrar): un corte a mitad de
+/// Guarda los ajustes en disco y avisa a la interfaz. Si cambió el idioma o un atajo, rehace el
+/// menú de la app. Escribe con `escribir_atomico` (archivo temporal + renombrar): un corte a mitad de
 /// escritura nunca deja `ajustes.json` a medias.
 #[tauri::command]
 pub fn guardar_ajustes(app: AppHandle, ajustes: Ajustes) -> Result<(), String> {
-    let idioma_anterior = leer_ajustes(app.clone()).idioma;
+    let ajustes_anteriores = leer_ajustes(app.clone());
     let ruta_del_archivo = ruta_del_archivo_de_ajustes(&app)?;
     if let Some(carpeta_de_configuracion) = ruta_del_archivo.parent() {
         fs::create_dir_all(carpeta_de_configuracion)
@@ -251,8 +262,8 @@ pub fn guardar_ajustes(app: AppHandle, ajustes: Ajustes) -> Result<(), String> {
     let texto_de_los_ajustes = serde_json::to_string_pretty(&ajustes).map_err(|error| error.to_string())?;
     crate::escribir_atomico(&ruta_del_archivo, texto_de_los_ajustes.as_bytes())
         .map_err(|error| format!("Could not save the settings: {error}"))?;
-    if ajustes.idioma != idioma_anterior {
-        crate::menu::cambiar_idioma(&app, &ajustes.idioma);
+    if ajustes.idioma != ajustes_anteriores.idioma || ajustes.atajos_de_teclado != ajustes_anteriores.atajos_de_teclado {
+        crate::menu::rehacer(&app, &ajustes);
     }
     app.emit(EVENTO_AJUSTES_CAMBIADOS, &ajustes).map_err(|error| error.to_string())
 }

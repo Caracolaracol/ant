@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
-import { Ajustes, OpcionesDeCompilacion, OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO } from "../ajustes";
+import { Ajustes, OpcionesDeCompilacion, OpcionesDelModoEscritor, OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO } from "../ajustes";
 import { EntradaDelArbol } from "../arbolDeCarpetas";
 import { buscarCarpetaDelDiario } from "../diario";
 import { crearConfiguracionModoEscritor } from "../editor/escritor";
@@ -28,6 +28,8 @@ interface Props {
   /** Ruta de la nota visible: su carpeta es la que se propone compilar. */
   rutaDeLaNotaVisible: string | null;
   ajustes: Ajustes;
+  /** Opciones del modo escritor de la cámara (para corregir la tipografía como al escribir), o `null` si no lo usa. */
+  opcionesDelModoEscritor: OpcionesDelModoEscritor | null;
   /** Lo elegido antes para cada carpeta de la cámara (de sus datos en `.ant/`), por ruta. */
   opcionesGuardadasPorCarpeta: Record<string, OpcionesDeCompilacion>;
   /** Recuerda lo elegido para una carpeta, tras exportar. */
@@ -105,6 +107,7 @@ export function Compilar({
   arbolDeLaCamara,
   rutaDeLaNotaVisible,
   ajustes,
+  opcionesDelModoEscritor,
   textoDeNotaAbiertaPorRuta,
   cambiarAjustes,
   opcionesGuardadasPorCarpeta,
@@ -228,7 +231,7 @@ export function Compilar({
       // La corrección usa las comillas y reglas del modo escritor (o las de por defecto si está apagado).
       const configuracionTipografica = corregirTipografia
         ? crearConfiguracionModoEscritor(
-            ajustes.modo_escritor ? ajustes.opciones_del_modo_escritor : OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO,
+            opcionesDelModoEscritor ?? OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO,
             idioma,
           )
         : null;

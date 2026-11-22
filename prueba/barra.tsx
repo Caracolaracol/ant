@@ -1,18 +1,24 @@
-// Página de prueba de la barra lateral con el selector de cámaras y los fijados (iconos), el menú de clic derecho y las ventanitas de Ajustes, «Cámara
-// nueva», «Nota nueva», «Carpeta nueva» y el selector de iconos, fuera de Tauri (`pnpm dev`, luego
-// http://localhost:1420/prueba/barra.html). Parámetros: `?es` en español, `?ajustes` abre los
-// Ajustes, `?nueva` la ventanita «Cámara nueva», `?nota` la de «Nota nueva», `?carpeta` la de
-// «Carpeta nueva», `?menu` el clic derecho de una nota, `?iconos` el selector de iconos,
-// `?globo` muestra el globo del primer fijado, `?camaras` despliega el selector de cámaras,
-// `?entrada` abre la «Entrada» y `?diario` el calendario del modo diario.
+// Página de prueba de la barra lateral con el selector de cámaras y los fijados (iconos), el menú
+// de clic derecho y las ventanitas de Ajustes, «Cámara nueva», «Nota nueva», «Carpeta nueva» y el
+// selector de iconos, fuera de Tauri (`pnpm dev`, luego http://localhost:1420/prueba/barra.html).
+// Parámetros: `?es` en español, `?ajustes` abre los Ajustes (`?ajustes=atajos` en esa área),
+// `?nueva` la ventanita «Cámara nueva», `?nota` la de «Nota nueva», `?carpeta` la de «Carpeta
+// nueva», `?menu` el clic derecho de una nota, `?iconos` el selector de iconos, `?globo` muestra el
+// globo del primer fijado, `?camaras` despliega el selector de cámaras, `?entrada` abre la
+// «Entrada», `?diario` el calendario del modo diario, `?sinnota` la invitación a crear una nota
+// (sin ninguna abierta), `?bloqueada` la cámara cifrada y bloqueada y `?cifrar` la ventanita para
+// cifrar una cámara.
 
 import ReactDOM from "react-dom/client";
 import "../src/App.css";
-import { AJUSTES_POR_DEFECTO, type Ajustes } from "../src/ajustes";
+import { AJUSTES_POR_DEFECTO, configuracionDelEditorPorDefecto, type Ajustes } from "../src/ajustes";
 import { ModalAjustes } from "../src/ajustes/ModalAjustes";
 import { BarraLateral } from "../src/barraLateral/BarraLateral";
 import { CAMARA_DE_ENTRADA } from "../src/hormigueros/hormigueros";
 import { NuevaNotaOCarpeta } from "../src/hormigueros/NuevaNotaOCarpeta";
+import { InvitacionANotaNueva } from "../src/notasAbiertas/InvitacionANotaNueva";
+import { CifrarCamara } from "../src/hormigueros/CifrarCamara";
+import { DesbloquearCamara } from "../src/hormigueros/DesbloquearCamara";
 import type { EntradaDelArbol } from "../src/arbolDeCarpetas";
 import { ElegirIconoDeFijado } from "../src/barraLateral/ElegirIconoDeFijado";
 import { NuevaCamara } from "../src/hormigueros/NuevaCamara";
@@ -38,6 +44,8 @@ const ajustes: Ajustes = {
   idioma: parametrosDeLaDireccion.has("es") ? "es" : "en",
   hormiguero,
   camara_abierta: abrirLaEntrada ? CAMARA_DE_ENTRADA : "Novela",
+  // Un atajo cambiado, para ver cómo se marca en Ajustes → Atajos.
+  atajos_de_teclado: { mostrar_panel: "CmdOrCtrl+Shift+KeyB" },
 };
 // Los fijados y sus iconos son datos de la cámara (en `.ant/`); aquí, de ejemplo.
 const datosDeLaCamara = {
@@ -58,7 +66,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           carpetaDeLaCamara={base}
           nombreDeLaCamaraAbierta={ajustes.camara_abierta}
           laCamaraEsLaEntrada={abrirLaEntrada}
+          laCamaraEstaBloqueada={parametrosDeLaDireccion.has("bloqueada")}
           camarasDelHormiguero={camaras}
+          camarasCifradas={["Personal"]}
+          alBloquearLaCamara={null}
           arbolDeLaCamara={abrirLaEntrada ? arbol.filter((entrada) => !entrada.esCarpeta) : arbol}
           clavesDeFijados={datosDeLaCamara.fijados}
           iconosElegidosPorFijado={datosDeLaCamara.iconos_de_fijados}
@@ -83,14 +94,23 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           alPedirCrear={nada}
           carpetaRecienCreada={null}
         />
-        <div className="editor" />
+        {parametrosDeLaDireccion.has("bloqueada") ? (
+          <DesbloquearCamara nombreDeLaCamara="Novela" alDesbloquear={async () => {}} />
+        ) : parametrosDeLaDireccion.has("sinnota") ? (
+          <InvitacionANotaNueva nombreDeLaCamara="Novela" atajoDeNotaNueva="⌘N" alCrearNotaNueva={nada} />
+        ) : (
+          <div className="editor" />
+        )}
       </div>
       <footer className="estado"><span>02 - La lluvia.md</span><span /></footer>
     </main>
-    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} camarasDelHormiguero={camaras} alPedirCamaraNueva={nada} alCerrar={nada} />}
+    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} camarasDelHormiguero={camaras} alPedirCamaraNueva={nada} camarasCifradas={["Personal"]} alPedirCifrado={nada} nombreDeLaCamaraAbierta="Novela" configuracionDelEditor={configuracionDelEditorPorDefecto(ajustes)} cambiarConfiguracionDelEditor={nada} alCerrar={nada} areaInicial={parametrosDeLaDireccion.get("ajustes") ?? undefined} />}
     {parametrosDeLaDireccion.has("nueva") && <NuevaCamara carpetaDelHormiguero={hormiguero} camarasDelHormiguero={camaras} alCavarCamara={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("nota") && <NuevaNotaOCarpeta queSeCrea="nota" carpetaDondeCrearla={`${base}/Libro I`} lugarVisible="Novela / Libro I" alCrear={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("carpeta") && <NuevaNotaOCarpeta queSeCrea="carpeta" carpetaDondeCrearla={base} lugarVisible="Novela" alCrear={nada} alCerrar={nada} />}
+    {parametrosDeLaDireccion.has("cifrar") && (
+      <CifrarCamara queSeHace="cifrar" nombreDeLaCamara="Contraseñas" alConfirmar={async () => {}} alCerrar={nada} />
+    )}
     {parametrosDeLaDireccion.has("iconos") && <ElegirIconoDeFijado x={120} y={90} iconoActual="drama" alElegirIcono={nada} alCerrar={nada} />}
   </ContextoDeTextos.Provider>,
 );

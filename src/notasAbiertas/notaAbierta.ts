@@ -28,7 +28,7 @@ export interface NotaAbierta {
 
 let contadorDeNotasNuevas = 0;
 
-/** Nota nueva y en blanco, sin archivo: la que se crea con Cmd+N o al cerrar la última. */
+/** Nota nueva y en blanco, sin archivo: la de Cmd+N cuando no hay ninguna cámara abierta. */
 export const crearNotaEnBlanco = (): NotaAbierta => ({
   id: `nota-nueva-${++contadorDeNotasNuevas}`,
   rutaDelArchivo: null,
@@ -44,8 +44,8 @@ export const crearNotaEnBlanco = (): NotaAbierta => ({
 export const idDeNotaConArchivo = (rutaDelArchivo: string) => `archivo:${rutaDelArchivo}`;
 
 /**
- * Indica si una nota es la nota en blanco con que arranca la app (sin archivo ni texto). Esa no
- * se lista en la barra lateral y se descarta sola al abrir otra.
+ * Indica si una nota es una nota en blanco (sin archivo ni texto). Esa no se lista en la barra
+ * lateral y se descarta sola al abrir otra.
  */
 export const esNotaEnBlanco = (nota: NotaAbierta) =>
   !nota.rutaDelArchivo && !nota.ultimoTextoConocido && !nota.tieneCambiosSinGuardar;

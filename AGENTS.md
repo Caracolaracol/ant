@@ -66,7 +66,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/App.tsx` — ventana principal. Solo junta las piezas: barra lateral, editor, barra de
   estado y, encima, la bienvenida (sin hormiguero o sin cámara, o con el evento
   `abrir-bienvenida`), los Ajustes, «Cámara nueva» y «Compilar y exportar» (eventos que manda Rust desde el menú,
-  `EVENTOS_DE_RUST` en `src/useEventoDeRust.ts`). La lógica vive en hooks:
+  `EVENTOS_DE_RUST` en `src/useEventoDeRust.ts`). Al entrar vuelve a abrir la última nota (`Ajustes.ultima_nota_abierta`, que se pone al día al
+  cambiar de nota). La lógica vive en hooks:
   - `src/ajustes/useAjustesGuardados.ts` — los ajustes vigentes y `cambiarAjustes` (aplica y guarda).
   - `src/hormigueros/useCamarasDelHormiguero.ts` — las cámaras del hormiguero (para la bienvenida,
     Ajustes y saber si la abierta sigue existiendo); se releen al cambiar de hormiguero y al volver
@@ -76,15 +77,27 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - `src/hormigueros/useDatosDeLaCamara.ts` — datos de la cámara abierta en `.ant/` (fijados,
     iconos, compilaciones): se leen al abrirla y al volver el foco, y se guardan al cambiar.
   - `src/notasAbiertas/useNotasAbiertas.ts` — las notas abiertas (`NotaAbierta`, en
-    `notaAbierta.ts`): una sola con archivo a la vez (`dejarComoUnicaNotaAbierta`), guardado
+    `notaAbierta.ts`): puede no haber ninguna (así arranca y así queda al cerrar la última; nunca
+    se crea una de la nada, y en lugar del editor va `notasAbiertas/InvitacionANotaNueva.tsx`, con
+    un botón que crea una nota en la raíz de la cámara), una sola con archivo a la vez
+    (`dejarComoUnicaNotaAbierta`), guardado
     automático (`guardarNotaEnDiscoAhora`, tras `PAUSA_ANTES_DE_GUARDAR`, al cambiar de nota, al
     perder el foco, al cerrar la ventana y al salir: Rust avisa con `antes-de-salir` y espera a
     `salir`), no pisar cambios hechos fuera de Ant (cada nota recuerda `textoQueHayEnDisco`; al
     volver el foco se recargan las que cambiaron) y el último texto conocido para contar
     (`ultimoTextoConocido`, al día tras `PAUSA_ANTES_DE_CONTAR`). Las notas con archivo tienen
     id fijo por ruta (`idDeNotaConArchivo`), así el editor las reconoce al volver a abrirlas.
-  - `src/useAtajosDeTeclado.ts` — Cmd+N (ventanita «Nota nueva»), Cmd+O, Cmd+S, Cmd+Shift+S,
-    Cmd+Shift+] / [ y `Cmd+\`.
+  - `src/useAtajosDeTeclado.ts` — los atajos de la ventana (nota nueva, abrir, guardar, guardar
+    como, nota siguiente / anterior, panel), con las teclas de `src/atajos.ts`.
+- `src/atajos.ts` — atajos de teclado: acciones con su atajo por defecto (`ACCIONES_CON_ATAJO`),
+  los que el usuario cambió (`Ajustes.atajos_de_teclado`, solo los distintos), los reservados y
+  los fijos del editor, leer una tecla pulsada, mostrarlos (`⇧⌘N` / `Ctrl+Shift+N`) y saber si uno
+  está libre. Formato del menú de Tauri con la tecla física (`KeyboardEvent.code`):
+  `CmdOrCtrl+Shift+KeyN`. Los del menú (ajustes, cámara nueva, compilar) los aplica Rust
+  (`menu.rs`, con los mismos ids y valores por defecto: una prueba de Rust lo comprueba). Para
+  agregar un atajo: la acción en `ACCIONES_CON_ATAJO`, su nombre en `accionesConAtajo`
+  (`idioma.tsx`) y su efecto en `useAtajosDeTeclado` (o en el menú). Probado en
+  `prueba/automaticas/atajos.prueba.ts`.
 - `src/hormigueros/NuevaNotaOCarpeta.tsx` — ventanita «Nota nueva» o «Carpeta nueva»: pide el
   nombre y crea la nota vacía (`crear_nota_nueva`) o la carpeta (`crear_carpeta_nueva`), sin pisar
   nada. La nota de Cmd+N va junto a la nota visible si es de la cámara, o en la
@@ -104,11 +117,27 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   (`estaEnLaCamara`). Si la cámara abierta falta o ya no existe, la bienvenida se abre en su
   página de cámaras. Los ajustes
   de antes (`carpeta`, o `hormiguero_abierto` con la lista `hormigueros`) pasan a ser el hormiguero.
-  Más adelante, algunas cámaras podrán protegerse con contraseña.
+  - **Cámaras cifradas** (para guardar contraseñas, por ejemplo): protegen contra quien use el
+    computador o entre a la nube. Rust (`src-tauri/src/camaras_cifradas.rs`) cifra cada archivo
+    con el formato estándar age (`Banco.md` → `Banco.md.age`) con una llave X25519 propia de la
+    cámara, guardada en `<cámara>/.ant-llave.age` y protegida con la contraseña (scrypt). Para el
+    resto de la app nada cambia de nombre: `leer_archivo` / `escribir_archivo` resuelven el
+    `.age` (las notas, la nota nueva, el diario y las imágenes pasan por ahí), así fijados, última
+    nota y enlaces siguen sirviendo. La llave desbloqueada vive solo en memoria
+    (`LlavesAbiertas`); bloqueada, leer o escribir da `camara-bloqueada`. Olvidar la contraseña es
+    perder la cámara (sin recuperación, a pedido del usuario): la ventanita de cifrar
+    (`src/hormigueros/CifrarCamara.tsx`) lo avisa en grande y pide marcar que se entiende.
+    `useCifradoDeLaCamara.ts` sigue el estado y bloquea sola la cámara que se deja; al bloquear se
+    cierran sus notas y el editor olvida su texto (`olvidarNotasDentroDe`). Bloqueada, la barra
+    muestra solo el selector y en lugar del editor va `DesbloquearCamara.tsx`. Las imágenes
+    cifradas se muestran desde la memoria (`leer_imagen_cifrada`, `blob:`). Los nombres siguen
+    visibles en el disco. Lo que se agregue y lea o escriba archivos de una cámara tiene que pasar
+    por `leer_archivo` / `escribir_archivo`.
   - **Carpeta `.ant/`** en la raíz del hormiguero (como `.obsidian/`): lo que es de las notas y no
     de este computador, para que viaje con el hormiguero. Un archivo por cámara,
     `.ant/camaras/<nombre>.json` (`.entrada.json` para la Entrada), con fijados, iconos y opciones
-    de compilación, y rutas **relativas a la cámara con `/`** (`.` es la cámara). En la app se usan
+    de compilación, la configuración de su editor (`editor`: modo escritor, programador o simple,
+    y las opciones del escritor; sin ella usa `modo_escritor` de los ajustes), y rutas **relativas a la cámara con `/`** (`.` es la cámara). En la app se usan
     completas: `src/hormigueros/datosDeLaCamara.ts` convierte en los dos sentidos y pasa al archivo
     lo que cada cámara tenía en `ajustes.json` la primera vez que se abre (y lo quita de ahí). En
     `ajustes.json` queda solo lo de este computador. Rust: `src-tauri/src/datos_del_hormiguero.rs`
@@ -175,7 +204,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/ajustes.ts` — tipo `Ajustes` (igual al de Rust), leer, guardar y escuchar cambios.
 - `src/ajustes/ModalAjustes.tsx` y `.css` — Ajustes como ventanita sobre la principal (no es
   otra ventana), en dos columnas: áreas a la izquierda (`AREAS`: General —idioma, hormiguero y
-  cámaras—, Editor —modo escritor—, Diario, Apariencia) y el panel del área elegida a la
+  cámaras—, Editor —modo de la cámara abierta: escritor, programador o simple—, Diario, Apariencia, Atajos —`PanelAtajos.tsx`: clic en un atajo y
+  pulsar las teclas nuevas—) y el panel del área elegida a la
   derecha. Los cambios se guardan al instante; Escape, Cmd+W o clic fuera la cierran. El marco
   de las ventanitas (`.modal-fondo`, `.modal`) está en `App.css`.
   Para agregar un ajuste: campo en `Ajustes` (TS y Rust, con `#[serde(default)]`) y su control
@@ -190,10 +220,34 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   `mostrarNota`, `olvidarNota`, `obtenerTextoDeNota`, `reemplazarTextoDesdeDisco` (cambio mínimo,
   fuera del historial y sin avisar como si se hubiera escrito), `llevarCursorA` y `enfocar`.
 - `src/editor/escritor.ts` — modo escritor (Ajustes → Editor, activo por defecto): reemplazos
-  tipográficos al teclear (`reemplazo`, probada aparte), Backspace que los deshace, letra de
-  libro y corrector. Va en un `Compartment` de `Editor.tsx` (prop `escritor`); nunca toca texto
+  tipográficos al teclear (`reemplazo`, probada aparte), Backspace que los deshace, títulos sin
+  `#` (se esconden con decoraciones en las líneas a la vista, salvo donde está el cursor), letra
+  de libro y corrector. Va en un `Compartment` de `Editor.tsx` (prop `escritor`); nunca toca texto
   ya escrito ni código, HTML, URLs o el encabezado YAML.
+- `src/editor/programador.ts` — modo programador (por cámara): al escribir ``` y Enter cierra el
+  bloque de código solo (si no estaba cerrado, según el árbol de sintaxis; probado en
+  `prueba/automaticas/programador.prueba.ts`), cierra paréntesis y comillas (`@codemirror/autocomplete`),
+  marca el par, da fondo a los bloques de código a la vista y apaga el corrector. Va en el mismo
+  `Compartment` que el modo escritor (`extensionesDelModo` en `Editor.tsx`): uno, otro o ninguno
+  (simple), según `ConfiguracionDelEditor` de la cámara (`ajustes.ts`).
 - `src/editor/tema.ts` — tema de CodeMirror y colores del Markdown, leyendo las variables CSS.
+- **Imágenes en las notas**: se arrastran a la ventana o se pegan, y se ven debajo de su línea sin
+  esconder el Markdown.
+  - `src/editor/imagenesEnElTexto.ts` — encontrar imágenes en una línea (`![…](…)`, con `< >` o
+    `%20`, y `![[…]]` de Obsidian), resolver su ruta desde la carpeta de la nota y escribir el
+    enlace de una nueva (probado en `prueba/automaticas/imagenes.prueba.ts`).
+  - `src/editor/imagenes.ts` — extensión de CodeMirror: un widget de bloque por imagen. Solo se
+    revisan las líneas que cambian. El editor sabe dónde está la nota visible
+    (`cambiarLugarDeLaNota`, prop `rutaDeLaNotaVisible`). Lee los archivos con el protocolo
+    `asset:` de Tauri, permitiendo antes la carpeta de cada imagen.
+  - `src/editor/useImagenesEnLaNota.ts` — lo arrastrado (Tauri `onDragDropEvent`, con rutas) y lo
+    pegado: copia o guarda en `Images/` junto a la nota (una imagen que ya está en el hormiguero se
+    enlaza donde está) e inserta el enlace con `insertarEnLineaPropia`. Soltar una nota la abre.
+  - `src-tauri/src/imagenes.rs` — copiar, guardar lo pegado (bytes crudos, como
+    `guardar_archivo_binario`), permitir carpetas al protocolo `asset:` y buscar por nombre las de
+    Obsidian. Nunca pisa una imagen (`-2`, `-3`…). Requiere el feature `protocol-asset` de `tauri`
+    y `assetProtocol.enable` en `tauri.conf.json` (con alcance vacío: se permite carpeta por carpeta).
+  - «Compilar y exportar» todavía no incluye las imágenes en el Word o el PDF.
 - `src/compilar/` — «Compilar y exportar» (menú File, Cmd+Shift+E; Rust emite
   `abrir-compilar` y `App` abre el diálogo). Sin dependencias ni programas externos:
   - `Compilar.tsx` y `.css` — el diálogo: carpeta, capítulos (incluir, ordenar), título, autor,
@@ -219,9 +273,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   (o a los 3 s).
 - `src-tauri/src/menu.rs` — menú propio en inglés o español según `Ajustes.idioma` (Ant con
   «Welcome to Ant…» y «Settings…» Cmd+, · File con «New Chamber…» Cmd+Shift+N y «Compile and Export…»
-  Cmd+Shift+E · Edit · Window); `EVENTOS` dice qué evento emite cada ítem y `cambiar_idioma`
-  lo rehace al guardar otro idioma. No incluye «Cerrar ventana»: Cmd+W no cierra la ventana
-  principal.
+  Cmd+Shift+E · Edit · Window); `EVENTOS` dice qué evento emite cada ítem y `rehacer` lo vuelve a
+  armar al guardar otro idioma u otros atajos (los suyos, de `Ajustes.atajos_de_teclado`). No
+  incluye «Cerrar ventana»: Cmd+W no cierra la ventana principal.
 - `src-tauri/src/ajustes.rs` — ajustes en `ajustes.json` de la carpeta de configuración de la
   app, escritos con `escribir_atomico`; al guardar emite `ajustes-cambiados`. Si el archivo está
   dañado, guarda una copia (`ajustes-ilegibles.json`) antes de usar los valores por defecto. Los
@@ -268,6 +322,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   (por eso existe `src/conteoDelTexto.ts`).
 - `prueba/compilar.html` — el diálogo «Compilar y exportar» con una carpeta de ejemplo (`?es` en
   español, `?libro` con opciones guardadas). Para revisar su diseño; exportar no funciona fuera de Tauri.
+- `prueba/imagenes.html` — el editor con una nota con imágenes: una en línea (se ve) y dos que fuera
+  de Tauri no se pueden leer (quedan con su nombre tenue).
 
 - `website/` — sitio en GitHub Pages (https://caracolaracol.github.io/ant/), hecho con Astro y
   npm (no pnpm; tiene su propio `package-lock.json`). `npm run dev` / `npm run build` dentro de

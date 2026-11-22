@@ -11,8 +11,13 @@
 // En cada tecla solo se avisa *que* cambió el texto (`alCambiarTexto`), sin copiarlo: con una
 // novela entera en una nota, copiar todo el texto en cada tecla haría lento escribir. Quien
 // necesita el texto lo pide con `obtenerTextoDeNota`.
-// El modo escritor (`escritor.ts`) va en un `Compartment`: se enciende, apaga o cambia en vivo,
-// y cada nota guardada se pone al día al volver a mostrarse.
+// El modo del editor de la cámara (escritor, `escritor.ts`; programador, `programador.ts`; o
+// simple) va en un `Compartment`: se cambia en vivo, y cada nota guardada se pone al día al volver
+// a mostrarse.
+// Las imágenes de la nota se ven debajo de su línea (`imagenes.ts`); para resolver sus rutas el
+// editor sabe dónde está la nota visible (`rutaDeLaNotaVisible`). Las imágenes pegadas se pasan a
+// la app (`alPegarImagenes`), que las guarda; las arrastradas llegan por Tauri a la app, que las
+// inserta con `insertarEnLineaPropia`.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { Annotation, Compartment, EditorSelection, EditorState, Transaction } from "@codemirror/state";
@@ -23,6 +28,22 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { temaDelEditor, resaltadoDelMarkdown } from "./tema";
 import { ConfiguracionModoEscritor, extensionesDelModoEscritor } from "./escritor";
+import { extensionesDelModoProgramador } from "./programador";
+import type { ModoDelEditor } from "../ajustes";
+import { cambiarLugarDeLaNota, extensionesDeImagenes, LugarDeLaNota } from "./imagenes";
+
+/** Modo del editor ya resuelto para montarlo: el modo y, en el escritor, su configuración. */
+export interface ConfiguracionDelEditorResuelta {
+  modo: ModoDelEditor;
+  escritor: ConfiguracionModoEscritor | null;
+}
+
+/** Extensiones de CodeMirror del modo del editor. */
+function extensionesDelModo(configuracion: ConfiguracionDelEditorResuelta) {
+  if (configuracion.modo === "escritor") return extensionesDelModoEscritor(configuracion.escritor);
+  if (configuracion.modo === "programador") return extensionesDelModoProgramador;
+  return [];
+}
 
 /** Cuántas notas recuerda el editor (cursor e historial) después de cerrarlas. */
 const LIMITE_DE_NOTAS_RECORDADAS = 30;
@@ -45,6 +66,11 @@ export interface ControlDelEditor {
   recuerdaLaNota(idNota: string): boolean;
   /** Olvida para siempre el estado de una nota (una nota en blanco que se descarta). */
   olvidarNota(idNota: string): void;
+  /**
+   * Olvida el estado (texto, historial) de todas las notas de archivos dentro de `carpeta`, también
+   * la visible: al bloquear una cámara cifrada, su texto no queda en memoria.
+   */
+  olvidarNotasDentroDe(carpeta: string): void;
   /** Devuelve el texto de una nota (la visible o una recordada en segundo plano). */
   obtenerTextoDeNota(idNota: string): string | undefined;
   /** Pone al día el texto de una nota con lo que hay en su archivo, sin perder cursor ni historial. */
@@ -53,6 +79,11 @@ export interface ControlDelEditor {
   llevarCursorA(posicion: number): void;
   /** Pone el foco en el editor. */
   enfocar(): void;
+  /**
+   * Agrega `texto` (por ejemplo, el enlace de una imagen) en una línea propia, debajo de la línea
+   * del cursor o de la que está en `coordenadasEnLaVentana` (donde se soltó algo arrastrado).
+   */
+  insertarEnLineaPropia(texto: string, coordenadasEnLaVentana?: { x: number; y: number }): void;
 }
 
 interface Props {
@@ -60,8 +91,15 @@ interface Props {
   alCambiarTexto(): void;
   /** Se llama cuando el cursor se mueve, con su posición (para marcar el título actual). */
   alMoverCursor(posicion: number): void;
-  /** Configuración del modo escritor, o `null` si está apagado. */
-  configuracionModoEscritor: ConfiguracionModoEscritor | null;
+  /** Modo del editor de la cámara abierta y, en el modo escritor, su configuración. */
+  configuracionDelEditor: ConfiguracionDelEditorResuelta;
+  /** Archivo de la nota visible (o `null`) y el hormiguero, para encontrar sus imágenes. */
+  rutaDeLaNotaVisible: string | null;
+  carpetaDelHormiguero: string | null;
+  /** Se llama al pegar imágenes (por ejemplo, una captura de pantalla), con sus archivos. */
+  alPegarImagenes(archivos: File[]): void;
+  /** Sin ninguna nota abierta, el editor se esconde (la vista sigue creada, lista para la próxima). */
+  estaOculto: boolean;
 }
 
 /**
@@ -92,7 +130,7 @@ const transaccionDesdeDisco = (estado: EditorState, textoNuevo: string) => ({
 });
 
 export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
-  { alCambiarTexto, alMoverCursor, configuracionModoEscritor },
+  { alCambiarTexto, alMoverCursor, configuracionDelEditor, rutaDeLaNotaVisible, carpetaDelHormiguero, alPegarImagenes, estaOculto },
   referenciaDelControl,
 ) {
   const contenedorDelEditor = useRef<HTMLDivElement>(null);
@@ -102,13 +140,16 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
   const idNotaVisible = useRef<string | null>(null);
   const estadosRecordadosPorNota = useRef(new Map<string, EditorState>());
   // Últimos callbacks en refs: la vista se crea una sola vez y siempre llama a la versión vigente.
-  const callbacksVigentes = useRef({ alCambiarTexto, alMoverCursor });
-  callbacksVigentes.current = { alCambiarTexto, alMoverCursor };
-  // Modo escritor: su compartimento (uno por editor) y la configuración vigente, comparada como
+  const callbacksVigentes = useRef({ alCambiarTexto, alMoverCursor, alPegarImagenes });
+  callbacksVigentes.current = { alCambiarTexto, alMoverCursor, alPegarImagenes };
+  // Dónde está la nota visible, para pasárselo a cada nota que se muestra.
+  const lugarDeLaNotaVigente = useRef<LugarDeLaNota>({ rutaDeLaNota: rutaDeLaNotaVisible, carpetaDelHormiguero });
+  lugarDeLaNotaVigente.current = { rutaDeLaNota: rutaDeLaNotaVisible, carpetaDelHormiguero };
+  // Modo del editor: su compartimento (uno por editor) y la configuración vigente, comparada como
   // texto para no reconfigurar si los ajustes cambiaron en otra cosa (fijados, ancho…).
-  const compartimentoModoEscritor = useRef(new Compartment()).current;
-  const configuracionModoEscritorVigente = useRef(configuracionModoEscritor);
-  const configuracionModoEscritorComoTexto = JSON.stringify(configuracionModoEscritor);
+  const compartimentoDelModo = useRef(new Compartment()).current;
+  const configuracionDelEditorVigente = useRef(configuracionDelEditor);
+  const configuracionDelEditorComoTexto = JSON.stringify(configuracionDelEditor);
 
   /** Extensiones de CodeMirror: historial, atajos, Markdown, tema y avisos a la app. */
   const crearExtensiones = () => [
@@ -122,7 +163,18 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
     markdown({ base: markdownLanguage, codeLanguages: languages }),
     temaDelEditor,
     resaltadoDelMarkdown,
-    compartimentoModoEscritor.of(extensionesDelModoEscritor(configuracionModoEscritorVigente.current)),
+    compartimentoDelModo.of(extensionesDelModo(configuracionDelEditorVigente.current)),
+    extensionesDeImagenes,
+    // Pegar imágenes (una captura, una imagen copiada): la app las guarda junto a la nota y agrega su enlace.
+    EditorView.domEventHandlers({
+      paste(evento) {
+        const imagenesPegadas = [...(evento.clipboardData?.files ?? [])].filter((archivo) => archivo.type.startsWith("image/"));
+        if (!imagenesPegadas.length) return false;
+        evento.preventDefault();
+        callbacksVigentes.current.alPegarImagenes(imagenesPegadas);
+        return true;
+      },
+    }),
     EditorView.updateListener.of((actualizacion) => {
       const vieneDelDisco = actualizacion.transactions.some((transaccion) => transaccion.annotation(cambioQueVieneDelDisco));
       if (actualizacion.docChanged && !vieneDelDisco) callbacksVigentes.current.alCambiarTexto();
@@ -148,11 +200,17 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
     return () => vista.destroy();
   }, []);
 
-  // Al cambiar el modo escritor en Ajustes, la nota visible lo aplica al instante.
+  // Al cambiar dónde está la nota visible (otra nota, «Guardar como» u otro hormiguero), sus imágenes
+  // se vuelven a buscar desde ahí.
   useEffect(() => {
-    configuracionModoEscritorVigente.current = configuracionModoEscritor;
-    vistaDelEditor.current?.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesDelModoEscritor(configuracionModoEscritor)) });
-  }, [configuracionModoEscritorComoTexto]);
+    vistaDelEditor.current?.dispatch({ effects: cambiarLugarDeLaNota.of(lugarDeLaNotaVigente.current) });
+  }, [rutaDeLaNotaVisible, carpetaDelHormiguero]);
+
+  // Al cambiar el modo en Ajustes (o al pasar a una cámara con otro), la nota visible lo aplica al instante.
+  useEffect(() => {
+    configuracionDelEditorVigente.current = configuracionDelEditor;
+    vistaDelEditor.current?.dispatch({ effects: compartimentoDelModo.reconfigure(extensionesDelModo(configuracionDelEditor)) });
+  }, [configuracionDelEditorComoTexto]);
 
   useImperativeHandle(referenciaDelControl, () => ({
     mostrarNota(idNota, textoInicial) {
@@ -164,8 +222,14 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
       vista.setState(estadoRecordado ?? EditorState.create({ doc: textoInicial, extensions: crearExtensiones() }));
       idNotaVisible.current = idNota;
       recordarEstado(idNota, vista.state);
-      // Una nota recordada pudo quedar con otra configuración del modo escritor: se pone al día.
-      vista.dispatch({ effects: compartimentoModoEscritor.reconfigure(extensionesDelModoEscritor(configuracionModoEscritorVigente.current)) });
+      // Una nota recordada pudo quedar con otro modo del editor: se pone al día.
+      // Y se le dice dónde está, para sus imágenes.
+      vista.dispatch({
+        effects: [
+          compartimentoDelModo.reconfigure(extensionesDelModo(configuracionDelEditorVigente.current)),
+          cambiarLugarDeLaNota.of(lugarDeLaNotaVigente.current),
+        ],
+      });
       callbacksVigentes.current.alMoverCursor(vista.state.selection.main.head);
       vista.focus();
     },
@@ -173,6 +237,20 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
     olvidarNota(idNota) {
       estadosRecordadosPorNota.current.delete(idNota);
       if (idNotaVisible.current === idNota) idNotaVisible.current = null;
+    },
+    olvidarNotasDentroDe(carpeta) {
+      const carpetaSinBarraFinal = carpeta.replace(/[\\/]+$/, "");
+      const esDeLaCarpeta = (idNota: string) =>
+        idNota.startsWith(`archivo:${carpetaSinBarraFinal}/`) || idNota.startsWith(`archivo:${carpetaSinBarraFinal}\\`);
+      for (const idNota of [...estadosRecordadosPorNota.current.keys()]) {
+        if (esDeLaCarpeta(idNota)) estadosRecordadosPorNota.current.delete(idNota);
+      }
+      // Si la visible era de ahí, el editor se vacía (queda escondido hasta mostrar otra nota).
+      const vista = vistaDelEditor.current;
+      if (vista && idNotaVisible.current && esDeLaCarpeta(idNotaVisible.current)) {
+        idNotaVisible.current = null;
+        vista.setState(EditorState.create({ extensions: crearExtensiones() }));
+      }
     },
     obtenerTextoDeNota(idNota) {
       if (idNota === idNotaVisible.current) return vistaDelEditor.current?.state.doc.toString();
@@ -199,7 +277,22 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
       vista.focus();
     },
     enfocar: () => vistaDelEditor.current?.focus(),
+    insertarEnLineaPropia(texto, coordenadasEnLaVentana) {
+      const vista = vistaDelEditor.current;
+      if (!vista) return;
+      const posicion = (coordenadasEnLaVentana && vista.posAtCoords(coordenadasEnLaVentana)) ?? vista.state.selection.main.head;
+      const linea = vista.state.doc.lineAt(posicion);
+      // En una línea vacía va ahí mismo; si no, en una línea nueva debajo.
+      const textoQueSeAgrega = linea.length === 0 ? texto : `\n${texto}`;
+      const desde = linea.length === 0 ? linea.from : linea.to;
+      vista.dispatch({
+        changes: { from: desde, insert: textoQueSeAgrega },
+        selection: EditorSelection.cursor(desde + textoQueSeAgrega.length),
+        scrollIntoView: true,
+      });
+      vista.focus();
+    },
   }));
 
-  return <div className="editor" ref={contenedorDelEditor} />;
+  return <div className={`editor${estaOculto ? " oculto" : ""}`} ref={contenedorDelEditor} />;
 });

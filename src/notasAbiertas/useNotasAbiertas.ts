@@ -2,6 +2,8 @@
 // guardarlas solas, cerrarlas y no pisar cambios hechos fuera de Ant.
 //
 // Reglas:
+//   · Puede no haber ninguna nota abierta: así arranca la app (salvo que vuelva a abrir la última,
+//     ver `App`) y así queda al cerrar la última. Nunca se crea una nota de la nada.
 //   · Una sola nota con archivo abierta a la vez: abrir otra guarda y cierra la anterior. Solo
 //     siguen abiertas las notas nuevas (sin archivo) que ya tienen algo escrito, para no perderlas.
 //   · Guardado automático: una nota con archivo se guarda `PAUSA_ANTES_DE_GUARDAR` después de la
@@ -24,6 +26,7 @@ import { extraerTitulosDeLaNota } from "../titulosDeLaNota";
 import { elegirNotaConElDialogo, elegirDondeGuardarConElDialogo, guardarNotaEnElDisco, leerNotaDelDisco, nombreDelArchivo } from "../archivosDeNotas";
 import { useEventoDeRust } from "../useEventoDeRust";
 import { NotaAbierta, crearNotaEnBlanco, idDeNotaConArchivo } from "./notaAbierta";
+import { estaDentroDe } from "../arbolDeCarpetas";
 
 /** Cuánto se espera tras la última tecla para guardar la nota sola, en milisegundos. */
 const PAUSA_ANTES_DE_GUARDAR = 600;
@@ -56,8 +59,9 @@ export function useNotasAbiertas({
   mostrarError,
 }: ParametrosDeLasNotasAbiertas) {
   const textosDeLaInterfaz = useTextos();
-  const [notasAbiertas, setNotasAbiertas] = useState<NotaAbierta[]>(() => [crearNotaEnBlanco()]);
-  const [idNotaVisible, setIdNotaVisible] = useState(() => notasAbiertas[0].id);
+  const [notasAbiertas, setNotasAbiertas] = useState<NotaAbierta[]>([]);
+  // Nota que se ve en el editor, o `null` si no hay ninguna abierta.
+  const [idNotaVisible, setIdNotaVisible] = useState<string | null>(null);
 
   // Copias en refs para que los callbacks, que no se vuelven a crear, lean siempre lo último.
   const notasAbiertasVigentes = useRef(notasAbiertas);
@@ -203,6 +207,7 @@ export function useNotasAbiertas({
    */
   const alCambiarTextoEnElEditor = useCallback(() => {
     const idNota = idNotaVisibleVigente.current;
+    if (!idNota) return;
     cantidadDeCambiosPorNota.current.set(idNota, (cantidadDeCambiosPorNota.current.get(idNota) ?? 0) + 1);
     const notaQueCambio = notasAbiertasVigentes.current.find((nota) => nota.id === idNota);
     if (notaQueCambio && !notaQueCambio.tieneCambiosSinGuardar) cambiarDatosDeNota(idNota, { tieneCambiosSinGuardar: true });
@@ -292,7 +297,7 @@ export function useNotasAbiertas({
     if (rutaElegida) await abrirNotaDeArchivo(rutaElegida);
   }, [abrirNotaDeArchivo]);
 
-  /** Abre una nota nueva en blanco (Cmd+N) en lugar de la que había. */
+  /** Abre una nota nueva en blanco, sin archivo, en lugar de la que había (Cmd+N cuando no hay cámara). */
   const abrirNotaEnBlanco = useCallback(() => dejarComoUnicaNotaAbierta(crearNotaEnBlanco()), [dejarComoUnicaNotaAbierta]);
 
   /**
@@ -324,7 +329,7 @@ export function useNotasAbiertas({
   }, [guardarNotaEnDiscoAhora, textoActualDeNota, cambiarDatosDeNota, releerArbolDeLaCamara]);
 
   /**
-   * Cierra una nota y muestra la vecina. Si tiene archivo, antes guarda sus cambios; si es una
+   * Cierra una nota y muestra la vecina (o ninguna, si era la última). Si tiene archivo, antes guarda sus cambios; si es una
    * nota nueva con algo escrito, pregunta antes de descartarla.
    */
   const cerrarNota = useCallback(async (idNota: string) => {
@@ -346,17 +351,31 @@ export function useNotasAbiertas({
     // Las notas con archivo se siguen recordando en el editor por si se vuelven a abrir.
     if (!notaQueSeCierra.rutaDelArchivo) controlDelEditor.current?.olvidarNota(idNota);
     const notasQueQuedan = notas.filter((nota) => nota.id !== idNota);
-    // Nunca queda la ventana vacía: si se cerró la última nota, se abre una en blanco.
-    if (notasQueQuedan.length === 0) notasQueQuedan.push(crearNotaEnBlanco());
     setNotasAbiertas(notasQueQuedan);
+    // Si se cerró la visible, se ve la vecina; si era la última, no queda ninguna (la ventana
+    // muestra la invitación a crear una nota).
     if (idNota === idNotaVisibleVigente.current) {
-      setIdNotaVisible(notasQueQuedan[Math.min(posicionEnLaLista, notasQueQuedan.length - 1)].id);
+      setIdNotaVisible(notasQueQuedan[Math.min(posicionEnLaLista, notasQueQuedan.length - 1)]?.id ?? null);
     }
   }, [controlDelEditor, guardarNotaEnDiscoAhora]);
+
+  /**
+   * Guarda y cierra todas las notas abiertas que están dentro de `carpeta` (al bloquear una cámara
+   * cifrada). Si la visible era una de ellas, se ve otra abierta, o ninguna.
+   */
+  const cerrarNotasDentroDe = useCallback(async (carpeta: string) => {
+    const notasDeLaCarpeta = notasAbiertasVigentes.current.filter((nota) => nota.rutaDelArchivo && estaDentroDe(nota.rutaDelArchivo, carpeta));
+    if (!notasDeLaCarpeta.length) return;
+    await Promise.all(notasDeLaCarpeta.map((nota) => guardarNotaEnDiscoAhora(nota.id).catch(() => {})));
+    const notasQueQuedan = notasAbiertasVigentes.current.filter((nota) => !notasDeLaCarpeta.includes(nota));
+    setNotasAbiertas(notasQueQuedan);
+    if (notasDeLaCarpeta.some((nota) => nota.id === idNotaVisibleVigente.current)) setIdNotaVisible(notasQueQuedan[0]?.id ?? null);
+  }, [guardarNotaEnDiscoAhora]);
 
   /** Pasa a la nota abierta siguiente (`paso` = 1) o anterior (`paso` = -1), dando la vuelta al llegar al final. */
   const pasarANotaVecina = useCallback((paso: 1 | -1) => {
     const notas = notasAbiertasVigentes.current;
+    if (!notas.length) return;
     const posicionActual = notas.findIndex((nota) => nota.id === idNotaVisibleVigente.current);
     setIdNotaVisible(notas[(posicionActual + paso + notas.length) % notas.length].id);
   }, []);
@@ -367,7 +386,8 @@ export function useNotasAbiertas({
     return nota ? controlDelEditor.current?.obtenerTextoDeNota(nota.id) : undefined;
   }, [controlDelEditor]);
 
-  const notaVisible = notasAbiertas.find((nota) => nota.id === idNotaVisible) ?? notasAbiertas[0];
+  /** La nota que se ve en el editor, o `null` si no hay ninguna abierta. */
+  const notaVisible = notasAbiertas.find((nota) => nota.id === idNotaVisible) ?? null;
 
   return {
     notasAbiertas,
@@ -380,6 +400,7 @@ export function useNotasAbiertas({
     abrirNotaEnBlanco,
     guardarNotaVisible,
     cerrarNota,
+    cerrarNotasDentroDe,
     pasarANotaVecina,
     alCambiarTextoEnElEditor,
     textoDeNotaAbiertaPorRuta,

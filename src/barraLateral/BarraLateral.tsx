@@ -1,7 +1,8 @@
 // Barra lateral de la ventana principal (el «panel»). Simple a propósito: no tiene líneas
 // separadoras, las secciones se separan solo con espacio. De arriba hacia abajo:
 //   0. El selector de cámaras (`SelectorDeCamara.tsx`): el nombre de la cámara abierta, que al
-//      tocarlo despliega las otras para cambiar de cámara (y «Cámara nueva…»).
+//      tocarlo despliega las otras para cambiar de cámara (y «Cámara nueva…»). Si la cámara es
+//      cifrada y está bloqueada, la barra muestra solo esto.
 //   1. El calendario del modo diario si está activo en Ajustes (`Calendario.tsx`), con la nota
 //      diaria abierta debajo. En ese modo la carpeta `Daily` no aparece en el árbol: a las notas
 //      diarias se llega desde el calendario.
@@ -44,8 +45,16 @@ interface Props {
   nombreDeLaCamaraAbierta: string | null;
   /** Si la cámara abierta es la «Entrada»: solo son suyas las notas sueltas de la raíz del hormiguero. */
   laCamaraEsLaEntrada: boolean;
-  /** Las cámaras del hormiguero, para el selector. */
+  /**
+   * Si la cámara abierta es cifrada y está bloqueada (o todavía no se sabe): la barra muestra solo
+   * el selector de cámaras, nada de lo que hay dentro.
+   */
+  laCamaraEstaBloqueada: boolean;
+  /** Las cámaras del hormiguero, para el selector, y cuáles están cifradas (llevan candado). */
   camarasDelHormiguero: string[];
+  camarasCifradas: string[];
+  /** Bloquea la cámara abierta (si es cifrada y está desbloqueada; si no, `null`). */
+  alBloquearLaCamara: (() => void) | null;
   arbolDeLaCamara: EntradaDelArbol[];
   /** Claves de todo lo fijado (de los ajustes); solo se muestran las de la cámara abierta. */
   clavesDeFijados: string[];
@@ -54,7 +63,8 @@ interface Props {
   /** Si el modo diario está activo (muestra el calendario). */
   modoDiarioActivo: boolean;
   notasAbiertas: NotaAbierta[];
-  idNotaVisible: string;
+  /** Nota que se ve en el editor, o `null` si no hay ninguna abierta. */
+  idNotaVisible: string | null;
   /** Títulos de la nota visible (los calcula App tras una pausa al escribir). */
   titulosDeLaNotaVisible: TituloDeLaNota[];
   /** Índice del título donde está el cursor, o -1. */
@@ -146,8 +156,8 @@ export function BarraLateral(props: Props) {
     ? notasAbiertas.filter((nota) => nota.rutaDelArchivo && estaDentroDe(nota.rutaDelArchivo, carpetaDelDiario))
     : [];
 
-  // «Abiertas»: notas fuera de la cámara. La nota en blanco con que arranca la app no se lista:
-  // solo aparece cuando se empieza a escribir en ella.
+  // «Abiertas»: notas fuera de la cámara. Una nota en blanco (sin archivo) no se lista: solo
+  // aparece cuando se empieza a escribir en ella.
   const notasFueraDeLaCamara = notasAbiertas.filter((nota) =>
     nota.rutaDelArchivo ? !esDeLaCamara(nota.rutaDelArchivo) : nota.ultimoTextoConocido || nota.tieneCambiosSinGuardar,
   );
@@ -211,17 +221,23 @@ export function BarraLateral(props: Props) {
             tienen su propio menú (y detienen el evento). */}
         <div
           className="barra-contenido"
-          onContextMenu={(evento) => carpetaDeLaCamara && datosCompartidos.abrirMenuContextual(evento, opcionesParaCrearEn(carpetaDeLaCamara))}
+          onContextMenu={(evento) =>
+            carpetaDeLaCamara && !props.laCamaraEstaBloqueada && datosCompartidos.abrirMenuContextual(evento, opcionesParaCrearEn(carpetaDeLaCamara))
+          }
         >
           {carpetaDeLaCamara && props.nombreDeLaCamaraAbierta && (
             <SelectorDeCamara
               nombreDeLaCamaraAbierta={props.nombreDeLaCamaraAbierta}
               carpetaDeLaCamara={carpetaDeLaCamara}
               camarasDelHormiguero={props.camarasDelHormiguero}
+              camarasCifradas={props.camarasCifradas}
               alAbrirCamara={props.alAbrirCamara}
               alPedirCamaraNueva={props.alPedirCamaraNueva}
+              alBloquearLaCamara={props.alBloquearLaCamara}
             />
           )}
+          {!props.laCamaraEstaBloqueada && (
+          <>
           {carpetaDelDiario && (
             <section className="barra-seccion barra-diario">
               <Calendario
@@ -274,6 +290,8 @@ export function BarraLateral(props: Props) {
                 <div className="barra-vacia">{textosDeLaInterfaz.carpetaVacia}</div>
               )}
             </section>
+          )}
+          </>
           )}
         </div>
         {/* Borde invisible para cambiar el ancho; doble clic vuelve al ancho por defecto. */}

@@ -1,25 +1,31 @@
 // Ajustes (Ant → Settings… / Ajustes… o Cmd+,): una ventanita sobre la ventana principal, no una
 // ventana aparte. Está dividida en dos: a la izquierda la lista de áreas de ajustes y a la
 // derecha las opciones del área elegida:
-//   General (idioma, hormiguero y cámaras) · Editor (modo escritor) · Diario (calendario y notas
-//   diarias) · Apariencia (colores).
+//   General (idioma, hormiguero y cámaras) · Editor (modo de la cámara abierta: escritor,
+//   programador o simple) · Diario (calendario y notas
+//   diarias) · Apariencia (colores) · Atajos (teclas de cada acción, en `PanelAtajos.tsx`).
 // Los cambios se aplican y guardan al instante (`cambiarAjustes`, de App); se cierra con Escape,
 // Cmd+W, la × o un clic fuera. Los textos salen de `idioma.tsx`, así cambia de idioma apenas se
 // elige otro. Para agregar un área nueva: sumarla a `AREAS_DE_AJUSTES` (y su nombre a `areas` en
 // `idioma.tsx`), crear su panel y mostrarlo en `ModalAjustes`.
 
 import { useEffect, useState } from "react";
-import { Ajustes, OpcionesDelModoEscritor } from "../ajustes";
+import { Ajustes, ConfiguracionDelEditor, ModoDelEditor, OpcionesDelModoEscritor } from "../ajustes";
 import { COLORES_POR_DEFECTO, TEMAS, VARIABLES_DE_COLOR } from "../colores";
 import { NOMBRE_DE_LA_CARPETA_DEL_DIARIO } from "../diario";
 import { cambiosParaElegirHormiguero, elegirCarpetaConElDialogo, esLaEntrada, nombreVisibleDeLaCamara } from "../hormigueros/hormigueros";
 import { IDIOMAS, Idioma, idiomaValido, useTextos } from "../idioma";
 import { nombreDelArchivo } from "../archivosDeNotas";
 import { marcarComoTextoDeIzquierdaADerecha } from "../arbolDeCarpetas";
+import { PanelAtajos } from "./PanelAtajos";
+import { Icono } from "../Icono";
 import "./ModalAjustes.css";
 
+/** Modos del editor, en el orden en que se ofrecen (sus nombres y ayudas en `idioma.tsx`). */
+const MODOS_DEL_EDITOR: ModoDelEditor[] = ["escritor", "programador", "simple"];
+
 /** Áreas de ajustes que aparecen en la columna izquierda (sus nombres están en `idioma.tsx`). */
-const AREAS_DE_AJUSTES = ["general", "editor", "diario", "apariencia"] as const;
+const AREAS_DE_AJUSTES = ["general", "editor", "diario", "apariencia", "atajos"] as const;
 type AreaDeAjustes = (typeof AREAS_DE_AJUSTES)[number];
 
 interface PropsDeUnPanel {
@@ -29,7 +35,8 @@ interface PropsDeUnPanel {
 
 /**
  * Área «General»: idioma de la interfaz, el hormiguero (se puede cambiar por otra carpeta) y sus
- * cámaras, con la abierta marcada. Desde aquí se abre otra cámara o se cava una nueva. Al cambiar
+ * cámaras, con la abierta marcada y las cifradas con candado. Desde aquí se abre otra cámara, se
+ * cava una nueva y se cifra una (o se le quita el cifrado). Al cambiar
  * de hormiguero, la bienvenida pide elegir una de sus cámaras.
  */
 function PanelGeneral({
@@ -37,7 +44,9 @@ function PanelGeneral({
   cambiarAjustes,
   camarasDelHormiguero,
   alPedirCamaraNueva,
-}: PropsDeUnPanel & { camarasDelHormiguero: string[]; alPedirCamaraNueva(): void }) {
+  camarasCifradas,
+  alPedirCifrado,
+}: PropsDeUnPanel & Pick<Props, "camarasDelHormiguero" | "alPedirCamaraNueva" | "camarasCifradas" | "alPedirCifrado">) {
   const textosDeLaInterfaz = useTextos();
   const carpetaDelHormiguero = ajustes.hormiguero;
 
@@ -85,12 +94,27 @@ function PanelGeneral({
             {camarasDelHormiguero.length === 0 && <p className="ajuste-ayuda">{textosDeLaInterfaz.sinCamaras}</p>}
             {camarasDelHormiguero.map((nombreDeLaCamara) => {
               const estaAbierta = nombreDeLaCamara === ajustes.camara_abierta;
+              const estaCifrada = camarasCifradas.includes(nombreDeLaCamara);
               return (
                 <div key={nombreDeLaCamara} className={`ajuste-camara${estaAbierta ? " actual" : ""}`}>
                   <div className="ajuste-camara-nombre">
                     <b>{nombreVisibleDeLaCamara(nombreDeLaCamara, textosDeLaInterfaz.entrada)}</b>
                     {esLaEntrada(nombreDeLaCamara) && <span className="ajuste-camara-detalle">{textosDeLaInterfaz.entradaAyuda}</span>}
+                    {estaCifrada && (
+                      <span className="ajuste-camara-detalle ajuste-camara-cifrada">
+                        <Icono nombreDelIcono="lock" tamanoEnPixeles={11} /> {textosDeLaInterfaz.cifrada}
+                      </span>
+                    )}
                   </div>
+                  {/* Cifrar o quitar el cifrado (la Entrada es la raíz del hormiguero: no se cifra). */}
+                  {!esLaEntrada(nombreDeLaCamara) && (
+                    <button
+                      className="ajuste-camara-secundario"
+                      onClick={() => alPedirCifrado(estaCifrada ? "quitar_cifrado" : "cifrar", nombreDeLaCamara)}
+                    >
+                      {estaCifrada ? textosDeLaInterfaz.quitarCifradoBoton : textosDeLaInterfaz.cifrarCamaraBoton}
+                    </button>
+                  )}
                   {estaAbierta ? (
                     <span className="ajuste-camara-abierta">{textosDeLaInterfaz.abierta}</span>
                   ) : (
@@ -108,15 +132,21 @@ function PanelGeneral({
 }
 
 /**
- * Área «Editor»: arriba de todo, el interruptor del modo escritor; con el modo activo aparecen
- * debajo sus opciones (tipografía al escribir y página). Con el modo apagado, por ahora, nada más.
+ * Área «Editor»: el modo del editor de la cámara abierta (cada cámara tiene el suyo): escritor,
+ * programador o simple, como tres tarjetas para elegir. Con el modo escritor aparecen debajo sus
+ * opciones (tipografía al escribir y página). Se guarda en los datos de la cámara (`.ant/`).
  */
-function PanelEditor({ ajustes, cambiarAjustes }: PropsDeUnPanel) {
+function PanelEditor({
+  ajustes,
+  nombreDeLaCamaraAbierta,
+  configuracionDelEditor,
+  cambiarConfiguracionDelEditor,
+}: Pick<Props, "ajustes" | "nombreDeLaCamaraAbierta" | "configuracionDelEditor" | "cambiarConfiguracionDelEditor">) {
   const textosDeLaInterfaz = useTextos();
-  const opcionesDelModoEscritor = ajustes.opciones_del_modo_escritor;
-  /** Cambia algunas opciones del modo escritor. */
+  const opcionesDelModoEscritor = configuracionDelEditor.opciones_del_modo_escritor;
+  /** Cambia algunas opciones del modo escritor de la cámara. */
   const cambiarOpcionesDelModoEscritor = (cambios: Partial<OpcionesDelModoEscritor>) =>
-    cambiarAjustes({ opciones_del_modo_escritor: { ...opcionesDelModoEscritor, ...cambios } });
+    cambiarConfiguracionDelEditor({ opciones_del_modo_escritor: { ...opcionesDelModoEscritor, ...cambios } });
   /** Si se usarán comillas latinas, para mostrar el ejemplo según el estilo elegido y el idioma de la app. */
   const seUsanComillasLatinas =
     opcionesDelModoEscritor.estilo_de_comillas === "latinas" ||
@@ -138,22 +168,26 @@ function PanelEditor({ ajustes, cambiarAjustes }: PropsDeUnPanel) {
   return (
     <>
       <h1>{textosDeLaInterfaz.areas.editor}</h1>
-      {/* El modo escritor no es un ajuste más: va destacado, con un interruptor. */}
-      <label className={`ajuste-modo${ajustes.modo_escritor ? " activo" : ""}`}>
-        <div>
-          <div className="ajuste-modo-titulo">{textosDeLaInterfaz.modoEscritor}</div>
-          <p className="ajuste-ayuda">{textosDeLaInterfaz.modoEscritorAyuda}</p>
-        </div>
-        <input
-          type="checkbox"
-          className="interruptor"
-          role="switch"
-          checked={ajustes.modo_escritor}
-          onChange={(evento) => cambiarAjustes({ modo_escritor: evento.target.checked })}
-        />
-      </label>
+      {nombreDeLaCamaraAbierta && <p className="ajuste-ayuda">{textosDeLaInterfaz.editorDeLaCamara(nombreDeLaCamaraAbierta)}</p>}
+      {/* El modo no es un ajuste más: va destacado, como tres tarjetas para elegir una. */}
+      <div className="ajuste-modos" role="radiogroup" aria-label={textosDeLaInterfaz.modoDelEditor}>
+        {MODOS_DEL_EDITOR.map((modo) => (
+          <label key={modo} className={`ajuste-modo${configuracionDelEditor.modo === modo ? " activo" : ""}`}>
+            <input
+              type="radio"
+              name="modo-del-editor"
+              checked={configuracionDelEditor.modo === modo}
+              onChange={() => cambiarConfiguracionDelEditor({ modo })}
+            />
+            <div>
+              <div className="ajuste-modo-titulo">{textosDeLaInterfaz.modosDelEditor[modo].titulo}</div>
+              <p className="ajuste-ayuda">{textosDeLaInterfaz.modosDelEditor[modo].ayuda}</p>
+            </div>
+          </label>
+        ))}
+      </div>
 
-      {ajustes.modo_escritor && (
+      {configuracionDelEditor.modo === "escritor" && (
         <>
           <div className="ajuste">
             <div className="ajuste-titulo">{textosDeLaInterfaz.tipografia}</div>
@@ -301,12 +335,37 @@ interface Props {
   camarasDelHormiguero: string[];
   /** Abre la ventanita «Cámara nueva» encima de los Ajustes. */
   alPedirCamaraNueva(): void;
+  /** Cámaras cifradas, para marcarlas y ofrecer quitarles el cifrado. */
+  camarasCifradas: string[];
+  /** Nombre visible de la cámara abierta: el área Editor configura la suya. */
+  nombreDeLaCamaraAbierta: string | null;
+  /** Configuración del editor de la cámara abierta, y cómo cambiarla (se guarda en sus datos de `.ant/`). */
+  configuracionDelEditor: ConfiguracionDelEditor;
+  cambiarConfiguracionDelEditor(cambios: Partial<ConfiguracionDelEditor>): void;
+  /** Abre la ventanita para cifrar una cámara o quitarle el cifrado. */
+  alPedirCifrado(queSeHace: "cifrar" | "quitar_cifrado", nombreDeLaCamara: string): void;
   alCerrar(): void;
+  /** Área que se muestra al abrir (por defecto, General); la usa la página de prueba. */
+  areaInicial?: string;
 }
 
-export function ModalAjustes({ ajustes, cambiarAjustes, camarasDelHormiguero, alPedirCamaraNueva, alCerrar }: Props) {
+export function ModalAjustes({
+  ajustes,
+  cambiarAjustes,
+  camarasDelHormiguero,
+  alPedirCamaraNueva,
+  camarasCifradas,
+  alPedirCifrado,
+  nombreDeLaCamaraAbierta,
+  configuracionDelEditor,
+  cambiarConfiguracionDelEditor,
+  alCerrar,
+  areaInicial,
+}: Props) {
   const textosDeLaInterfaz = useTextos();
-  const [areaElegida, setAreaElegida] = useState<AreaDeAjustes>("general");
+  const [areaElegida, setAreaElegida] = useState<AreaDeAjustes>(() =>
+    AREAS_DE_AJUSTES.find((area) => area === areaInicial) ?? "general",
+  );
 
   // Escape y Cmd+W cierran los Ajustes (Cmd+W no cierra la ventana principal). Si hay una
   // ventanita encima (cámara nueva), Escape la cierra a ella primero.
@@ -342,11 +401,21 @@ export function ModalAjustes({ ajustes, cambiarAjustes, camarasDelHormiguero, al
               cambiarAjustes={cambiarAjustes}
               camarasDelHormiguero={camarasDelHormiguero}
               alPedirCamaraNueva={alPedirCamaraNueva}
+              camarasCifradas={camarasCifradas}
+              alPedirCifrado={alPedirCifrado}
             />
           )}
-          {areaElegida === "editor" && <PanelEditor ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
+          {areaElegida === "editor" && (
+            <PanelEditor
+              ajustes={ajustes}
+              nombreDeLaCamaraAbierta={nombreDeLaCamaraAbierta}
+              configuracionDelEditor={configuracionDelEditor}
+              cambiarConfiguracionDelEditor={cambiarConfiguracionDelEditor}
+            />
+          )}
           {areaElegida === "diario" && <PanelDiario ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
           {areaElegida === "apariencia" && <PanelApariencia ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
+          {areaElegida === "atajos" && <PanelAtajos ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
         </section>
       </div>
     </div>

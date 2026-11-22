@@ -53,6 +53,12 @@ fn leer_arbol(carpeta: &Path, profundidad: usize) -> Vec<EntradaDelArbol> {
                 }
                 Some(EntradaDelArbol { nombre, ruta: ruta.to_string_lossy().into_owned(), es_carpeta: true, hijos })
             } else {
+                // Una nota cifrada (`Banco.md.age`, en una cámara cifrada) se muestra con su
+                // nombre sin `.age`: para el resto de la app se llama `Banco.md`.
+                let (nombre, ruta) = match nombre.strip_suffix(".age") {
+                    Some(nombre_sin_cifrar) => (nombre_sin_cifrar.to_string(), ruta.with_extension("")),
+                    None => (nombre, ruta),
+                };
                 let extension = ruta.extension()?.to_str()?.to_lowercase();
                 EXTENSIONES_DE_NOTAS.contains(&extension.as_str()).then(|| EntradaDelArbol {
                     nombre,
@@ -63,6 +69,9 @@ fn leer_arbol(carpeta: &Path, profundidad: usize) -> Vec<EntradaDelArbol> {
             }
         })
         .collect();
+    // Si una nota quedó a la vez cifrada y sin cifrar (un corte a mitad de cifrar), va una sola vez.
+    entradas.sort_by(|una, otra| una.ruta.cmp(&otra.ruta));
+    entradas.dedup_by(|una, otra| una.ruta == otra.ruta);
     // Carpetas primero; dentro de cada grupo, orden alfabético sin distinguir mayúsculas.
     entradas.sort_by(|una, otra| {
         otra.es_carpeta.cmp(&una.es_carpeta).then_with(|| una.nombre.to_lowercase().cmp(&otra.nombre.to_lowercase()))
@@ -180,10 +189,16 @@ pub fn crear_carpeta_nueva(carpeta_donde_crearla: String, nombre_de_la_carpeta: 
 }
 
 /// Crea una nota vacía `nombre_de_la_nota` dentro de `carpeta_donde_crearla` (le agrega `.md` si
-/// no termina en una extensión de notas) y devuelve su ruta. Es el botón «Nota nueva» (y Cmd+N).
-/// Nunca pisa una nota que ya existe: si el nombre está tomado, falla con un aviso.
+/// no termina en una extensión de notas) y devuelve su ruta. Es «Nota nueva» (Cmd+N, clic
+/// derecho). Nunca pisa una nota que ya existe: si el nombre está tomado, falla con un aviso. En
+/// una cámara cifrada la crea cifrada (ver `camaras_cifradas.rs`).
 #[tauri::command]
-pub fn crear_nota_nueva(carpeta_donde_crearla: String, nombre_de_la_nota: String) -> Result<String, String> {
+pub fn crear_nota_nueva(app: tauri::AppHandle, carpeta_donde_crearla: String, nombre_de_la_nota: String) -> Result<String, String> {
+    crear_nota(&crate::camaras_cifradas::llaves_de(&app), &carpeta_donde_crearla, &nombre_de_la_nota)
+}
+
+/// Lo que hace `crear_nota_nueva`, con las llaves de las cámaras cifradas a mano (para probarlo).
+fn crear_nota(llaves: &crate::camaras_cifradas::LlavesAbiertas, carpeta_donde_crearla: &str, nombre_de_la_nota: &str) -> Result<String, String> {
     let nombre = nombre_de_la_nota.trim();
     if nombre.is_empty() || nombre.starts_with('.') || nombre.contains(['/', '\\', ':']) {
         return Err(format!("“{nombre}” cannot be a note name"));
@@ -194,6 +209,13 @@ pub fn crear_nota_nueva(carpeta_donde_crearla: String, nombre_de_la_nota: String
     }
     let nombre_del_archivo = if es_archivo_de_nota(Path::new(nombre)) { nombre.to_string() } else { format!("{nombre}.md") };
     let ruta_de_la_nota = carpeta.join(&nombre_del_archivo);
+    if crate::camaras_cifradas::camara_cifrada_que_contiene(&ruta_de_la_nota).is_some() {
+        if crate::camaras_cifradas::existe(&ruta_de_la_nota) {
+            return Err(format!("There is already a note “{nombre_del_archivo}” in {}", carpeta.display()));
+        }
+        crate::camaras_cifradas::escribir_archivo(llaves, &ruta_de_la_nota, b"")?;
+        return Ok(ruta_de_la_nota.to_string_lossy().into_owned());
+    }
     // `create_new` falla si el archivo ya existe, sin la carrera de mirar primero y crear después.
     fs::OpenOptions::new().write(true).create_new(true).open(&ruta_de_la_nota).map_err(|error| {
         if error.kind() == std::io::ErrorKind::AlreadyExists {
@@ -247,15 +269,15 @@ mod pruebas {
         let carpeta_de_prueba = std::env::temp_dir().join(format!("ant-nota-nueva-{}", std::process::id()));
         fs::create_dir_all(&carpeta_de_prueba).unwrap();
         let carpeta = carpeta_de_prueba.to_string_lossy().into_owned();
-        let nota_creada = crear_nota_nueva(carpeta.clone(), " Capítulo 1 ".into()).unwrap();
+        let nota_creada = crear_nota(&Default::default(), &carpeta, " Capítulo 1 ").unwrap();
         assert!(nota_creada.ends_with("Capítulo 1.md"));
         assert_eq!(fs::read_to_string(&nota_creada).unwrap(), "");
         fs::write(&nota_creada, "texto que no se pisa").unwrap();
-        assert!(crear_nota_nueva(carpeta.clone(), "Capítulo 1".into()).is_err());
+        assert!(crear_nota(&Default::default(), &carpeta, "Capítulo 1").is_err());
         assert_eq!(fs::read_to_string(&nota_creada).unwrap(), "texto que no se pisa");
-        assert!(crear_nota_nueva(carpeta.clone(), "ideas.txt".into()).unwrap().ends_with("ideas.txt"));
-        assert!(crear_nota_nueva(carpeta.clone(), "a/b".into()).is_err());
-        assert!(crear_nota_nueva(carpeta, "".into()).is_err());
+        assert!(crear_nota(&Default::default(), &carpeta, "ideas.txt").unwrap().ends_with("ideas.txt"));
+        assert!(crear_nota(&Default::default(), &carpeta, "a/b").is_err());
+        assert!(crear_nota(&Default::default(), &carpeta, "").is_err());
         fs::remove_dir_all(carpeta_de_prueba).unwrap();
     }
 

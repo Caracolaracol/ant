@@ -159,3 +159,49 @@
   color: var(--tenue);
   line-height: 1.5;
 }
+
+/* Ventanita «Cifrar la cámara» (CifrarCamara.tsx): el aviso de que olvidar la contraseña es
+   perderlo todo va destacado, con el color de acento; la casilla de «Entiendo…», debajo. */
+.cifrar-camara {
+  max-width: 480px;
+}
+
+.cifrar-camara-advertencia {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 4px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--acento);
+  border-radius: 8px;
+  color: var(--titulo);
+  font-family: var(--fuente);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.cifrar-camara-advertencia .icono {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--acento);
+}
+
+.cifrar-camara-pista {
+  font-size: 12px;
+  color: var(--acento);
+}
+
+.cifrar-camara-entiendo {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.cifrar-camara-entiendo input {
+  margin-top: 3px;
+  accent-color: var(--acento);
+}

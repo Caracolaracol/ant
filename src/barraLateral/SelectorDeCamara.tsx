@@ -1,6 +1,7 @@
 // Selector de cámaras, arriba de la barra lateral: muestra el nombre de la cámara abierta y, al
 // hacer clic, despliega la lista de las cámaras del hormiguero (la abierta con ✓, la «Entrada»
-// primero si hay notas sueltas) para cambiar a otra, y al final «Cámara nueva…».
+// primero si hay notas sueltas, las cifradas con candado) para cambiar a otra, «Bloquear ahora»
+// si la abierta es cifrada y está desbloqueada, y al final «Cámara nueva…».
 
 import { useCallback, useState } from "react";
 import { esLaEntrada, nombreVisibleDeLaCamara } from "../hormigueros/hormigueros";
@@ -14,8 +15,12 @@ interface Props {
   /** Ruta de la cámara abierta, para mostrarla al pasar el mouse. */
   carpetaDeLaCamara: string;
   camarasDelHormiguero: string[];
+  /** Cámaras cifradas (llevan un candado). */
+  camarasCifradas: string[];
   alAbrirCamara(nombreDeLaCamara: string): void;
   alPedirCamaraNueva(): void;
+  /** Bloquea la cámara abierta, si es cifrada y está desbloqueada (si no, `null`). */
+  alBloquearLaCamara: (() => void) | null;
 }
 
 export function SelectorDeCamara(props: Props) {
@@ -36,8 +41,12 @@ export function SelectorDeCamara(props: Props) {
     ...camarasDelHormiguero.map((nombreDeLaCamara) => ({
       texto: nombreVisibleDeLaCamara(nombreDeLaCamara, textosDeLaInterfaz.entrada),
       estaMarcada: nombreDeLaCamara === nombreDeLaCamaraAbierta,
+      icono: props.camarasCifradas.includes(nombreDeLaCamara) ? "lock" : undefined,
       alElegir: () => nombreDeLaCamara !== nombreDeLaCamaraAbierta && props.alAbrirCamara(nombreDeLaCamara),
     })),
+    ...(props.alBloquearLaCamara
+      ? [{ texto: textosDeLaInterfaz.bloquearAhora, icono: "lock", vaSeparadaDeLaAnterior: true, alElegir: props.alBloquearLaCamara }]
+      : []),
     { texto: textosDeLaInterfaz.camaraNuevaBoton, icono: "folder-plus", vaSeparadaDeLaAnterior: true, alElegir: props.alPedirCamaraNueva },
   ];
 
@@ -53,6 +62,11 @@ export function SelectorDeCamara(props: Props) {
         onClick={(evento) => abrirOCerrarLista(evento.currentTarget)}
       >
         <span className="selector-de-camara-nombre">{nombreVisibleDeLaCamara(nombreDeLaCamaraAbierta, textosDeLaInterfaz.entrada)}</span>
+        {props.camarasCifradas.includes(nombreDeLaCamaraAbierta) && (
+          <span className="selector-de-camara-candado" title={textosDeLaInterfaz.candadoCamaraCifrada}>
+            <Icono nombreDelIcono={props.alBloquearLaCamara ? "lock-open" : "lock"} tamanoEnPixeles={12} />
+          </span>
+        )}
         <Icono nombreDelIcono="chevrons-up-down" tamanoEnPixeles={12} />
       </button>
       {posicionDeLaLista && (

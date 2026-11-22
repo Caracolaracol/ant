@@ -1,12 +1,15 @@
 // Núcleo nativo de la app: arma la aplicación Tauri, registra los plugins, el menú y los
 // comandos que la interfaz (React) llama para leer y guardar notas, ajustes, el hormiguero
-// y sus cámaras (carpetas), los datos de cada cámara en `.ant/` (`datos_del_hormiguero.rs`), notas
+// y sus cámaras (carpetas), los datos de cada cámara en `.ant/` (`datos_del_hormiguero.rs`), las
+// imágenes de las notas (`imagenes.rs`), las cámaras cifradas (`camaras_cifradas.rs`), notas
 // diarias y los archivos que genera «Compilar y exportar» (Word y PDF).
 
 mod ajustes;
+mod camaras_cifradas;
 mod carpeta;
 mod datos_del_hormiguero;
 mod diario;
+mod imagenes;
 mod menu;
 
 use std::fs;
@@ -43,19 +46,23 @@ pub(crate) async fn en_segundo_plano<Resultado: Send + 'static>(
 /// Lee una nota y devuelve su contenido como texto UTF-8. Se llama desde la interfaz al abrir un
 /// archivo (diálogo «Abrir» o clic en la barra lateral) y antes de cada guardado automático (para
 /// no pisar cambios hechos fuera de Ant).
+/// En una cámara cifrada, la descifra (ver `camaras_cifradas.rs`).
 #[tauri::command]
-async fn leer_nota_del_disco(ruta_del_archivo: String) -> Result<String, String> {
+async fn leer_nota_del_disco(app: tauri::AppHandle, ruta_del_archivo: String) -> Result<String, String> {
+    let llaves = camaras_cifradas::llaves_de(&app);
     en_segundo_plano(move || {
-        fs::read_to_string(&ruta_del_archivo).map_err(|error| format!("Could not read {ruta_del_archivo}: {error}"))
+        let bytes = camaras_cifradas::leer_archivo(&llaves, Path::new(&ruta_del_archivo))?;
+        String::from_utf8(bytes).map_err(|_| format!("{ruta_del_archivo} is not a text file"))
     })
     .await
 }
 
 /// Guarda el texto de una nota, creando el archivo o reemplazándolo (con `escribir_atomico`: un
-/// corte a mitad de escritura nunca deja la nota a medias).
+/// corte a mitad de escritura nunca deja la nota a medias). En una cámara cifrada, la cifra.
 #[tauri::command]
-async fn guardar_nota_en_el_disco(ruta_del_archivo: String, texto_de_la_nota: String) -> Result<(), String> {
-    en_segundo_plano(move || escribir_atomico(Path::new(&ruta_del_archivo), texto_de_la_nota.as_bytes())).await
+async fn guardar_nota_en_el_disco(app: tauri::AppHandle, ruta_del_archivo: String, texto_de_la_nota: String) -> Result<(), String> {
+    let llaves = camaras_cifradas::llaves_de(&app);
+    en_segundo_plano(move || camaras_cifradas::escribir_archivo(&llaves, Path::new(&ruta_del_archivo), texto_de_la_nota.as_bytes())).await
 }
 
 /// Escribe en un archivo temporal junto al destino y luego lo renombra, para que un corte a
@@ -72,7 +79,7 @@ pub(crate) fn escribir_atomico(ruta_de_destino: &Path, bytes: &[u8]) -> Result<(
 
 /// Deshace el `encodeURIComponent` con que la interfaz manda la ruta en un encabezado (los
 /// encabezados solo admiten ASCII y las rutas pueden tener tildes o eñes).
-fn decodificar_ruta_del_encabezado(ruta_codificada: &str) -> String {
+pub(crate) fn decodificar_ruta_del_encabezado(ruta_codificada: &str) -> String {
     let bytes_codificados = ruta_codificada.as_bytes();
     let mut bytes_decodificados = Vec::with_capacity(bytes_codificados.len());
     let valor_hexadecimal = |caracter: u8| (caracter as char).to_digit(16);
@@ -140,8 +147,10 @@ fn mostrar_archivo_en_su_carpeta(ruta_del_archivo: String) -> Result<(), String>
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        // Llaves de las cámaras cifradas desbloqueadas: solo en memoria, se pierden al salir.
+        .manage(camaras_cifradas::LlavesAbiertas::default())
         // El menú nace en el idioma guardado; `guardar_ajustes` lo rehace si después cambia.
-        .menu(|app| menu::crear(app, &ajustes::leer_ajustes(app.clone()).idioma))
+        .menu(|app| menu::crear(app, &ajustes::leer_ajustes(app.clone())))
         // Ajustes, bienvenida, cámara nueva y compilar viven en la ventana principal: se la
         // trae al frente y se le avisa con el evento del ítem.
         .on_menu_event(|app, evento_del_menu| {
@@ -165,6 +174,18 @@ pub fn run() {
             carpeta::crear_nota_nueva,
             datos_del_hormiguero::leer_datos_de_la_camara,
             datos_del_hormiguero::guardar_datos_de_la_camara,
+            imagenes::copiar_imagen_junto_a_la_nota,
+            imagenes::guardar_imagen_pegada,
+            imagenes::permitir_mostrar_imagenes_de,
+            imagenes::buscar_imagen_en_el_hormiguero,
+            camaras_cifradas::estado_de_cifrado,
+            camaras_cifradas::camaras_cifradas,
+            camaras_cifradas::cifrar_camara,
+            camaras_cifradas::desbloquear_camara,
+            camaras_cifradas::bloquear_camara,
+            camaras_cifradas::quitar_cifrado_de_la_camara,
+            camaras_cifradas::es_imagen_cifrada,
+            camaras_cifradas::leer_imagen_cifrada,
             salir,
             diario::abrir_o_crear_nota_del_dia
         ])
