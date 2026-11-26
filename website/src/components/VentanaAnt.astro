@@ -1,7 +1,9 @@
 ---
 // Maqueta de la ventana de Ant hecha con HTML y CSS (no es una captura): barra lateral con los
-// fijados (iconos de Lucide, como en la app), la cámara abierta y los capítulos de la nota, editor con el borrador de un cuento en Markdown y barra de estado. Muestra la app
-// pensada para escribir, en el idioma de la página.
+// fijados (iconos de Lucide, como en la app), el selector con la cámara abierta («Novela») y su
+// árbol con los capítulos de la nota; editor con el borrador de un cuento como lo muestra el modo
+// escritor (el título sin su `#`) y barra de estado. Muestra la app pensada para escribir, en el
+// idioma de la página.
 import { traductor, type Idioma } from '../lib/sitio';
 interface Props { idioma: Idioma; }
 const t = traductor(Astro.props.idioma);
@@ -15,17 +17,17 @@ const t = traductor(Astro.props.idioma);
         <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" /><path d="M2 6h4" /><path d="M2 10h4" /><path d="M2 14h4" /><path d="M2 18h4" /><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" /></svg></i>
         <i class="actual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z" /></svg></i>
       </div>
-      <p class="lat-carpeta">{t('writing', 'escritos')}</p>
-      <p>▾ {t('novel', 'novela')}</p>
+      <p class="lat-carpeta">{t('Novel', 'Novela')} ▾</p>
+      <p>▾ {t('Book I', 'Libro I')}</p>
       <p class="lat-activa">&nbsp;&nbsp;{t('the-colony.md', 'la-colonia.md')}</p>
       <p class="lat-titulo">&nbsp;&nbsp;&nbsp;&nbsp;{t('1. The rain', '1. La lluvia')}</p>
       <p class="lat-titulo actual">&nbsp;&nbsp;&nbsp;&nbsp;{t('2. The tunnel', '2. El túnel')}</p>
       <p class="lat-titulo">&nbsp;&nbsp;&nbsp;&nbsp;{t('3. The queen', '3. La reina')}</p>
       <p>&nbsp;&nbsp;{t('characters.md', 'personajes.md')}</p>
-      <p>{t('short-stories', 'cuentos')}</p>
+      <p>{t('research', 'investigación')}</p>
     </div>
     <div class="ventana-editor">
-      <p><span class="md">#</span> <b class="h1">{t('2. The tunnel', '2. El túnel')}</b></p>
+      <p><b class="h1">{t('2. The tunnel', '2. El túnel')}</b></p>
       <p>&nbsp;</p>
       <p>{t('Nobody in the colony remembered', 'Nadie en la colonia recordaba')}</p>
       <p>{t('who had dug the old tunnel.', 'quién había cavado el túnel viejo.')}</p>
