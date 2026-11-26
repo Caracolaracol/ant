@@ -135,7 +135,7 @@ const MEDIO_ANCHO_DEL_TUNEL = 26;
  * camino (así un tramo vertical ondula igual que uno horizontal) y un temblor fino.
  */
 function contornoDelTunel(vertices: Punto[], azarDelTunel: () => number): string {
-  const centro = muestrearLinea(vertices, 70, 24);
+  const centro = muestrearLinea(vertices, 160, 24);
   if (centro.length < 2) return '';
   const fasesDeUnLado = [azarDelTunel(), azarDelTunel(), azarDelTunel()].map((fase) => fase * Math.PI * 2);
   const fasesDelOtroLado = [azarDelTunel(), azarDelTunel(), azarDelTunel()].map((fase) => fase * Math.PI * 2);

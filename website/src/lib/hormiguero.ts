@@ -171,10 +171,20 @@ export function recorrerHormiguero(nido: HTMLElement, fila: HTMLElement, opcione
       lugarDeLosChevrons = [(bordesDeLosHuecos[1] + bordesDeLosHuecos[2]) / 2, centroDelHueco(camaraDeLaBifurcacion)[1]];
     }
 
-    // El túnel nace en el borde izquierdo, a la altura del primer piso, y pasa por el centro de
-    // cada cámara; el ramal va del centro de su cámara al de la cámara del ramal.
+    // El túnel baja desde la superficie: nace arriba, en la esquina izquierda de lo que se ve al
+    // entrar, baja en diagonal (a 45°, o más empinado si no hay espacio) y se endereza para entrar
+    // a la primera cámara; después pasa por el centro de cada cámara. El ramal va del centro de su
+    // cámara al de la cámara del ramal.
     const centros = paradas.map(centroDelHueco);
-    const lineasDelTunel: Punto[][] = [[[0, centros[0][1]], ...centros]];
+    const [centroXDeLaPrimera, centroYDeLaPrimera] = centros[0];
+    const bordeDeLaVistaInicial = vistaDeLaCamara(paradas[0])[0];
+    const espacioHastaLaPrimera = centroXDeLaPrimera - bordeDeLaVistaInicial;
+    const finDeLaBajada = bordeDeLaVistaInicial + Math.min(centroYDeLaPrimera, espacioHastaLaPrimera * 0.6);
+    const lineasDelTunel: Punto[][] = [[
+      [bordeDeLaVistaInicial, -40],
+      [finDeLaBajada, centroYDeLaPrimera],
+      ...centros,
+    ]];
     if (camaraDelRamal && camaraDeLaBifurcacion) lineasDelTunel.push([centroDelHueco(camaraDeLaBifurcacion), centroDelHueco(camaraDelRamal)]);
     dibujarTunel(fila, lineasDelTunel, anchoDelPlano, altoDelPlano);
 
