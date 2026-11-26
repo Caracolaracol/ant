@@ -178,7 +178,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     abierta va bajo el calendario.
   - `useArrastreDelBorde.ts` — el ancho se cambia arrastrando el borde derecho (`.barra-tirador`,
     invisible, puntero `col-resize`); se guarda en `Ajustes.ancho_de_la_barra_lateral` al soltar.
-  `prueba/barra.html` la muestra con fijados de ejemplo (y los Ajustes, `?ajustes`).
+  `prueba/barra.html` la muestra con fijados de ejemplo (y los Ajustes, `?ajustes`; con
+  `&captura`, solo los Ajustes a todo su alto: de ahí sale la captura del sitio).
 - `src/iconos.ts` — iconos que se pueden elegir para los fijados: una selección de Lucide
   (ISC) copiada aquí, por grupos, más los de los menús (fuera de los grupos);
   `src/Icono.tsx` los dibuja.
@@ -354,6 +355,11 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - Los bordes de las cámaras y del túnel son imperfectos, como cavados: los dibuja
     `lib/cavar.ts` en SVG (con semilla fija por cámara); sin JavaScript quedan los bordes
     redondeados del CSS.
+  - La cámara «El hormiguero» de la portada muestra una captura de Ajustes → General
+    (`src/assets/ajustes-camaras-en.png` y `-es.png`, a 2x). Si cambian esos Ajustes, volver a
+    sacarla con Chrome sin ventana: `--headless=new --force-device-scale-factor=2
+    --window-size=720,756 --default-background-color=00000000 --screenshot=…` sobre
+    `http://localhost:1420/prueba/barra.html?ajustes&captura` (y `&es`), con `pnpm dev` corriendo.
   - La tierra de fondo es `src/assets/tierra.svg`: granos y piedritas al azar (semilla fija) que
     genera `website/scripts/tierra.mjs`; para cambiarla, editar el script y correrlo con node.
 

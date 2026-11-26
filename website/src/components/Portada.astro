@@ -7,7 +7,10 @@
 // largo va en la documentación.
 import Nido from '../layouts/Nido.astro';
 import VentanaAnt from './VentanaAnt.astro';
+import { Image } from 'astro:assets';
 import { ruta, rutaDe, sitio, traductor, type Idioma } from '../lib/sitio';
+import capturaDeLasCamarasEnIngles from '../assets/ajustes-camaras-en.png';
+import capturaDeLasCamarasEnEspanol from '../assets/ajustes-camaras-es.png';
 
 interface Props { idioma: Idioma; }
 const { idioma } = Astro.props;
@@ -15,19 +18,10 @@ const t = traductor(idioma);
 const docs = rutaDe(idioma, 'docs');
 const instalar = `${docs}#${t('install', 'instalar')}`;
 
-// Hormiguero de ejemplo de la cámara «El hormiguero»: cada línea es una carpeta o nota (con su
-// sangría) y una nota al margen. Las notas se alinean rellenando los nombres con espacios, porque
-// el largo de los nombres cambia según el idioma.
-const lineasDelHormigueroDeEjemplo: [string, string][] = [
-  [`▾ ${t('Anthill', 'Hormiguero')}/`, ''],
-  [`  ▾ ${t('Novel', 'Novela')}/`, t('writer', 'escritor')],
-  [`      ${t('01 - The rain.md', '01 - La lluvia.md')}`, ''],
-  ['  ▾ Personal/', t('diary', 'diario')],
-  ['      Daily/2026-11-26.md', ''],
-  [`  ▾ ${t('Work', 'Trabajo')}/`, t('programmer', 'programador')],
-  [`  ▾ ${t('Vault', 'Bóveda')}/`, t('encrypted', 'cifrada')],
-];
-const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]) => nombre.length)) + 3;
+// Captura de Ajustes → General con las cámaras de un hormiguero de ejemplo, para la cámara «El
+// hormiguero». Sale de `prueba/barra.html?ajustes&captura` (con `&es` en español), a 2x con Chrome
+// sin ventana; ver el comentario de `?captura` en `prueba/barra.tsx` para volver a sacarla.
+const capturaDeLasCamaras = idioma === 'es' ? capturaDeLasCamarasEnEspanol : capturaDeLasCamarasEnIngles;
 ---
 <Nido
   idioma={idioma}
@@ -76,7 +70,7 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
         <p>{t('Your notes live in one folder, the anthill. Each chamber inside is one context: a novel, your diary, your work.', 'Tus notas viven en una carpeta, el hormiguero. Cada cámara es un contexto: una novela, tu diario, tu trabajo.')}</p>
         <p class="tenue">{t('Each one with its own pins, diary and editor.', 'Cada una con sus fijados, su diario y su editor.')}</p>
       </div>
-<pre class="bloque ancho" aria-label={t('Example of an anthill with its chambers', 'Ejemplo de un hormiguero con sus cámaras')}><code>{lineasDelHormigueroDeEjemplo.map(([nombre, nota]) => <>{nombre.padEnd(anchoDeLosNombres)}{nota && <span class="pr">{nota}</span>}{'\n'}</>)}</code></pre>
+      <Image class="captura" src={capturaDeLasCamaras} width={540} densities={[1, 2]} alt={t('Ant’s Settings, General: the anthill folder and its chambers (Entrance, Novel, Personal, Work and Vault, which is encrypted), each with Open and Encrypt buttons, and New chamber at the end', 'Ajustes de Ant, General: la carpeta del hormiguero y sus cámaras (Entrada, Novela, Personal, Trabajo y Bóveda, que está cifrada), cada una con Abrir y Cifrar, y Cámara nueva al final')} />
     </div>
   </section>
 
