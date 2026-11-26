@@ -2,8 +2,9 @@
 // Portada del sitio en inglés o español: una cámara por idea, de izquierda a derecha. Presenta
 // Ant como un lugar simple, inteligente y sin distracciones para escribir: primero para
 // escritores (cuentos, novelas); después el hormiguero y sus cámaras (cómo se ordenan las notas),
-// las notas de todos los días, los desarrolladores, lo que la hace inteligente, lo liviana que
-// es, sus atajos y el cierre.
+// las cámaras cifradas, las notas de todos los días, los desarrolladores, lo que la hace
+// inteligente, lo liviana que es, sus atajos y el cierre. Los textos son cortos a propósito: lo
+// largo va en la documentación.
 import Nido from '../layouts/Nido.astro';
 import VentanaAnt from './VentanaAnt.astro';
 import { ruta, rutaDe, sitio, traductor, type Idioma } from '../lib/sitio';
@@ -19,17 +20,12 @@ const instalar = `${docs}#${t('install', 'instalar')}`;
 // el largo de los nombres cambia según el idioma.
 const lineasDelHormigueroDeEjemplo: [string, string][] = [
   [`▾ ${t('Anthill', 'Hormiguero')}/`, ''],
-  [`  ▾ ${t('Novel', 'Novela')}/`, t('writer · book font', 'escritor · letra de libro')],
+  [`  ▾ ${t('Novel', 'Novela')}/`, t('writer', 'escritor')],
   [`      ${t('01 - The rain.md', '01 - La lluvia.md')}`, ''],
-  [`      ${t('02 - The tunnel.md', '02 - El túnel.md')}`, ''],
-  ['  ▾ Personal/', t('with a diary', 'con diario')],
+  ['  ▾ Personal/', t('diary', 'diario')],
   ['      Daily/2026-11-26.md', ''],
   [`  ▾ ${t('Work', 'Trabajo')}/`, t('programmer', 'programador')],
-  ['      deploy.md', ''],
   [`  ▾ ${t('Vault', 'Bóveda')}/`, t('encrypted', 'cifrada')],
-  [`      ${t('Bank.md.age', 'Banco.md.age')}`, ''],
-  ['    idea.md', t('loose: the Entrance', 'suelta: la Entrada')],
-  ['    .ant/', t('pins and options', 'fijados y opciones')],
 ];
 const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]) => nombre.length)) + 3;
 ---
@@ -49,10 +45,7 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
       <div>
         <h1>Ant<span>.</span></h1>
         <p class="lema">{t('Write without distractions.', 'Escribe sin distracciones.')}</p>
-        <p class="sublema">{t(
-          'Simple, smart and quiet. For stories, novels, notes and code, saved as plain Markdown files on your disk.',
-          'Simple, inteligente y silenciosa. Para cuentos, novelas, notas y código, guardados como archivos Markdown en tu disco.',
-        )}</p>
+        <p class="sublema">{t('Simple, smart and quiet. Plain Markdown files on your disk.', 'Simple, inteligente y silenciosa. Archivos Markdown en tu disco.')}</p>
         <div class="acciones">
           <a class="boton lleno" href={instalar}>{t('Download', 'Descargar')}</a>
           <a class="boton" href={docs}>{t('Documentation', 'Documentación')}</a>
@@ -68,14 +61,8 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
       <div class="bloque">
         <p class="etiqueta">{t('For writers', 'Para escritores')}</p>
         <h2>{t('Your manuscript, nothing else', 'Tu manuscrito, nada más')}</h2>
-        <p>{t(
-          'Write stories, novels, essays or scripts in a clean column of text. No toolbars and no panels fighting for your attention: just the page and the cursor.',
-          'Escribe cuentos, novelas, ensayos o guiones en una columna limpia de texto. Sin barras de herramientas ni paneles que peleen por tu atención: solo la página y el cursor.',
-        )}</p>
-        <p class="tenue">{t(
-          'Every chapter heading appears in the sidebar, so you can move through a long manuscript in one click. The word count is always there, at the bottom.',
-          'Cada título de capítulo aparece en la barra lateral, así recorres un manuscrito largo con un clic. El conteo de palabras está siempre ahí, abajo.',
-        )}</p>
+        <p>{t('Just the page and the cursor. No toolbars, no panels.', 'Solo la página y el cursor. Sin barras ni paneles.')}</p>
+        <p class="tenue">{t('Chapters in the sidebar, word count at the bottom.', 'Los capítulos en la barra lateral, las palabras abajo.')}</p>
       </div>
       <VentanaAnt idioma={idioma} />
     </div>
@@ -85,19 +72,9 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
     <div class="hueco bloques">
       <div class="bloque">
         <p class="etiqueta">{t('One anthill, many chambers', 'Un hormiguero, muchas cámaras')}</p>
-        <h2>{t('Every part of your life in its own chamber', 'Cada parte de tu vida en su cámara')}</h2>
-        <p>{t(
-          'All your notes live in one anthill: a folder on your computer, a new one or one you already have, like an Obsidian vault. Inside it, each chamber is a folder for one context: your personal notes, everything about one novel, your work and its projects.',
-          'Todas tus notas viven en un hormiguero: una carpeta de tu computador, nueva o una que ya tengas, como una bóveda de Obsidian. Dentro, cada cámara es una carpeta para un contexto: tus notas personales, todo lo de una novela, tu trabajo y sus proyectos.',
-        )}</p>
-        <p>{t(
-          'The sidebar shows one chamber at a time, so the novel never gets mixed up with the shopping list. Switch with a click on its name, at the top.',
-          'La barra lateral muestra una cámara a la vez, así la novela nunca se mezcla con la lista del súper. Cambias con un clic en su nombre, arriba.',
-        )}</p>
-        <p class="tenue">{t(
-          'Each chamber keeps its own pins, its own diary, its own editor (a writer’s, a programmer’s, or both) and its own export options. And one can be locked with a password.',
-          'Cada cámara tiene sus propios fijados, su propio diario, su propio editor (de escritor, de programador o los dos) y sus propias opciones de exportación. Y una se puede cerrar con contraseña.',
-        )}</p>
+        <h2>{t('A chamber for each part of your life', 'Una cámara para cada parte de tu vida')}</h2>
+        <p>{t('Your notes live in one folder, the anthill. Each chamber inside is one context: a novel, your diary, your work.', 'Tus notas viven en una carpeta, el hormiguero. Cada cámara es un contexto: una novela, tu diario, tu trabajo.')}</p>
+        <p class="tenue">{t('Each one with its own pins, diary and editor.', 'Cada una con sus fijados, su diario y su editor.')}</p>
       </div>
 <pre class="bloque ancho" aria-label={t('Example of an anthill with its chambers', 'Ejemplo de un hormiguero con sus cámaras')}><code>{lineasDelHormigueroDeEjemplo.map(([nombre, nota]) => <>{nombre.padEnd(anchoDeLosNombres)}{nota && <span class="pr">{nota}</span>}{'\n'}</>)}</code></pre>
     </div>
@@ -108,25 +85,14 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
       <div class="bloque">
         <p class="etiqueta">{t('Encrypted chambers', 'Cámaras cifradas')}</p>
         <h2>{t('A chamber only you can open', 'Una cámara que solo tú abres')}</h2>
-        <p>{t(
-          'For passwords, a private journal or anything that is nobody else’s business: encrypt a chamber with a password and every note and image in it is stored encrypted on your disk, with the standard age format.',
-          'Para contraseñas, un diario íntimo o lo que no le importa a nadie más: cifra una cámara con una contraseña y cada nota e imagen se guarda cifrada en tu disco, con el formato estándar age.',
-        )}</p>
-        <p>{t(
-          'Whoever uses your computer, or gets into the cloud where you sync your notes, sees only scrambled files. Ant asks for the password to open the chamber and locks it again when you leave it.',
-          'Quien use tu computador, o entre a la nube donde sincronizas tus notas, solo ve archivos ilegibles. Ant pide la contraseña para abrir la cámara y la vuelve a bloquear cuando sales de ella.',
-        )}</p>
+        <p>{t('Lock a chamber with a password. On your disk or in the cloud, nobody else can read it.', 'Cierra una cámara con contraseña. En tu disco o en la nube, nadie más puede leerla.')}</p>
+        <p class="tenue">{t('Forget the password and it is lost. On purpose.', 'Si olvidas la contraseña, se pierde. A propósito.')}</p>
       </div>
       <div class="bloque">
         <div class="sellos">
           <div><b>age</b><span>{t('standard format', 'formato estándar')}</span></div>
           <div><b>0</b><span>{t('servers', 'servidores')}</span></div>
-          <div><b>1</b><span>{t('password', 'contraseña')}</span></div>
         </div>
-        <p class="tenue">{t(
-          'There is no recovery, on purpose: if you forget the password, that chamber is lost. Ant says so clearly before encrypting anything.',
-          'No hay recuperación, a propósito: si olvidas la contraseña, esa cámara se pierde. Ant lo avisa claramente antes de cifrar nada.',
-        )}</p>
       </div>
     </div>
   </section>
@@ -136,14 +102,7 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
       <div class="bloque">
         <p class="etiqueta">{t('For everyday notes', 'Para tus notas')}</p>
         <h2>{t('Ideas, lists, journals', 'Ideas, listas, diarios')}</h2>
-        <p>{t(
-          'Each chamber is a notebook: its folders and notes in the sidebar, the ones you use most pinned at the top, and a calendar with one note per day if you want a diary.',
-          'Cada cámara es un cuaderno: sus carpetas y notas en la barra lateral, las que más usas fijadas arriba y, si quieres un diario, un calendario con una nota por día.',
-        )}</p>
-        <p>{t(
-          'Drag or paste images and they show right below their line. Tasks get checkboxes you click, and Markdown looks the way it ends up, without its marks.',
-          'Arrastra o pega imágenes y se ven justo debajo de su línea. Las tareas tienen casillas que se marcan con un clic, y el Markdown se ve como queda, sin sus marcas.',
-        )}</p>
+        <p>{t('Pin what you use most, keep a diary, paste images, check off tasks.', 'Fija lo que más usas, lleva un diario, pega imágenes, marca tareas.')}</p>
       </div>
       <div class="bloque">
         <div class="sellos">
@@ -151,10 +110,7 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
           <div><b>0</b><span>{t('clouds', 'nubes')}</span></div>
           <div><b>.md</b><span>{t('plain files', 'archivos simples')}</span></div>
         </div>
-        <p class="tenue">{t(
-          'No sign-up, no sync service, no database. Your notes are files you own, and any other app can open them.',
-          'Sin registro, sin servicio de sincronización, sin base de datos. Tus notas son archivos tuyos y cualquier otra app puede abrirlos.',
-        )}</p>
+        <p class="tenue">{t('Your notes are files you own.', 'Tus notas son archivos tuyos.')}</p>
       </div>
     </div>
   </section>
@@ -165,16 +121,13 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
         <p class="etiqueta">{t('For developers', 'Para desarrolladores')}</p>
         <h2>{t('Plain text, keyboard first', 'Texto plano, primero el teclado')}</h2>
         <ul>
-          <li>{t('Markdown with highlighted code blocks for dozens of languages.', 'Markdown con bloques de código resaltados en decenas de lenguajes.')}</li>
-          <li>{t('Plain files that live happily in a git repository.', 'Archivos simples que viven tranquilos en un repositorio git.')}</li>
-          <li>{t('A programmer mode per chamber: code blocks and brackets close themselves, and code stands out.', 'Un modo programador por cámara: los bloques de código y los paréntesis se cierran solos, y el código se destaca.')}</li>
-          <li>{t('Every action has a shortcut you can change; search and replace understands regular expressions.', 'Cada acción tiene un atajo que puedes cambiar; buscar y reemplazar entiende expresiones regulares.')}</li>
-          <li>{t('Open source under the MIT license, built with Tauri, React and CodeMirror.', 'Código abierto con licencia MIT, hecha con Tauri, React y CodeMirror.')}</li>
+          <li>{t('Highlighted code in dozens of languages.', 'Código resaltado en decenas de lenguajes.')}</li>
+          <li>{t('Code blocks and brackets close themselves.', 'Bloques y paréntesis que se cierran solos.')}</li>
+          <li>{t('Plain files, at home in a git repo.', 'Archivos simples, cómodos en un repo git.')}</li>
+          <li>{t('Open source, MIT license.', 'Código abierto, licencia MIT.')}</li>
         </ul>
       </div>
 <pre class="bloque ancho" aria-label={t('Example of a note with a code block', 'Ejemplo de una nota con un bloque de código')}><code><span class="pr">##</span> {t('Deploy notes', 'Notas del deploy')}
-
-{t('Remember to bump the version first:', 'Recordar subir la versión antes:')}
 
 <span class="pr">```sh</span>
 <span class="pr">$</span> pnpm version patch
@@ -188,16 +141,14 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
   <section class="camara" id={t('smart', 'inteligente')} data-nombre={t('Simple, but smart', 'Simple, pero inteligente')}>
     <div class="hueco">
       <p class="etiqueta">{t('Simple, but smart', 'Simple, pero inteligente')}</p>
-      <h2>{t('Small details that stay out of the way', 'Detalles que no estorban')}</h2>
+      <h2>{t('Details that stay out of the way', 'Detalles que no estorban')}</h2>
       <div class="tarjetas">
-        <div class="tarjeta"><h3>{t('An outline that follows you', 'Un índice que te sigue')}</h3><p>{t('The heading you are writing under lights up in the sidebar.', 'El título bajo el que estás escribiendo se ilumina en la barra lateral.')}</p></div>
-        <div class="tarjeta"><h3>{t('Pins', 'Fijados')}</h3><p>{t('Keep your current project at the top, like pinned tabs, with the icon you choose. Each chamber has its own.', 'Deja tu proyecto actual arriba, como pestañas fijadas, con el icono que elijas. Cada cámara tiene los suyos.')}</p></div>
-        <div class="tarjeta"><h3>{t('An editor per chamber', 'Un editor por cámara')}</h3><p>{t('Writer, Programmer or Simple presets, and every option on its own: the novel gets a book font, the work chamber closes your code blocks.', 'Presets Escritor, Programador o Simple, y cada opción por separado: la novela con letra de libro, el trabajo cerrando tus bloques de código.')}</p></div>
-        <div class="tarjeta"><h3>{t('Notes that travel', 'Notas que viajan')}</h3><p>{t('Pins and options live inside the anthill, in a hidden .ant folder, so they go with your notes to another computer.', 'Los fijados y las opciones viven dentro del hormiguero, en una carpeta oculta .ant, así van con tus notas a otro computador.')}</p></div>
-        <div class="tarjeta"><h3>{t('Always in sync', 'Siempre al día')}</h3><p>{t('Rename or move files elsewhere and Ant notices as soon as you come back.', 'Renombra o mueve archivos desde otra app y Ant lo nota apenas vuelves.')}</p></div>
-        <div class="tarjeta"><h3>{t('Safe saves', 'Guardado seguro')}</h3><p>{t('Notes are written to a temporary file and then swapped in, so a crash never leaves half a file.', 'Las notas se escriben en un archivo temporal y luego lo reemplazan: un corte nunca deja un archivo a medias.')}</p></div>
-        <div class="tarjeta"><h3>{t('Nothing gets lost', 'Nada se pierde')}</h3><p>{t('Ant saves on its own as you write, and never overwrites a note that changed in another app.', 'Ant guarda sola mientras escribes, y nunca pisa una nota que cambió en otra app.')}</p></div>
-        <div class="tarjeta"><h3>{t('Find and replace', 'Buscar y reemplazar')}</h3><p>{t('Match case, whole words or regular expressions, without leaving the note.', 'Mayúsculas, palabras completas o expresiones regulares, sin salir de la nota.')}</p></div>
+        <div class="tarjeta"><h3>{t('An outline that follows you', 'Un índice que te sigue')}</h3><p>{t('The heading you are under lights up.', 'El título donde escribes se ilumina.')}</p></div>
+        <div class="tarjeta"><h3>{t('Pins', 'Fijados')}</h3><p>{t('Your project on top, like pinned tabs.', 'Tu proyecto arriba, como pestañas fijadas.')}</p></div>
+        <div class="tarjeta"><h3>{t('An editor per chamber', 'Un editor por cámara')}</h3><p>{t('A writer’s, a programmer’s, or both.', 'De escritor, de programador o los dos.')}</p></div>
+        <div class="tarjeta"><h3>{t('Notes that travel', 'Notas que viajan')}</h3><p>{t('Pins and options go with your notes.', 'Fijados y opciones van con tus notas.')}</p></div>
+        <div class="tarjeta"><h3>{t('Nothing gets lost', 'Nada se pierde')}</h3><p>{t('Saves as you type, never overwrites.', 'Guarda sola y nunca pisa nada.')}</p></div>
+        <div class="tarjeta"><h3>{t('Find and replace', 'Buscar y reemplazar')}</h3><p>{t('With regular expressions too.', 'También con expresiones regulares.')}</p></div>
       </div>
     </div>
   </section>
@@ -206,10 +157,7 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
     <div class="hueco">
       <p class="etiqueta">{t('Light as an ant', 'Liviana como una hormiga')}</p>
       <h2>{t('About 5 MB', 'Unos 5 MB')}</h2>
-      <p style="max-width: 50ch">{t(
-        'Ant uses the web view your system already has instead of bringing its own browser. It downloads in seconds, opens instantly and barely touches your memory.',
-        'Ant usa el visor web que ya trae tu sistema en vez de traer su propio navegador. Se descarga en segundos, abre al instante y casi no ocupa memoria.',
-      )}</p>
+      <p style="max-width: 50ch">{t('No bundled browser. It opens instantly.', 'Sin navegador incluido. Abre al instante.')}</p>
       <div class="sellos">
         <div><b>5.2 MB</b><span>{t('macOS installer', 'instalador macOS')}</span></div>
         <div><b>2.1 MB</b><span>{t('Windows installer', 'instalador Windows')}</span></div>
@@ -227,16 +175,12 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
         <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>N</kbd></dt><dd>{t('New chamber', 'Cámara nueva')}</dd>
         <dt><kbd>⌘</kbd> <kbd>O</kbd></dt><dd>{t('Open', 'Abrir')}</dd>
         <dt><kbd>⌘</kbd> <kbd>S</kbd></dt><dd>{t('Save', 'Guardar')}</dd>
-        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>S</kbd></dt><dd>{t('Save as', 'Guardar como')}</dd>
-        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>]</kbd></dt><dd>{t('Next note', 'Nota siguiente')}</dd>
-        <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd></dt><dd>{t('Previous note', 'Nota anterior')}</dd>
         <dt><kbd>⌘</kbd> <kbd>\</kbd></dt><dd>{t('Sidebar', 'Barra lateral')}</dd>
         <dt><kbd>⌘</kbd> <kbd>,</kbd></dt><dd>{t('Settings', 'Ajustes')}</dd>
         <dt><kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>E</kbd></dt><dd>{t('Compile and export', 'Compilar y exportar')}</dd>
         <dt><kbd>⌘</kbd> <kbd>F</kbd></dt><dd>{t('Find', 'Buscar')}</dd>
-        <dt><kbd>⌘</kbd> <kbd>Z</kbd></dt><dd>{t('Undo', 'Deshacer')}</dd>
       </dl>
-      <p class="tenue" style="margin-top: 18px">{t('Don’t like one? Change it in Settings → Shortcuts.', '¿No te gusta alguno? Cámbialo en Ajustes → Atajos.')}</p>
+      <p class="tenue" style="margin-top: 18px">{t('All of them can be changed.', 'Todos se pueden cambiar.')}</p>
     </div>
   </section>
 
@@ -244,10 +188,7 @@ const anchoDeLosNombres = Math.max(...lineasDelHormigueroDeEjemplo.map(([nombre]
     <div class="hueco">
       <p class="etiqueta">{t('The end of the tunnel', 'El final del túnel')}</p>
       <h2>{t('Start writing', 'Empieza a escribir')}</h2>
-      <p style="max-width: 46ch">{t(
-        'Ant is free. Download it, dig your anthill (or use the folder where you already keep your texts), open a chamber and start typing. That is all there is to learn.',
-        'Ant es gratis. Descárgala, cava tu hormiguero (o usa la carpeta donde ya guardas tus textos), abre una cámara y empieza a escribir. No hay nada más que aprender.',
-      )}</p>
+      <p style="max-width: 46ch">{t('Free. Download it, dig your anthill and write.', 'Gratis. Descárgala, cava tu hormiguero y escribe.')}</p>
       <div class="acciones">
         <a class="boton lleno" href={instalar}>{t('Download', 'Descargar')}</a>
         <a class="boton" href={docs}>{t('Read the documentation', 'Leer la documentación')}</a>
