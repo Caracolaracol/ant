@@ -1,8 +1,8 @@
 // Ajustes (Ant → Settings… / Ajustes… o Cmd+,): una ventanita sobre la ventana principal, no una
 // ventana aparte. Está dividida en dos: a la izquierda la lista de áreas de ajustes y a la
 // derecha las opciones del área elegida:
-//   General (idioma, hormiguero y cámaras) · Editor (modo de la cámara abierta: escritor,
-//   programador o simple) · Diario (calendario y notas
+//   General (idioma, hormiguero y cámaras) · Editor (opciones de la cámara abierta, con presets
+//   escritor, programador y simple) · Diario (calendario y notas
 //   diarias) · Apariencia (colores) · Atajos (teclas de cada acción, en `PanelAtajos.tsx`).
 // Los cambios se aplican y guardan al instante (`cambiarAjustes`, de App); se cierra con Escape,
 // Cmd+W, la × o un clic fuera. Los textos salen de `idioma.tsx`, así cambia de idioma apenas se
@@ -10,7 +10,7 @@
 // `idioma.tsx`), crear su panel y mostrarlo en `ModalAjustes`.
 
 import { useEffect, useState } from "react";
-import { Ajustes, ConfiguracionDelEditor, ModoDelEditor, OpcionesDelModoEscritor } from "../ajustes";
+import { Ajustes, OpcionesDelEditor, PRESETS_DEL_EDITOR, PresetDelEditor, presetQueCoincide } from "../ajustes";
 import { COLORES_POR_DEFECTO, TEMAS, VARIABLES_DE_COLOR } from "../colores";
 import { NOMBRE_DE_LA_CARPETA_DEL_DIARIO } from "../diario";
 import { cambiosParaElegirHormiguero, elegirCarpetaConElDialogo, esLaEntrada, nombreVisibleDeLaCamara } from "../hormigueros/hormigueros";
@@ -21,8 +21,8 @@ import { PanelAtajos } from "./PanelAtajos";
 import { Icono } from "../Icono";
 import "./ModalAjustes.css";
 
-/** Modos del editor, en el orden en que se ofrecen (sus nombres y ayudas en `idioma.tsx`). */
-const MODOS_DEL_EDITOR: ModoDelEditor[] = ["escritor", "programador", "simple"];
+/** Presets del editor, en el orden en que se ofrecen (sus nombres y ayudas en `idioma.tsx`). */
+const PRESETS: PresetDelEditor[] = ["escritor", "programador", "simple"];
 
 /** Áreas de ajustes que aparecen en la columna izquierda (sus nombres están en `idioma.tsx`). */
 const AREAS_DE_AJUSTES = ["general", "editor", "diario", "apariencia", "atajos"] as const;
@@ -132,36 +132,47 @@ function PanelGeneral({
 }
 
 /**
- * Área «Editor»: el modo del editor de la cámara abierta (cada cámara tiene el suyo): escritor,
- * programador o simple, como tres tarjetas para elegir. Con el modo escritor aparecen debajo sus
- * opciones (tipografía al escribir y página). Se guarda en los datos de la cámara (`.ant/`).
+ * Área «Editor»: las opciones del editor de la cámara abierta (cada cámara tiene las suyas, en sus
+ * datos de `.ant/`). Arriba, tres presets rápidos (Escritor, Programador, Simple) que marcan las
+ * opciones de una vez; el que coincide con lo marcado se ve elegido. Abajo, cada opción por
+ * separado, en tres grupos: tipografía al escribir, página y código. Se pueden mezclar: una cámara
+ * puede tener la tipografía del escritor y las ayudas para código a la vez.
  */
 function PanelEditor({
   ajustes,
   nombreDeLaCamaraAbierta,
-  configuracionDelEditor,
-  cambiarConfiguracionDelEditor,
-}: Pick<Props, "ajustes" | "nombreDeLaCamaraAbierta" | "configuracionDelEditor" | "cambiarConfiguracionDelEditor">) {
+  opcionesDelEditor,
+  cambiarOpcionesDelEditor,
+}: Pick<Props, "ajustes" | "nombreDeLaCamaraAbierta" | "opcionesDelEditor" | "cambiarOpcionesDelEditor">) {
   const textosDeLaInterfaz = useTextos();
-  const opcionesDelModoEscritor = configuracionDelEditor.opciones_del_modo_escritor;
-  /** Cambia algunas opciones del modo escritor de la cámara. */
-  const cambiarOpcionesDelModoEscritor = (cambios: Partial<OpcionesDelModoEscritor>) =>
-    cambiarConfiguracionDelEditor({ opciones_del_modo_escritor: { ...opcionesDelModoEscritor, ...cambios } });
+  const presetElegido = presetQueCoincide(opcionesDelEditor);
   /** Si se usarán comillas latinas, para mostrar el ejemplo según el estilo elegido y el idioma de la app. */
   const seUsanComillasLatinas =
-    opcionesDelModoEscritor.estilo_de_comillas === "latinas" ||
-    (opcionesDelModoEscritor.estilo_de_comillas === "auto" && idiomaValido(ajustes.idioma) === "es");
+    opcionesDelEditor.estilo_de_comillas === "latinas" ||
+    (opcionesDelEditor.estilo_de_comillas === "auto" && idiomaValido(ajustes.idioma) === "es");
 
-  /** Fila con casilla, nombre y, a la derecha, el ejemplo de lo que se teclea → lo que queda. */
-  const filaDeReemplazo = (opcion: keyof OpcionesDelModoEscritor, nombreVisible: string, loQueSeTeclea: string, loQueQueda: string) => (
+  /** Casilla de una opción, con su nombre y, a la derecha, un ejemplo (lo que se teclea → lo que queda). */
+  const filaDeReemplazo = (opcion: keyof OpcionesDelEditor, nombreVisible: string, loQueSeTeclea: string, loQueQueda: string) => (
     <label className="ajuste-casilla ajuste-reemplazo">
       <input
         type="checkbox"
-        checked={opcionesDelModoEscritor[opcion] as boolean}
-        onChange={(evento) => cambiarOpcionesDelModoEscritor({ [opcion]: evento.target.checked })}
+        checked={opcionesDelEditor[opcion] as boolean}
+        onChange={(evento) => cambiarOpcionesDelEditor({ [opcion]: evento.target.checked })}
       />
       <span>{nombreVisible}</span>
       <code>{loQueSeTeclea} → {loQueQueda}</code>
+    </label>
+  );
+
+  /** Casilla de una opción con su nombre y una línea de ayuda debajo. */
+  const filaConAyuda = (opcion: keyof OpcionesDelEditor, nombreVisible: string, ayuda: string) => (
+    <label className="ajuste-casilla ajuste-casilla-ayuda">
+      <input
+        type="checkbox"
+        checked={opcionesDelEditor[opcion] as boolean}
+        onChange={(evento) => cambiarOpcionesDelEditor({ [opcion]: evento.target.checked })}
+      />
+      <span>{nombreVisible}<small>{ayuda}</small></span>
     </label>
   );
 
@@ -169,75 +180,85 @@ function PanelEditor({
     <>
       <h1>{textosDeLaInterfaz.areas.editor}</h1>
       {nombreDeLaCamaraAbierta && <p className="ajuste-ayuda">{textosDeLaInterfaz.editorDeLaCamara(nombreDeLaCamaraAbierta)}</p>}
-      {/* El modo no es un ajuste más: va destacado, como tres tarjetas para elegir una. */}
-      <div className="ajuste-modos" role="radiogroup" aria-label={textosDeLaInterfaz.modoDelEditor}>
-        {MODOS_DEL_EDITOR.map((modo) => (
-          <label key={modo} className={`ajuste-modo${configuracionDelEditor.modo === modo ? " activo" : ""}`}>
-            <input
-              type="radio"
-              name="modo-del-editor"
-              checked={configuracionDelEditor.modo === modo}
-              onChange={() => cambiarConfiguracionDelEditor({ modo })}
-            />
-            <div>
-              <div className="ajuste-modo-titulo">{textosDeLaInterfaz.modosDelEditor[modo].titulo}</div>
-              <p className="ajuste-ayuda">{textosDeLaInterfaz.modosDelEditor[modo].ayuda}</p>
-            </div>
-          </label>
-        ))}
+
+      <div className="ajuste">
+        <div className="ajuste-titulo">{textosDeLaInterfaz.presetsDelEditor}</div>
+        <p className="ajuste-ayuda">{textosDeLaInterfaz.presetsDelEditorAyuda}</p>
+        <div className="ajuste-presets">
+          {PRESETS.map((preset) => (
+            <button
+              key={preset}
+              className={`ajuste-preset${preset === presetElegido ? " elegido" : ""}`}
+              // El estilo de comillas elegido se conserva: el preset no lo cambia.
+              onClick={() => cambiarOpcionesDelEditor({ ...PRESETS_DEL_EDITOR[preset], estilo_de_comillas: opcionesDelEditor.estilo_de_comillas })}
+            >
+              <span className="ajuste-preset-titulo">{textosDeLaInterfaz.presets[preset].titulo}</span>
+              <span className="ajuste-preset-ayuda">{textosDeLaInterfaz.presets[preset].ayuda}</span>
+            </button>
+          ))}
+        </div>
+        {!presetElegido && <p className="ajuste-ayuda ajuste-personalizado">{textosDeLaInterfaz.opcionesPersonalizadas}</p>}
       </div>
 
-      {configuracionDelEditor.modo === "escritor" && (
-        <>
-          <div className="ajuste">
-            <div className="ajuste-titulo">{textosDeLaInterfaz.tipografia}</div>
-            <p className="ajuste-ayuda">{textosDeLaInterfaz.tipografiaAyuda}</p>
-            <div className="ajuste-lista">
-              <div className="ajuste-con-opcion">
-                {filaDeReemplazo("comillas_tipograficas", textosDeLaInterfaz.comillas, '"hola"', seUsanComillasLatinas ? "«hola»" : "“hola”")}
-                {opcionesDelModoEscritor.comillas_tipograficas && (
-                  <select
-                    className="ajuste-select"
-                    value={opcionesDelModoEscritor.estilo_de_comillas}
-                    onChange={(evento) =>
-                      cambiarOpcionesDelModoEscritor({ estilo_de_comillas: evento.target.value as OpcionesDelModoEscritor["estilo_de_comillas"] })
-                    }
-                  >
-                    {(["auto", "curvas", "latinas"] as const).map((estiloDeComillas) => (
-                      <option key={estiloDeComillas} value={estiloDeComillas}>{textosDeLaInterfaz.estiloComillas[estiloDeComillas]}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              {filaDeReemplazo("rayas_de_dialogo", textosDeLaInterfaz.rayas, "--", "—")}
-              {filaDeReemplazo("puntos_suspensivos", textosDeLaInterfaz.puntos, "...", "…")}
-              {filaDeReemplazo("comillas_angulares", textosDeLaInterfaz.angulares, "<< >>", "« »")}
-              {filaDeReemplazo("flechas", textosDeLaInterfaz.flechas, "-> <-", "→ ←")}
-            </div>
+      <div className="ajuste">
+        <div className="ajuste-titulo">{textosDeLaInterfaz.tipografia}</div>
+        <p className="ajuste-ayuda">{textosDeLaInterfaz.tipografiaAyuda}</p>
+        <div className="ajuste-lista">
+          <div className="ajuste-con-opcion">
+            {filaDeReemplazo("comillas_tipograficas", textosDeLaInterfaz.comillas, '"hola"', seUsanComillasLatinas ? "«hola»" : "“hola”")}
+            {opcionesDelEditor.comillas_tipograficas && (
+              <select
+                className="ajuste-select"
+                value={opcionesDelEditor.estilo_de_comillas}
+                onChange={(evento) => cambiarOpcionesDelEditor({ estilo_de_comillas: evento.target.value as OpcionesDelEditor["estilo_de_comillas"] })}
+              >
+                {(["auto", "curvas", "latinas"] as const).map((estiloDeComillas) => (
+                  <option key={estiloDeComillas} value={estiloDeComillas}>{textosDeLaInterfaz.estiloComillas[estiloDeComillas]}</option>
+                ))}
+              </select>
+            )}
           </div>
-          <div className="ajuste">
-            <div className="ajuste-titulo">{textosDeLaInterfaz.pagina}</div>
-            <div className="ajuste-lista">
-              <label className="ajuste-casilla ajuste-casilla-ayuda">
-                <input
-                  type="checkbox"
-                  checked={opcionesDelModoEscritor.letra_de_libro}
-                  onChange={(evento) => cambiarOpcionesDelModoEscritor({ letra_de_libro: evento.target.checked })}
-                />
-                <span>{textosDeLaInterfaz.letraLibro}<small>{textosDeLaInterfaz.letraLibroAyuda}</small></span>
-              </label>
-              <label className="ajuste-casilla ajuste-casilla-ayuda">
-                <input
-                  type="checkbox"
-                  checked={opcionesDelModoEscritor.corrector_ortografico}
-                  onChange={(evento) => cambiarOpcionesDelModoEscritor({ corrector_ortografico: evento.target.checked })}
-                />
-                <span>{textosDeLaInterfaz.corrector}<small>{textosDeLaInterfaz.correctorAyuda}</small></span>
-              </label>
-            </div>
-          </div>
-        </>
-      )}
+          {filaDeReemplazo("rayas_de_dialogo", textosDeLaInterfaz.rayas, "--", "—")}
+          {filaDeReemplazo("puntos_suspensivos", textosDeLaInterfaz.puntos, "...", "…")}
+          {filaDeReemplazo("comillas_angulares", textosDeLaInterfaz.angulares, "<< >>", "« »")}
+          {filaDeReemplazo("flechas", textosDeLaInterfaz.flechas, "-> <-", "→ ←")}
+        </div>
+      </div>
+
+      <div className="ajuste">
+        <div className="ajuste-titulo">{textosDeLaInterfaz.pagina}</div>
+        <div className="ajuste-lista">
+          {filaConAyuda("letra_de_libro", textosDeLaInterfaz.letraLibro, textosDeLaInterfaz.letraLibroAyuda)}
+          {filaConAyuda("corrector_ortografico", textosDeLaInterfaz.corrector, textosDeLaInterfaz.correctorAyuda)}
+        </div>
+      </div>
+
+      {/* Cada elemento del Markdown con su casilla y su ejemplo: lo que se escribe → cómo se ve. */}
+      <div className="ajuste">
+        <div className="ajuste-titulo">{textosDeLaInterfaz.vistaDelMarkdown}</div>
+        <p className="ajuste-ayuda">{textosDeLaInterfaz.vistaDelMarkdownAyuda}</p>
+        <div className="ajuste-lista">
+          {filaDeReemplazo("titulos_sin_almohadillas", textosDeLaInterfaz.titulosSinAlmohadillas, `## ${textosDeLaInterfaz.ejemploTitulo}`, textosDeLaInterfaz.ejemploTitulo)}
+          {filaDeReemplazo("enfasis_sin_marcas", textosDeLaInterfaz.enfasisSinMarcas, `**${textosDeLaInterfaz.ejemploNegrita}**`, textosDeLaInterfaz.ejemploNegrita)}
+          {filaDeReemplazo("codigo_en_linea_sin_marcas", textosDeLaInterfaz.codigoEnLineaSinMarcas, `\`${textosDeLaInterfaz.ejemploCodigo}\``, textosDeLaInterfaz.ejemploCodigo)}
+          {filaDeReemplazo("enlaces_solo_texto", textosDeLaInterfaz.enlacesSoloTexto, "[Ant](https://…)", "Ant")}
+          {filaDeReemplazo("citas_con_linea", textosDeLaInterfaz.citasConLinea, `> ${textosDeLaInterfaz.ejemploCita}`, `▏${textosDeLaInterfaz.ejemploCita}`)}
+          {filaDeReemplazo("vinetas_en_listas", textosDeLaInterfaz.vinetasEnListas, `- ${textosDeLaInterfaz.ejemploPunto}`, `• ${textosDeLaInterfaz.ejemploPunto}`)}
+          {filaDeReemplazo("casillas_en_tareas", textosDeLaInterfaz.casillasEnTareas, `- [ ] ${textosDeLaInterfaz.ejemploTarea}`, `☐ ${textosDeLaInterfaz.ejemploTarea}`)}
+          {filaDeReemplazo("separadores_como_linea", textosDeLaInterfaz.separadoresComoLinea, "---", "────")}
+          {filaConAyuda("mostrar_imagenes", textosDeLaInterfaz.mostrarImagenes, textosDeLaInterfaz.mostrarImagenesAyuda)}
+        </div>
+      </div>
+
+      <div className="ajuste">
+        <div className="ajuste-titulo">{textosDeLaInterfaz.codigo}</div>
+        <div className="ajuste-lista">
+          {filaConAyuda("cerrar_bloques_de_codigo", textosDeLaInterfaz.cerrarBloques, textosDeLaInterfaz.cerrarBloquesAyuda)}
+          {filaConAyuda("cerrar_parentesis", textosDeLaInterfaz.cerrarParentesis, textosDeLaInterfaz.cerrarParentesisAyuda)}
+          {filaConAyuda("marcar_el_par", textosDeLaInterfaz.marcarElPar, textosDeLaInterfaz.marcarElParAyuda)}
+          {filaConAyuda("fondo_en_bloques_de_codigo", textosDeLaInterfaz.fondoEnBloques, textosDeLaInterfaz.fondoEnBloquesAyuda)}
+        </div>
+      </div>
     </>
   );
 }
@@ -339,9 +360,9 @@ interface Props {
   camarasCifradas: string[];
   /** Nombre visible de la cámara abierta: el área Editor configura la suya. */
   nombreDeLaCamaraAbierta: string | null;
-  /** Configuración del editor de la cámara abierta, y cómo cambiarla (se guarda en sus datos de `.ant/`). */
-  configuracionDelEditor: ConfiguracionDelEditor;
-  cambiarConfiguracionDelEditor(cambios: Partial<ConfiguracionDelEditor>): void;
+  /** Opciones del editor de la cámara abierta, y cómo cambiarlas (se guardan en sus datos de `.ant/`). */
+  opcionesDelEditor: OpcionesDelEditor;
+  cambiarOpcionesDelEditor(cambios: Partial<OpcionesDelEditor>): void;
   /** Abre la ventanita para cifrar una cámara o quitarle el cifrado. */
   alPedirCifrado(queSeHace: "cifrar" | "quitar_cifrado", nombreDeLaCamara: string): void;
   alCerrar(): void;
@@ -357,8 +378,8 @@ export function ModalAjustes({
   camarasCifradas,
   alPedirCifrado,
   nombreDeLaCamaraAbierta,
-  configuracionDelEditor,
-  cambiarConfiguracionDelEditor,
+  opcionesDelEditor,
+  cambiarOpcionesDelEditor,
   alCerrar,
   areaInicial,
 }: Props) {
@@ -386,6 +407,13 @@ export function ModalAjustes({
   return (
     <div className="modal-fondo" onMouseDown={(evento) => evento.target === evento.currentTarget && alCerrar()}>
       <div className="modal ajustes" role="dialog" aria-label={textosDeLaInterfaz.ajustes}>
+        {/* Cabecera de la ventanita, a todo el ancho: el título y la × para cerrar, fuera de lo
+            que se está configurando (y fijas, sin desplazarse con las opciones). */}
+        <header className="ajustes-cabecera">
+          <span>{textosDeLaInterfaz.ajustes}</span>
+          <button className="ajustes-cerrar" aria-label={textosDeLaInterfaz.cerrar} onClick={alCerrar}>×</button>
+        </header>
+        <div className="ajustes-cuerpo">
         <nav className="ajustes-areas">
           {AREAS_DE_AJUSTES.map((area) => (
             <div key={area} className={`ajustes-area${area === areaElegida ? " activa" : ""}`} onClick={() => setAreaElegida(area)}>
@@ -394,7 +422,6 @@ export function ModalAjustes({
           ))}
         </nav>
         <section className="ajustes-panel">
-          <button className="modal-cerrar" aria-label={textosDeLaInterfaz.cerrar} onClick={alCerrar}>×</button>
           {areaElegida === "general" && (
             <PanelGeneral
               ajustes={ajustes}
@@ -409,14 +436,15 @@ export function ModalAjustes({
             <PanelEditor
               ajustes={ajustes}
               nombreDeLaCamaraAbierta={nombreDeLaCamaraAbierta}
-              configuracionDelEditor={configuracionDelEditor}
-              cambiarConfiguracionDelEditor={cambiarConfiguracionDelEditor}
+              opcionesDelEditor={opcionesDelEditor}
+              cambiarOpcionesDelEditor={cambiarOpcionesDelEditor}
             />
           )}
           {areaElegida === "diario" && <PanelDiario ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
           {areaElegida === "apariencia" && <PanelApariencia ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
           {areaElegida === "atajos" && <PanelAtajos ajustes={ajustes} cambiarAjustes={cambiarAjustes} />}
         </section>
+        </div>
       </div>
     </div>
   );

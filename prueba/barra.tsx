@@ -11,7 +11,7 @@
 
 import ReactDOM from "react-dom/client";
 import "../src/App.css";
-import { AJUSTES_POR_DEFECTO, configuracionDelEditorPorDefecto, type Ajustes } from "../src/ajustes";
+import { AJUSTES_POR_DEFECTO, opcionesDelEditorDeLaCamara, type Ajustes } from "../src/ajustes";
 import { ModalAjustes } from "../src/ajustes/ModalAjustes";
 import { BarraLateral } from "../src/barraLateral/BarraLateral";
 import { CAMARA_DE_ENTRADA } from "../src/hormigueros/hormigueros";
@@ -104,7 +104,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       </div>
       <footer className="estado"><span>02 - La lluvia.md</span><span /></footer>
     </main>
-    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} camarasDelHormiguero={camaras} alPedirCamaraNueva={nada} camarasCifradas={["Personal"]} alPedirCifrado={nada} nombreDeLaCamaraAbierta="Novela" configuracionDelEditor={configuracionDelEditorPorDefecto(ajustes)} cambiarConfiguracionDelEditor={nada} alCerrar={nada} areaInicial={parametrosDeLaDireccion.get("ajustes") ?? undefined} />}
+    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} camarasDelHormiguero={camaras} alPedirCamaraNueva={nada} camarasCifradas={["Personal"]} alPedirCifrado={nada} nombreDeLaCamaraAbierta="Novela" opcionesDelEditor={opcionesDelEditorDeLaCamara({}, ajustes)} cambiarOpcionesDelEditor={nada} alCerrar={nada} areaInicial={parametrosDeLaDireccion.get("ajustes") ?? undefined} />}
     {parametrosDeLaDireccion.has("nueva") && <NuevaCamara carpetaDelHormiguero={hormiguero} camarasDelHormiguero={camaras} alCavarCamara={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("nota") && <NuevaNotaOCarpeta queSeCrea="nota" carpetaDondeCrearla={`${base}/Libro I`} lugarVisible="Novela / Libro I" alCrear={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("carpeta") && <NuevaNotaOCarpeta queSeCrea="carpeta" carpetaDondeCrearla={base} lugarVisible="Novela" alCrear={nada} alCerrar={nada} />}

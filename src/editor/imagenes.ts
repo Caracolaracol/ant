@@ -181,5 +181,9 @@ const imagenesDeLaNota = StateField.define<DecorationSet>({
   provide: (campo) => EditorView.decorations.from(campo),
 });
 
-/** Extensiones de las imágenes para el editor. */
-export const extensionesDeImagenes = [lugarDeLaNota, imagenesDeLaNota];
+/**
+ * Dónde está la nota (va siempre en el editor, así se sabe aunque las imágenes estén apagadas) y
+ * las imágenes a la vista (solo con «Ver las imágenes» activo en las opciones de la cámara).
+ */
+export const lugarDeLaNotaEnElEditor = lugarDeLaNota;
+export const imagenesALaVista = imagenesDeLaNota;

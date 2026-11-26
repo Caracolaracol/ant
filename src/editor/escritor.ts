@@ -1,20 +1,18 @@
-// Modo escritor del editor (Ajustes → Editor). Adapta CodeMirror a escribir prosa, al estilo del
+// Ayudas para escribir prosa del editor (Ajustes → Editor, por cámara; el preset «Escritor» las
+// activa todas, pero cada una se activa por separado y se pueden sumar a las del programador). Adapta CodeMirror a escribir prosa, al estilo del
 // plugin Smart Typography de Obsidian pero pensado también para el español:
 //   · Tipografía al escribir: comillas rectas → tipográficas (“ ” o « » según el idioma),
 //     `--` → raya de diálogo `—`, `...` → `…`, `<<` `>>` → `«` `»`, `->` `<-` → `→` `←`.
 //     Backspace justo después de un cambio lo deshace (vuelve lo que se tecleó). Nada se cambia
 //     dentro de código, HTML, URLs ni del encabezado YAML.
-//   · Títulos sin `#`: los `#` del principio de un título no se ven, salvo en la línea donde está
-//     el cursor (ahí aparecen, para poder cambiar el nivel del título). Solo se revisan las líneas
-//     a la vista, así no crece con el largo de la nota.
 //   · Letra de libro: con serifa, más grande y en una columna más angosta.
 //   · Corrector ortográfico del sistema.
 // El texto que ya existe nunca se convierte: solo cambia lo que se teclea con el modo activo.
 // `Editor.tsx` monta estas extensiones en un `Compartment` para encenderlas y apagarlas en vivo.
 // «Compilar y exportar» usa `reemplazoTipografico` para corregir la tipografía de un libro entero.
 
-import { EditorSelection, Prec, RangeSetBuilder, StateEffect, StateField, type EditorState, type Extension } from "@codemirror/state";
-import { Decoration, EditorView, ViewPlugin, keymap, type DecorationSet, type ViewUpdate } from "@codemirror/view";
+import { EditorSelection, Prec, StateEffect, StateField, type EditorState, type Extension } from "@codemirror/state";
+import { EditorView, keymap } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import type { OpcionesDelModoEscritor } from "../ajustes";
 import type { Idioma } from "../idioma";
@@ -40,7 +38,10 @@ export interface ConfiguracionModoEscritor {
  * comillas siguen el idioma de la app: latinas « » en español (como recomienda la RAE) y curvas
  * “ ” en inglés.
  */
-export function crearConfiguracionModoEscritor(opciones: OpcionesDelModoEscritor, idioma: Idioma): ConfiguracionModoEscritor {
+export function crearConfiguracionModoEscritor(
+  opciones: OpcionesDelModoEscritor,
+  idioma: Idioma,
+): ConfiguracionModoEscritor {
   const estiloDeComillas =
     opciones.estilo_de_comillas === "auto" ? (idioma === "es" ? "latinas" : "curvas") : opciones.estilo_de_comillas;
   return {
@@ -208,64 +209,10 @@ const letraDeLibro = Prec.highest(
   }),
 );
 
-/** Esconde un tramo del texto (los `#` de un título y el espacio que los sigue). */
-const almohadillasEscondidas = Decoration.replace({});
-
-/**
- * Decoraciones que esconden los `#` del principio de cada título a la vista, salvo en las líneas
- * donde está el cursor o la selección. Los `#` se encuentran con el árbol de sintaxis del Markdown
- * (así no se esconden los de un bloque de código).
- */
-function decoracionesDeLosTitulos(vista: EditorView): DecorationSet {
-  const { state: estado } = vista;
-  const lineasConElCursor = new Set<number>();
-  for (const rango of estado.selection.ranges) {
-    for (let numeroDeLinea = estado.doc.lineAt(rango.from).number; numeroDeLinea <= estado.doc.lineAt(rango.to).number; numeroDeLinea++) {
-      lineasConElCursor.add(numeroDeLinea);
-    }
-  }
-  const constructor = new RangeSetBuilder<Decoration>();
-  for (const { from: desde, to: hasta } of vista.visibleRanges) {
-    syntaxTree(estado).iterate({
-      from: desde,
-      to: hasta,
-      enter(nodo) {
-        if (nodo.name !== "HeaderMark") return;
-        const linea = estado.doc.lineAt(nodo.from);
-        if (lineasConElCursor.has(linea.number)) return;
-        // Solo los `#` del principio (no los de cierre de `## Título ##` ni el subrayado `===`).
-        const esAlPrincipio = estado.doc.sliceString(linea.from, nodo.from).trim() === "";
-        if (!esAlPrincipio || !/^#+$/.test(estado.doc.sliceString(nodo.from, nodo.to))) return;
-        let finDeLosEspacios = nodo.to;
-        while (finDeLosEspacios < linea.to && estado.doc.sliceString(finDeLosEspacios, finDeLosEspacios + 1) === " ") finDeLosEspacios++;
-        constructor.add(nodo.from, finDeLosEspacios, almohadillasEscondidas);
-      },
-    });
-  }
-  return constructor.finish();
-}
-
-/** Títulos sin `#` a la vista: se recalculan al escribir, al mover el cursor o al desplazarse. */
-const titulosSinAlmohadillas = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
-    constructor(vista: EditorView) {
-      this.decorations = decoracionesDeLosTitulos(vista);
-    }
-    update(actualizacion: ViewUpdate) {
-      const cambioElArbol = syntaxTree(actualizacion.startState) !== syntaxTree(actualizacion.state);
-      if (actualizacion.docChanged || actualizacion.viewportChanged || actualizacion.selectionSet || cambioElArbol) {
-        this.decorations = decoracionesDeLosTitulos(actualizacion.view);
-      }
-    }
-  },
-  { decorations: (plugin) => plugin.decorations },
-);
-
 /** Extensiones del modo escritor según su configuración, o ninguna si está apagado (`null`). */
 export function extensionesDelModoEscritor(configuracion: ConfiguracionModoEscritor | null): Extension {
   if (!configuracion) return [];
-  const extensiones: Extension[] = [ultimoReemplazoHecho, tipografiaAlEscribir(configuracion), deshacerReemplazoConBackspace, titulosSinAlmohadillas];
+  const extensiones: Extension[] = [ultimoReemplazoHecho, tipografiaAlEscribir(configuracion), deshacerReemplazoConBackspace];
   if (configuracion.letraDeLibro) extensiones.push(letraDeLibro);
   if (configuracion.correctorOrtografico) {
     extensiones.push(

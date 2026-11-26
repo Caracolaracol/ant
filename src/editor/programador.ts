@@ -1,18 +1,19 @@
-// Modo programador del editor (Ajustes → Editor, por cámara): para notas técnicas, de trabajo o
-// de proyectos de código.
+// Ayudas para código del editor (Ajustes → Editor, por cámara; el preset «Programador» las activa
+// todas, pero cada una se activa por separado y se pueden sumar a las del escritor):
 //   · Bloques de código cómodos: al escribir ``` (o ~~~, con o sin lenguaje: ```js) y pulsar
 //     Enter, se cierra el bloque solo y el cursor queda adentro. Si el bloque ya estaba cerrado,
 //     Enter es un Enter normal.
 //   · Los bloques de código se ven con un fondo, para distinguirlos del texto (solo las líneas a
 //     la vista: no crece con el largo de la nota).
-//   · Paréntesis, corchetes, llaves y comillas se cierran solos, y se marca el par del que está
-//     junto al cursor.
-//   · Sin reemplazos tipográficos ni corrector ortográfico (estorban en el código).
-// `Editor.tsx` lo monta en el mismo `Compartment` que el modo escritor: se usa uno u otro.
+//   · Paréntesis, corchetes y llaves se cierran solos (y las comillas, salvo que estén activas las
+//     tipográficas del escritor, que ya las manejan al escribir prosa).
+//   · Se marca el par del paréntesis que está junto al cursor.
+// `Editor.tsx` lo monta en el mismo `Compartment` que las ayudas del escritor.
 
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { bracketMatching, syntaxTree } from "@codemirror/language";
-import { EditorSelection, Prec, RangeSetBuilder, type EditorState, type Extension } from "@codemirror/state";
+import { EditorSelection, EditorState, Prec, RangeSetBuilder, type Extension } from "@codemirror/state";
+import type { OpcionesDelEditor } from "../ajustes";
 import { Decoration, EditorView, ViewPlugin, keymap, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 /** Línea que abre (o cierra) un bloque de código: sangría, ``` o ~~~, y el lenguaje si lo hay. */
@@ -93,12 +94,16 @@ const bloquesDeCodigoConFondo = ViewPlugin.fromClass(
   { decorations: (plugin) => plugin.decorations },
 );
 
-/** Extensiones del modo programador. */
-export const extensionesDelModoProgramador: Extension = [
-  Prec.high(keymap.of([{ key: "Enter", run: cerrarElBloqueDeCodigo }])),
-  closeBrackets(),
-  keymap.of(closeBracketsKeymap),
-  bracketMatching(),
-  bloquesDeCodigoConFondo,
-  EditorView.contentAttributes.of({ spellcheck: "false", autocorrect: "off", autocapitalize: "off" }),
-];
+/** Extensiones de las ayudas para código que estén activas en las opciones. */
+export function extensionesDelModoProgramador(opciones: OpcionesDelEditor): Extension {
+  const extensiones: Extension[] = [];
+  if (opciones.cerrar_bloques_de_codigo) extensiones.push(Prec.high(keymap.of([{ key: "Enter", run: cerrarElBloqueDeCodigo }])));
+  if (opciones.cerrar_parentesis) {
+    // Con las comillas tipográficas activas, las comillas no se cierran solas (las convierte la tipografía).
+    const queSeCierra = opciones.comillas_tipograficas ? ["(", "[", "{"] : ["(", "[", "{", "'", '"'];
+    extensiones.push(closeBrackets(), keymap.of(closeBracketsKeymap), EditorState.languageData.of(() => [{ closeBrackets: { brackets: queSeCierra } }]));
+  }
+  if (opciones.marcar_el_par) extensiones.push(bracketMatching());
+  if (opciones.fondo_en_bloques_de_codigo) extensiones.push(bloquesDeCodigoConFondo);
+  return extensiones;
+}

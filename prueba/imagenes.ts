@@ -2,15 +2,17 @@
 // http://localhost:1420/prueba/imagenes.html). Muestra una nota con una imagen en línea (data:),
 // que se ve, y una relativa y una de Obsidian, que fuera de Tauri no se pueden leer y quedan con
 // su nombre tenue. Sirve para revisar cómo se dibujan; leer archivos solo funciona en la app.
-// Con `?escritor`, con el modo escritor (los `#` de los títulos no se ven, salvo con el cursor).
+// Con `?escritor`, con el preset Escritor (tipografía y la vista del Markdown: sin `#`, `**`…,
+// salvo en la línea del cursor, que queda en la primera).
 
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { cambiarLugarDeLaNota, extensionesDeImagenes } from "../src/editor/imagenes";
+import { cambiarLugarDeLaNota, imagenesALaVista, lugarDeLaNotaEnElEditor } from "../src/editor/imagenes";
+import { extensionesDeLaVistaDelMarkdown } from "../src/editor/vistaDelMarkdown";
 import { resaltadoDelMarkdown, temaDelEditor } from "../src/editor/tema";
 import { crearConfiguracionModoEscritor, extensionesDelModoEscritor } from "../src/editor/escritor";
-import { AJUSTES_POR_DEFECTO } from "../src/ajustes";
+import { PRESETS_DEL_EDITOR } from "../src/ajustes";
 import "../src/App.css";
 
 /** Un dibujo de ejemplo como imagen en línea: un hormiguero con tres cámaras. */
@@ -35,22 +37,32 @@ const texto = [
   "",
   "Y una de Obsidian: ![[Pasted image 20240101.png]]",
   "",
-  "Sigue el texto de la nota.",
+  "Sigue el texto de la nota, con **negrita**, *itálica*, ~~tachado~~, `código` y un [enlace](https://ejemplo.cl).",
+  "",
+  "> Una cita de la reina.",
+  "",
+  "- Primer punto",
+  "- [ ] Tarea pendiente",
+  "- [x] Tarea hecha",
+  "",
+  "---",
 ].join("\n");
 
 const vista = new EditorView({
   parent: document.getElementById("editor")!,
   state: EditorState.create({
     doc: texto,
-    // El cursor queda al final: los títulos de arriba se ven sin sus `#` en el modo escritor.
-    selection: { anchor: texto.length },
+    // El cursor queda al principio: lo de abajo se ve sin marcas con el preset Escritor.
+    selection: { anchor: 0 },
     extensions: [
       EditorView.lineWrapping,
       markdown({ base: markdownLanguage }),
       temaDelEditor,
       resaltadoDelMarkdown,
-      extensionesDeImagenes,
-      location.search.includes("escritor") ? extensionesDelModoEscritor(crearConfiguracionModoEscritor(AJUSTES_POR_DEFECTO.opciones_del_modo_escritor, "es")) : [],
+      lugarDeLaNotaEnElEditor,
+      imagenesALaVista,
+      location.search.includes("escritor") ? extensionesDelModoEscritor(crearConfiguracionModoEscritor(PRESETS_DEL_EDITOR.escritor, "es")) : [],
+      location.search.includes("escritor") ? extensionesDeLaVistaDelMarkdown(PRESETS_DEL_EDITOR.escritor) : [],
     ],
   }),
 });

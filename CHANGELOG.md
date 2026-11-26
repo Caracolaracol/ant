@@ -25,12 +25,17 @@ release with that section as its notes, so this file is always written in Englis
 
 ### Changed
 
-- **Editor mode per chamber**: each chamber has its own editor settings (Settings → Editor). Besides
-  **Writer**, there is a new **Programmer** mode for code and technical notes: type ``` and Enter and
-  the code block closes itself, brackets and quotes close themselves, code blocks stand out, and
-  there are no typographic changes. **Simple** shows Markdown exactly as you type it.
-- **Writer mode hides the `#` of headings**: headings look like headings, without their marks.
-  The marks show again on the line where the cursor is, so you can still change the level.
+- **Editor settings per chamber**: each chamber has its own editor settings (Settings → Editor).
+  Three quick presets (**Writer**, **Programmer**, **Simple**) check a set of options at once, and
+  every option can then be changed on its own, so a chamber can be a writer's and a programmer's
+  at the same time. New code options: type ``` and Enter and the code block closes itself,
+  brackets close themselves, the matching bracket is highlighted, and code blocks stand out.
+- **Markdown view** (part of the Writer preset, each piece with its own checkbox): text looks the
+  way it ends up, without its marks. Headings without `#`; bold, italic and strikethrough without
+  `**`, `*` or `~~`; inline code without backticks; links showing only their text; quotes with a
+  line; bullets in lists; checkboxes in tasks that you click to check; `---` as a line; and images.
+  On the line where the cursor is, the marks show again so you can edit them. Bold text is also a
+  bit brighter, so it stands out in the book font.
 - **No empty note out of nowhere**: Ant opens the last note you had open. If there is none (or you
   close the last one), the editor shows an invitation to start a new note, with a button that
   creates it at the root of the open chamber.

@@ -37,8 +37,8 @@ export interface Ajustes {
   /** Idioma de la interfaz: inglés (por defecto) o español. */
   idioma: Idioma;
   /**
-   * Modo escritor (activo por defecto) y sus opciones, para las cámaras que todavía no eligieron su
-   * propia configuración del editor (ver `ConfiguracionDelEditor`).
+   * Modo escritor (activo por defecto) y sus opciones, para las cámaras que todavía no eligieron
+   * sus propias opciones del editor (ver `OpcionesDelEditor`).
    */
   modo_escritor: boolean;
   /** Opciones del modo escritor de esas cámaras (ver `editor/escritor.ts`). */
@@ -67,29 +67,6 @@ export interface OpcionesDeCompilacion {
   origenTitulo: OrigenDelTituloDeCadaCapitulo;
   tipografia: boolean;
 }
-
-/**
- * Modo del editor de una cámara: «escritor» (prosa: tipografía, letra de libro, títulos sin `#`),
- * «programador» (código: bloques de código cómodos, paréntesis que se cierran solos) o «simple»
- * (Markdown tal cual, sin nada más).
- */
-export type ModoDelEditor = "escritor" | "programador" | "simple";
-
-/**
- * Configuración del editor de una cámara (Ajustes → Editor): cada cámara tiene la suya, guardada
- * en sus datos de `.ant/` (`hormigueros/datosDeLaCamara.ts`). Una cámara que todavía no la tiene
- * usa la de `modo_escritor` y `opciones_del_modo_escritor` de los ajustes.
- */
-export interface ConfiguracionDelEditor {
-  modo: ModoDelEditor;
-  opciones_del_modo_escritor: OpcionesDelModoEscritor;
-}
-
-/** Configuración del editor de una cámara que todavía no eligió la suya: la de los ajustes generales. */
-export const configuracionDelEditorPorDefecto = (ajustes: Ajustes): ConfiguracionDelEditor => ({
-  modo: ajustes.modo_escritor ? "escritor" : "simple",
-  opciones_del_modo_escritor: ajustes.opciones_del_modo_escritor,
-});
 
 /** Opciones del modo escritor. Debe coincidir con `OpcionesDelModoEscritor` de Rust. */
 export interface OpcionesDelModoEscritor {
@@ -122,6 +99,133 @@ export const OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO: OpcionesDelModoEscritor = {
   letra_de_libro: true,
   corrector_ortografico: true,
 };
+
+/**
+ * Opciones del editor de una cámara (Ajustes → Editor): cada cámara tiene las suyas, guardadas en
+ * sus datos de `.ant/` (`hormigueros/datosDeLaCamara.ts`). Son independientes: una cámara puede
+ * tener la tipografía del escritor y, a la vez, las ayudas para código del programador. Los
+ * presets (`PRESETS_DEL_EDITOR`) solo las marcan de una vez.
+ */
+export interface OpcionesDelEditor extends OpcionesDelModoEscritor {
+  // Vista del Markdown (`editor/vistaDelMarkdown.ts`): las marcas se esconden, salvo en la línea del cursor.
+  /** Títulos sin `#`. */
+  titulos_sin_almohadillas: boolean;
+  /** Negrita, itálica y tachado sin `**`, `*`, `_` ni `~~`. */
+  enfasis_sin_marcas: boolean;
+  /** Código en línea sin las comillas invertidas, con un fondo. */
+  codigo_en_linea_sin_marcas: boolean;
+  /** Enlaces que muestran solo su texto. */
+  enlaces_solo_texto: boolean;
+  /** Citas con una línea a la izquierda en vez del `>`. */
+  citas_con_linea: boolean;
+  /** Viñetas `•` en las listas. */
+  vinetas_en_listas: boolean;
+  /** Casillas que se marcan con un clic en las tareas (`- [ ]`). */
+  casillas_en_tareas: boolean;
+  /** `---` como una línea a lo ancho. */
+  separadores_como_linea: boolean;
+  /** Mostrar las imágenes debajo de su línea (`editor/imagenes.ts`). */
+  mostrar_imagenes: boolean;
+  // Código (`editor/programador.ts`).
+  /** Al escribir ``` y Enter, cerrar el bloque de código solo. */
+  cerrar_bloques_de_codigo: boolean;
+  /** Cerrar solos paréntesis, corchetes, llaves (y comillas, si no están las tipográficas). */
+  cerrar_parentesis: boolean;
+  /** Marcar el paréntesis que hace par con el que está junto al cursor. */
+  marcar_el_par: boolean;
+  /** Fondo en las líneas de los bloques de código. */
+  fondo_en_bloques_de_codigo: boolean;
+}
+
+/** Presets del editor, en el orden en que se ofrecen (sus nombres en `idioma.tsx`). */
+export type PresetDelEditor = "escritor" | "programador" | "simple";
+
+/** Todo apagado: Markdown tal cual se escribe (el preset «Simple»), y la base de los demás. */
+const OPCIONES_DEL_EDITOR_APAGADAS: OpcionesDelEditor = {
+  comillas_tipograficas: false,
+  estilo_de_comillas: "auto",
+  rayas_de_dialogo: false,
+  puntos_suspensivos: false,
+  comillas_angulares: false,
+  flechas: false,
+  letra_de_libro: false,
+  corrector_ortografico: false,
+  titulos_sin_almohadillas: false,
+  enfasis_sin_marcas: false,
+  codigo_en_linea_sin_marcas: false,
+  enlaces_solo_texto: false,
+  citas_con_linea: false,
+  vinetas_en_listas: false,
+  casillas_en_tareas: false,
+  separadores_como_linea: false,
+  mostrar_imagenes: false,
+  cerrar_bloques_de_codigo: false,
+  cerrar_parentesis: false,
+  marcar_el_par: false,
+  fondo_en_bloques_de_codigo: false,
+};
+
+/** Toda la vista del Markdown activa: el texto se ve como queda, sin marcas. */
+const VISTA_DEL_MARKDOWN_COMPLETA: Partial<OpcionesDelEditor> = {
+  titulos_sin_almohadillas: true,
+  enfasis_sin_marcas: true,
+  codigo_en_linea_sin_marcas: true,
+  enlaces_solo_texto: true,
+  citas_con_linea: true,
+  vinetas_en_listas: true,
+  casillas_en_tareas: true,
+  separadores_como_linea: true,
+  mostrar_imagenes: true,
+};
+
+/**
+ * Presets rápidos: «Escritor» (prosa: tipografía, letra de libro, corrector y el Markdown visto
+ * como queda), «Programador» (código: bloques que se cierran solos, paréntesis, par marcado, fondo;
+ * el Markdown a la vista, salvo imágenes y casillas) y «Simple» (nada: Markdown tal cual). Después
+ * cada opción se puede cambiar por separado.
+ */
+export const PRESETS_DEL_EDITOR: Record<PresetDelEditor, OpcionesDelEditor> = {
+  escritor: { ...OPCIONES_DEL_EDITOR_APAGADAS, ...OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO, ...VISTA_DEL_MARKDOWN_COMPLETA },
+  programador: {
+    ...OPCIONES_DEL_EDITOR_APAGADAS,
+    mostrar_imagenes: true,
+    casillas_en_tareas: true,
+    cerrar_bloques_de_codigo: true,
+    cerrar_parentesis: true,
+    marcar_el_par: true,
+    fondo_en_bloques_de_codigo: true,
+  },
+  simple: OPCIONES_DEL_EDITOR_APAGADAS,
+};
+
+/** El preset que coincide con unas opciones (sin contar el estilo de comillas), o `null` si se personalizaron. */
+export function presetQueCoincide(opciones: OpcionesDelEditor): PresetDelEditor | null {
+  const claves = (Object.keys(OPCIONES_DEL_EDITOR_APAGADAS) as (keyof OpcionesDelEditor)[]).filter((clave) => clave !== "estilo_de_comillas");
+  return (Object.keys(PRESETS_DEL_EDITOR) as PresetDelEditor[]).find((preset) => claves.every((clave) => PRESETS_DEL_EDITOR[preset][clave] === opciones[clave])) ?? null;
+}
+
+/** Si alguna opción de tipografía al escribir está activa. */
+export const hayTipografiaActiva = (opciones: OpcionesDelEditor) =>
+  opciones.comillas_tipograficas || opciones.rayas_de_dialogo || opciones.puntos_suspensivos || opciones.comillas_angulares || opciones.flechas;
+
+/**
+ * Opciones del editor de una cámara a partir de lo guardado en sus datos: las opciones (con las
+ * que falten apagadas), o la forma de antes (`{ modo, opciones_del_modo_escritor }`), o, si no
+ * guardó nada, las de los ajustes generales (`modo_escritor` y sus opciones).
+ */
+export function opcionesDelEditorDeLaCamara(
+  guardadas: { opciones_del_editor?: Partial<OpcionesDelEditor> | null; editor?: { modo?: string; opciones_del_modo_escritor?: OpcionesDelModoEscritor } | null },
+  ajustes: Pick<Ajustes, "modo_escritor" | "opciones_del_modo_escritor">,
+): OpcionesDelEditor {
+  // Lo que falta en lo guardado (opciones que se agregaron después) queda apagado, salvo las
+  // imágenes, que antes se veían siempre.
+  if (guardadas.opciones_del_editor) return { ...OPCIONES_DEL_EDITOR_APAGADAS, mostrar_imagenes: true, ...guardadas.opciones_del_editor };
+  const anterior = guardadas.editor;
+  if (anterior?.modo === "programador") return PRESETS_DEL_EDITOR.programador;
+  if (anterior?.modo === "simple") return PRESETS_DEL_EDITOR.simple;
+  if (anterior?.modo === "escritor") return { ...PRESETS_DEL_EDITOR.escritor, ...anterior.opciones_del_modo_escritor };
+  return ajustes.modo_escritor ? { ...PRESETS_DEL_EDITOR.escritor, ...ajustes.opciones_del_modo_escritor } : PRESETS_DEL_EDITOR.simple;
+}
 
 /** Ajustes de una instalación nueva, mientras se leen los guardados. */
 export const AJUSTES_POR_DEFECTO: Ajustes = {

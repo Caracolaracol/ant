@@ -1,6 +1,6 @@
 // Datos de cada cámara guardados en el hormiguero, en su carpeta oculta `.ant/` (ver
 // `src-tauri/src/datos_del_hormiguero.rs`): los fijados, sus iconos, las opciones de «Compilar y
-// exportar» y la configuración de su editor (modo escritor, programador o simple). Así viajan con las notas al mover o sincronizar el hormiguero.
+// exportar» y las opciones de su editor (tipografía, página y código; ver `OpcionesDelEditor`). Así viajan con las notas al mover o sincronizar el hormiguero.
 //
 // En el archivo las rutas son relativas a la cámara y con `/` («Libro I/01.md#Inicio»; `.` es la
 // cámara misma), para que sirvan en otro computador o sistema. En la app se usan completas, como
@@ -8,7 +8,7 @@
 // antes vivían en `ajustes.json` (con rutas completas) al archivo de su cámara.
 
 import { invoke } from "@tauri-apps/api/core";
-import type { Ajustes, ConfiguracionDelEditor, OpcionesDeCompilacion } from "../ajustes";
+import type { Ajustes, OpcionesDeCompilacion, OpcionesDelEditor, OpcionesDelModoEscritor } from "../ajustes";
 import { estaEnLaCamara } from "../arbolDeCarpetas.ts";
 import { claveDeCapitulo, interpretarClaveDeFijado } from "../barraLateral/clavesDeFijados.ts";
 
@@ -20,8 +20,10 @@ export interface DatosDeLaCamara {
   iconos_de_fijados: Record<string, string>;
   /** Opciones de «Compilar y exportar» de cada carpeta, por su ruta. */
   opciones_de_compilacion_por_carpeta: Record<string, OpcionesDeCompilacion>;
-  /** Configuración del editor de esta cámara, o nada si todavía usa la de los ajustes generales. */
-  editor?: ConfiguracionDelEditor | null;
+  /** Opciones del editor de esta cámara, o nada si todavía usa las de los ajustes generales. */
+  opciones_del_editor?: Partial<OpcionesDelEditor> | null;
+  /** Forma de antes de las opciones del editor (un modo); se lee con `opcionesDelEditorDeLaCamara`. */
+  editor?: { modo?: string; opciones_del_modo_escritor?: OpcionesDelModoEscritor } | null;
 }
 
 /** Una cámara sin datos todavía. */
@@ -64,6 +66,7 @@ function convertirClaveDeFijado(clave: string, convertirRuta: (ruta: string) => 
 function convertirRutasDeLosDatos(datos: DatosDeLaCamara, convertirRuta: (ruta: string) => string): DatosDeLaCamara {
   const convertirClave = (clave: string) => convertirClaveDeFijado(clave, convertirRuta);
   return {
+    ...(datos.opciones_del_editor ? { opciones_del_editor: datos.opciones_del_editor } : {}),
     ...(datos.editor ? { editor: datos.editor } : {}),
     fijados: (datos.fijados ?? []).map(convertirClave),
     iconos_de_fijados: Object.fromEntries(Object.entries(datos.iconos_de_fijados ?? {}).map(([clave, icono]) => [convertirClave(clave), icono])),

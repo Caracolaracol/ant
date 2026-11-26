@@ -1,13 +1,54 @@
 /* Estilos de los Ajustes: una ventanita sobre la principal (el fondo y el marco son `.modal` de
-   App.css), con la columna de áreas a la izquierda y el panel de opciones a la derecha. Usa las
-   mismas variables de color que la ventana principal (App.css). */
+   App.css), con una cabecera a todo el ancho (título y ×) y, debajo, la columna de áreas a la
+   izquierda y el panel de opciones a la derecha. Usa las mismas variables de color que la ventana
+   principal (App.css). */
 
 .ajustes {
   display: flex;
+  flex-direction: column;
   width: min(720px, 100%);
   height: min(540px, 100%);
   padding: 0;
   overflow: hidden;
+}
+
+/* Cabecera: «Ajustes» a la izquierda y la × a la derecha, separadas del resto por una línea. */
+.ajustes-cabecera {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 8px 18px;
+  border-bottom: 1px solid var(--seleccion);
+  background: var(--fondo-bajo);
+  font-weight: 700;
+  color: var(--titulo);
+  user-select: none;
+}
+
+.ajustes-cerrar {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--tenue);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ajustes-cerrar:hover {
+  color: var(--texto);
+  background: var(--coincidencia);
+}
+
+/* Debajo de la cabecera: áreas y panel, uno al lado del otro. */
+.ajustes-cuerpo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 
 /* Columna de áreas. */
@@ -216,70 +257,53 @@
   color: var(--tenue);
 }
 
-/* Modo escritor: tarjeta destacada con un interruptor a la derecha; con el modo activo, el borde
-   toma el color de acento. */
-.ajuste-modo {
+/* Presets del editor: tres botones en fila, cada uno con su nombre y una línea de lo que marca;
+   el que coincide con las opciones de abajo, con el borde de acento. */
+.ajuste-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.ajuste-preset {
   display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 24px;
-  padding: 14px 16px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
   border: 1px solid var(--seleccion);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--fondo-bajo);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-.ajuste-modo.activo {
+.ajuste-preset:hover {
+  border-color: var(--tenue);
+}
+
+.ajuste-preset.elegido {
   border-color: var(--acento);
 }
 
-.ajuste-modo-titulo {
-  font-size: 15px;
+.ajuste-preset-titulo {
   font-weight: 700;
   color: var(--titulo);
 }
 
-.ajuste-modo .ajuste-ayuda {
-  margin-bottom: 0;
+.ajuste-preset-ayuda {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--tenue);
 }
 
-/* Interruptor: una casilla dibujada como píldora con un círculo que se desliza. */
-.interruptor {
-  appearance: none;
-  position: relative;
-  flex-shrink: 0;
-  width: 38px;
-  height: 22px;
-  margin: 0;
-  border-radius: 11px;
-  background: var(--seleccion);
-  cursor: pointer;
-  transition: background 0.15s;
+.ajuste-personalizado {
+  margin: 8px 0 0;
+  color: var(--acento);
 }
 
-.interruptor::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--texto);
-  transition: transform 0.15s;
-}
-
-.interruptor:checked {
-  background: var(--acento);
-}
-
-.interruptor:checked::after {
-  transform: translateX(16px);
-  background: var(--fondo);
-}
-
-/* Listas de opciones del modo escritor. */
+/* Listas de opciones (tipografía, página, código). */
 .ajuste-lista {
   display: flex;
   flex-direction: column;
@@ -417,24 +441,4 @@
   align-items: center;
   gap: 4px;
   color: var(--acento);
-}
-
-/* Modos del editor (escritor, programador, simple): tarjetas una bajo otra, con un círculo para
-   elegir; la elegida con el borde de acento. */
-.ajuste-modos {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.ajuste-modos .ajuste-modo {
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 0;
-}
-
-.ajuste-modos .ajuste-modo input {
-  margin-top: 4px;
-  accent-color: var(--acento);
 }

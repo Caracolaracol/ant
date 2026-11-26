@@ -30,6 +30,12 @@ export const temaDelEditor = EditorView.theme(
     ".cm-imagen.no-encontrada": { color: "var(--tenue)", fontSize: "0.85em" },
     // Líneas de los bloques de código en el modo programador (`programador.ts`).
     ".cm-linea-de-codigo": { backgroundColor: "var(--fondo-bajo)" },
+    // Vista del Markdown (`vistaDelMarkdown.ts`): código en línea, citas, viñetas, tareas y separadores.
+    ".cm-codigo-en-linea": { backgroundColor: "var(--fondo-bajo)", borderRadius: "4px", padding: "1px 4px" },
+    ".cm-linea-de-cita": { borderLeft: "3px solid var(--seleccion)", paddingLeft: "12px !important" },
+    ".cm-vineta": { color: "var(--acento)" },
+    ".cm-casilla-de-tarea": { margin: "0 6px 0 0", verticalAlign: "-2px", accentColor: "var(--acento)", cursor: "pointer" },
+    ".cm-separador": { display: "inline-block", width: "100%", verticalAlign: "middle", borderTop: "1px solid var(--seleccion)" },
   },
   { dark: true },
 );
@@ -40,7 +46,8 @@ export const resaltadoDelMarkdown = syntaxHighlighting(
     { tag: tags.heading1, fontSize: "1.5em", fontWeight: "700", color: "var(--titulo)" },
     { tag: tags.heading2, fontSize: "1.25em", fontWeight: "700", color: "var(--titulo)" },
     { tag: [tags.heading3, tags.heading4, tags.heading5, tags.heading6], fontWeight: "700", color: "var(--titulo)" },
-    { tag: tags.strong, fontWeight: "700" },
+    // La negrita también un poco más clara, para que se note aunque la letra tenga poco contraste de grosor.
+    { tag: tags.strong, fontWeight: "700", color: "var(--titulo)" },
     { tag: tags.emphasis, fontStyle: "italic" },
     { tag: tags.strikethrough, textDecoration: "line-through" },
     { tag: [tags.link, tags.url], color: "var(--acento)" },

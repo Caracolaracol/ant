@@ -11,9 +11,9 @@
 // En cada tecla solo se avisa *que* cambió el texto (`alCambiarTexto`), sin copiarlo: con una
 // novela entera en una nota, copiar todo el texto en cada tecla haría lento escribir. Quien
 // necesita el texto lo pide con `obtenerTextoDeNota`.
-// El modo del editor de la cámara (escritor, `escritor.ts`; programador, `programador.ts`; o
-// simple) va en un `Compartment`: se cambia en vivo, y cada nota guardada se pone al día al volver
-// a mostrarse.
+// Las opciones del editor de la cámara (ayudas del escritor, `escritor.ts`, y del programador,
+// `programador.ts`, que se pueden sumar) van en un `Compartment`: se cambian en vivo, y cada nota
+// guardada se pone al día al volver a mostrarse.
 // Las imágenes de la nota se ven debajo de su línea (`imagenes.ts`); para resolver sus rutas el
 // editor sabe dónde está la nota visible (`rutaDeLaNotaVisible`). Las imágenes pegadas se pasan a
 // la app (`alPegarImagenes`), que las guarda; las arrastradas llegan por Tauri a la app, que las
@@ -29,21 +29,26 @@ import { languages } from "@codemirror/language-data";
 import { temaDelEditor, resaltadoDelMarkdown } from "./tema";
 import { ConfiguracionModoEscritor, extensionesDelModoEscritor } from "./escritor";
 import { extensionesDelModoProgramador } from "./programador";
-import type { ModoDelEditor } from "../ajustes";
-import { cambiarLugarDeLaNota, extensionesDeImagenes, LugarDeLaNota } from "./imagenes";
+import type { OpcionesDelEditor } from "../ajustes";
+import { cambiarLugarDeLaNota, imagenesALaVista, lugarDeLaNotaEnElEditor, LugarDeLaNota } from "./imagenes";
+import { extensionesDeLaVistaDelMarkdown } from "./vistaDelMarkdown";
 
-/** Modo del editor ya resuelto para montarlo: el modo y, en el escritor, su configuración. */
+/** Opciones del editor de la cámara, ya resueltas para montarlas (las del escritor, con sus comillas según el idioma). */
 export interface ConfiguracionDelEditorResuelta {
-  modo: ModoDelEditor;
-  escritor: ConfiguracionModoEscritor | null;
+  opciones: OpcionesDelEditor;
+  escritor: ConfiguracionModoEscritor;
 }
 
-/** Extensiones de CodeMirror del modo del editor. */
-function extensionesDelModo(configuracion: ConfiguracionDelEditorResuelta) {
-  if (configuracion.modo === "escritor") return extensionesDelModoEscritor(configuracion.escritor);
-  if (configuracion.modo === "programador") return extensionesDelModoProgramador;
-  return [];
-}
+/**
+ * Extensiones de CodeMirror de las opciones del editor: las del escritor, la vista del Markdown,
+ * las imágenes y las del programador que estén activas.
+ */
+const extensionesDelModo = (configuracion: ConfiguracionDelEditorResuelta) => [
+  extensionesDelModoEscritor(configuracion.escritor),
+  extensionesDeLaVistaDelMarkdown(configuracion.opciones),
+  configuracion.opciones.mostrar_imagenes ? imagenesALaVista : [],
+  extensionesDelModoProgramador(configuracion.opciones),
+];
 
 /** Cuántas notas recuerda el editor (cursor e historial) después de cerrarlas. */
 const LIMITE_DE_NOTAS_RECORDADAS = 30;
@@ -91,7 +96,7 @@ interface Props {
   alCambiarTexto(): void;
   /** Se llama cuando el cursor se mueve, con su posición (para marcar el título actual). */
   alMoverCursor(posicion: number): void;
-  /** Modo del editor de la cámara abierta y, en el modo escritor, su configuración. */
+  /** Opciones del editor de la cámara abierta (escritor y programador, sumables). */
   configuracionDelEditor: ConfiguracionDelEditorResuelta;
   /** Archivo de la nota visible (o `null`) y el hormiguero, para encontrar sus imágenes. */
   rutaDeLaNotaVisible: string | null;
@@ -164,7 +169,7 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
     temaDelEditor,
     resaltadoDelMarkdown,
     compartimentoDelModo.of(extensionesDelModo(configuracionDelEditorVigente.current)),
-    extensionesDeImagenes,
+    lugarDeLaNotaEnElEditor,
     // Pegar imágenes (una captura, una imagen copiada): la app las guarda junto a la nota y agrega su enlace.
     EditorView.domEventHandlers({
       paste(evento) {

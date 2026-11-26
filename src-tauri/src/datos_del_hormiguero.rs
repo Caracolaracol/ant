@@ -3,7 +3,7 @@
 // (iCloud, Dropbox, git) o respaldarlo. Por ahora, un archivo por cámara en `.ant/camaras/`:
 //
 //   .ant/camaras/Novela.json      fijados, sus iconos, las opciones de «Compilar y exportar»
-//                                 y la configuración del editor de la cámara
+//                                 y las opciones del editor de la cámara
 //   .ant/camaras/.entrada.json    lo mismo para la «Entrada» (las notas sueltas de la raíz)
 //
 // Las rutas de adentro son relativas a la cámara y con `/` (las convierte la interfaz, en
@@ -42,9 +42,12 @@ pub struct DatosDeLaCamara {
     /// Opciones de «Compilar y exportar» por carpeta (relativa a la cámara; `.` es la cámara misma).
     /// Su forma la define la interfaz (`OpcionesDeCompilacion`).
     pub opciones_de_compilacion_por_carpeta: BTreeMap<String, serde_json::Value>,
-    /// Configuración del editor de la cámara (modo escritor, programador o simple, y las opciones
-    /// del escritor). Su forma la define la interfaz (`ConfiguracionDelEditor`); sin ella, la
-    /// cámara usa la de los ajustes generales.
+    /// Opciones del editor de la cámara (tipografía, página y código). Su forma la define la
+    /// interfaz (`OpcionesDelEditor`); sin ellas, la cámara usa las de los ajustes generales.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub opciones_del_editor: Option<serde_json::Value>,
+    /// Forma de antes de las opciones del editor (un modo: escritor, programador o simple). La
+    /// interfaz la convierte al leerla y la quita al guardar las opciones nuevas.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub editor: Option<serde_json::Value>,
 }
@@ -56,6 +59,7 @@ impl Default for DatosDeLaCamara {
             fijados: Vec::new(),
             iconos_de_fijados: BTreeMap::new(),
             opciones_de_compilacion_por_carpeta: BTreeMap::new(),
+            opciones_del_editor: None,
             editor: None,
         }
     }

@@ -136,8 +136,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - **Carpeta `.ant/`** en la raíz del hormiguero (como `.obsidian/`): lo que es de las notas y no
     de este computador, para que viaje con el hormiguero. Un archivo por cámara,
     `.ant/camaras/<nombre>.json` (`.entrada.json` para la Entrada), con fijados, iconos y opciones
-    de compilación, la configuración de su editor (`editor`: modo escritor, programador o simple,
-    y las opciones del escritor; sin ella usa `modo_escritor` de los ajustes), y rutas **relativas a la cámara con `/`** (`.` es la cámara). En la app se usan
+    de compilación, las opciones de su editor (`opciones_del_editor`), y rutas **relativas a la cámara con `/`** (`.` es la cámara). En la app se usan
     completas: `src/hormigueros/datosDeLaCamara.ts` convierte en los dos sentidos y pasa al archivo
     lo que cada cámara tenía en `ajustes.json` la primera vez que se abre (y lo quita de ahí). En
     `ajustes.json` queda solo lo de este computador. Rust: `src-tauri/src/datos_del_hormiguero.rs`
@@ -203,8 +202,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   por el principio).
 - `src/ajustes.ts` — tipo `Ajustes` (igual al de Rust), leer, guardar y escuchar cambios.
 - `src/ajustes/ModalAjustes.tsx` y `.css` — Ajustes como ventanita sobre la principal (no es
-  otra ventana), en dos columnas: áreas a la izquierda (`AREAS`: General —idioma, hormiguero y
-  cámaras—, Editor —modo de la cámara abierta: escritor, programador o simple—, Diario, Apariencia, Atajos —`PanelAtajos.tsx`: clic en un atajo y
+  otra ventana), con una cabecera a todo el ancho (título y × para cerrar) y debajo dos columnas: áreas a la izquierda (`AREAS`: General —idioma, hormiguero y
+  cámaras—, Editor —opciones de la cámara abierta, con presets escritor, programador y simple—, Diario, Apariencia, Atajos —`PanelAtajos.tsx`: clic en un atajo y
   pulsar las teclas nuevas—) y el panel del área elegida a la
   derecha. Los cambios se guardan al instante; Escape, Cmd+W o clic fuera la cierran. El marco
   de las ventanitas (`.modal-fondo`, `.modal`) está en `App.css`.
@@ -220,16 +219,26 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   `mostrarNota`, `olvidarNota`, `obtenerTextoDeNota`, `reemplazarTextoDesdeDisco` (cambio mínimo,
   fuera del historial y sin avisar como si se hubiera escrito), `llevarCursorA` y `enfocar`.
 - `src/editor/escritor.ts` — modo escritor (Ajustes → Editor, activo por defecto): reemplazos
-  tipográficos al teclear (`reemplazo`, probada aparte), Backspace que los deshace, títulos sin
-  `#` (se esconden con decoraciones en las líneas a la vista, salvo donde está el cursor), letra
-  de libro y corrector. Va en un `Compartment` de `Editor.tsx` (prop `escritor`); nunca toca texto
+  tipográficos al teclear (`reemplazo`, probada aparte), Backspace que los deshace, letra de
+  libro y corrector.
+- `src/editor/vistaDelMarkdown.ts` — vista del Markdown: esconde las marcas (títulos `#`, `**`,
+  `*`, `~~`, comillas invertidas, `[…](…)`, `>`) y dibuja viñetas, casillas de tareas (se marcan
+  con un clic) y separadores; en la línea del cursor las marcas vuelven a verse. Sale del árbol de
+  sintaxis y solo de las líneas a la vista. Cada parte es una opción del editor de la cámara. Va en un `Compartment` de `Editor.tsx` (prop `escritor`); nunca toca texto
   ya escrito ni código, HTML, URLs o el encabezado YAML.
-- `src/editor/programador.ts` — modo programador (por cámara): al escribir ``` y Enter cierra el
-  bloque de código solo (si no estaba cerrado, según el árbol de sintaxis; probado en
-  `prueba/automaticas/programador.prueba.ts`), cierra paréntesis y comillas (`@codemirror/autocomplete`),
-  marca el par, da fondo a los bloques de código a la vista y apaga el corrector. Va en el mismo
-  `Compartment` que el modo escritor (`extensionesDelModo` en `Editor.tsx`): uno, otro o ninguno
-  (simple), según `ConfiguracionDelEditor` de la cámara (`ajustes.ts`).
+- `src/editor/programador.ts` — ayudas para código: al escribir ``` y Enter cierra el bloque de
+  código solo (si no estaba cerrado, según el árbol de sintaxis; probado en
+  `prueba/automaticas/programador.prueba.ts`), cierra paréntesis (y comillas si no están las
+  tipográficas; `@codemirror/autocomplete`), marca el par y da fondo a los bloques de código a la
+  vista. Cada una por separado.
+- **Opciones del editor por cámara** (`OpcionesDelEditor` en `ajustes.ts`): tipografía y página del
+  escritor más las ayudas de código, todas independientes y sumables; se guardan en los datos de la
+  cámara (`opciones_del_editor`; sin ellas, las de `modo_escritor` de los ajustes; la forma de antes,
+  `editor: { modo }`, se convierte con `opcionesDelEditorDeLaCamara`). Los presets
+  (`PRESETS_DEL_EDITOR`: escritor, programador, simple) solo las marcan de una vez; `presetQueCoincide`
+  dice cuál está elegido (probado en `prueba/automaticas/opcionesDelEditor.prueba.ts`). Ajustes →
+  Editor muestra los presets arriba y todas las opciones abajo. `Editor.tsx` las monta en un
+  `Compartment` (`extensionesDelModo`: las del escritor y las del programador que estén activas).
 - `src/editor/tema.ts` — tema de CodeMirror y colores del Markdown, leyendo las variables CSS.
 - **Imágenes en las notas**: se arrastran a la ventana o se pegan, y se ven debajo de su línea sin
   esconder el Markdown.

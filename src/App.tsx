@@ -21,7 +21,7 @@ import { crearConfiguracionModoEscritor } from "./editor/escritor";
 import { BarraLateral } from "./barraLateral/BarraLateral";
 import { ANCHO_DE_LA_BARRA_POR_DEFECTO } from "./barraLateral/useArrastreDelBorde";
 import { BarraDeEstado } from "./BarraDeEstado";
-import { configuracionDelEditorPorDefecto, type Ajustes, type ConfiguracionDelEditor } from "./ajustes";
+import { hayTipografiaActiva, opcionesDelEditorDeLaCamara, type Ajustes, type OpcionesDelEditor } from "./ajustes";
 import { ModalAjustes } from "./ajustes/ModalAjustes";
 import { useAjustesGuardados } from "./ajustes/useAjustesGuardados";
 import { Bienvenida } from "./bienvenida/Bienvenida";
@@ -235,23 +235,20 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     setIndiceDelTituloConElCursor(indiceDelTituloEnLaPosicion(titulosVigentes.current, posicion));
   }, []);
 
-  // Configuración del editor de la cámara abierta (cada cámara tiene la suya, en sus datos de
-  // `.ant/`; la que no eligió usa la de los ajustes generales) y, para el editor, ya resuelta: en
-  // el modo escritor, con las comillas según el idioma.
-  const configuracionDelEditorDeLaCamara: ConfiguracionDelEditor = datosDeLaCamara.editor ?? configuracionDelEditorPorDefecto(ajustes);
+  // Opciones del editor de la cámara abierta (cada cámara tiene las suyas, en sus datos de `.ant/`;
+  // la que no eligió usa las de los ajustes generales) y, para el editor, ya resueltas: las del
+  // escritor, con las comillas según el idioma.
+  const opcionesDelEditor = opcionesDelEditorDeLaCamara(datosDeLaCamara, ajustes);
   const configuracionDelEditor = useMemo(
-    () => ({
-      modo: configuracionDelEditorDeLaCamara.modo,
-      escritor:
-        configuracionDelEditorDeLaCamara.modo === "escritor"
-          ? crearConfiguracionModoEscritor(configuracionDelEditorDeLaCamara.opciones_del_modo_escritor, idiomaValido(ajustes.idioma))
-          : null,
-    }),
-    [JSON.stringify(configuracionDelEditorDeLaCamara), ajustes.idioma],
+    () => ({ opciones: opcionesDelEditor, escritor: crearConfiguracionModoEscritor(opcionesDelEditor, idiomaValido(ajustes.idioma)) }),
+    [JSON.stringify(opcionesDelEditor), ajustes.idioma],
   );
-  /** Cambia la configuración del editor de la cámara abierta (se guarda en sus datos de `.ant/`). */
-  const cambiarConfiguracionDelEditor = (cambios: Partial<ConfiguracionDelEditor>) =>
-    cambiarDatosDeLaCamara(({ editor }) => ({ editor: { ...(editor ?? configuracionDelEditorPorDefecto(ajustesVigentes.current)), ...cambios } }));
+  /** Cambia opciones del editor de la cámara abierta (se guardan en sus datos de `.ant/`, ya con la forma nueva). */
+  const cambiarOpcionesDelEditor = (cambios: Partial<OpcionesDelEditor>) =>
+    cambiarDatosDeLaCamara((datos) => ({
+      opciones_del_editor: { ...opcionesDelEditorDeLaCamara(datos, ajustesVigentes.current), ...cambios },
+      editor: null,
+    }));
 
   const nombreDeLaNotaVisible = !notaVisible ? null : notaVisible.rutaDelArchivo ? nombreDelArchivo(notaVisible.rutaDelArchivo) : textosDeLaInterfaz.sinTitulo;
   const notaVisibleEsperaQueLaGuarden = notaVisible !== null && esperaQueLaGuarden(notaVisible);
@@ -387,7 +384,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           arbolDeLaCamara={arbolDeLaCamara}
           rutaDeLaNotaVisible={rutaDeLaNotaVisible}
           ajustes={ajustes}
-          opcionesDelModoEscritor={configuracionDelEditorDeLaCamara.modo === "escritor" ? configuracionDelEditorDeLaCamara.opciones_del_modo_escritor : null}
+          opcionesDelModoEscritor={hayTipografiaActiva(opcionesDelEditor) ? opcionesDelEditor : null}
           textoDeNotaAbiertaPorRuta={notas.textoDeNotaAbiertaPorRuta}
           cambiarAjustes={cambiarAjustes}
           opcionesGuardadasPorCarpeta={datosDeLaCamara.opciones_de_compilacion_por_carpeta}
@@ -410,8 +407,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           alPedirCamaraNueva={() => setCavandoCamaraNueva(true)}
           camarasCifradas={cifrado.camarasCifradas}
           nombreDeLaCamaraAbierta={ajustes.camara_abierta ? nombreVisibleDeLaCamara(ajustes.camara_abierta, textosDeLaInterfaz.entrada) : null}
-          configuracionDelEditor={configuracionDelEditorDeLaCamara}
-          cambiarConfiguracionDelEditor={cambiarConfiguracionDelEditor}
+          opcionesDelEditor={opcionesDelEditor}
+          cambiarOpcionesDelEditor={cambiarOpcionesDelEditor}
           alPedirCifrado={(queSeHace, nombreDeLaCamara) => setCifradoPedido({ queSeHace, nombreDeLaCamara })}
           alCerrar={() => {
             setAjustesAbiertos(false);
