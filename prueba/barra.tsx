@@ -8,7 +8,7 @@
 // «Entrada», `?diario` el calendario del modo diario, `?sinnota` la invitación a crear una nota
 // (sin ninguna abierta), `?bloqueada` la cámara cifrada y bloqueada, `?cifrar` la ventanita para
 // cifrar una cámara y `?captura` (con `?ajustes`) deja solo los Ajustes, arriba a la izquierda y a
-// todo su alto, para sacar la captura del sitio.
+// todo su alto y solo con el hormiguero y las cámaras de General, para sacar la captura del sitio.
 
 import ReactDOM from "react-dom/client";
 import "../src/App.css";
@@ -145,8 +145,9 @@ if (parametrosDeLaDireccion.has("camaras")) {
   setTimeout(() => document.querySelector<HTMLElement>(".selector-de-camara")?.click(), 100);
 }
 
-// Para la captura de los Ajustes del sitio: sin la ventana de atrás ni el fondo oscuro, y con el
-// panel a todo su alto (sin scroll), así se ven todas las cámaras.
+// Para la captura de los Ajustes del sitio: sin la ventana de atrás ni el fondo oscuro, sin la
+// cabecera, las áreas, el título ni el idioma (solo el hormiguero y las cámaras), y con el panel a
+// todo su alto (sin scroll), así se ven todas las cámaras.
 if (parametrosDeLaDireccion.has("captura")) {
   document.head.insertAdjacentHTML(
     "beforeend",
@@ -155,8 +156,9 @@ if (parametrosDeLaDireccion.has("captura")) {
       body > #root > main { display: none; }
       .modal-fondo { position: static; padding: 0; background: none; display: block; }
       .modal { box-shadow: none; }
-      .ajustes { width: 720px; height: auto; max-height: none; }
-      .ajustes-panel { overflow: visible; }
+      .ajustes { width: 540px; height: auto; max-height: none; }
+      .ajustes-cabecera, .ajustes-areas, .ajustes-panel > h1, .ajustes-panel > .ajuste:first-of-type { display: none; }
+      .ajustes-panel { overflow: visible; padding-top: 22px; }
     </style>`,
   );
 }

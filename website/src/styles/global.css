@@ -178,7 +178,7 @@ p { margin: 0 0 12px; }
 .bloque { width: min(340px, 78vw); flex: none; }
 .bloque.ancho { width: min(460px, 82vw); }
 /* Captura de la app (los Ajustes con las cámaras): cabe en la cámara sin pasarse de alto. */
-.captura { flex: none; width: auto; height: auto; max-width: min(540px, 82vw); max-height: calc(100dvh - var(--alto-superficie) - var(--alto-recorrido) - 14vh); border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45); }
+.captura { flex: none; width: auto; height: auto; max-width: min(400px, 82vw); max-height: calc(100dvh - var(--alto-superficie) - var(--alto-recorrido) - 14vh); border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45); }
 /* En pantallas muy bajas un bloque puede tener su propio scroll vertical (la rueda lo respeta). */
 .desborda { max-height: calc(100dvh - var(--alto-superficie) - var(--alto-recorrido) - 14vh); overflow-y: auto; scrollbar-width: thin; }
 
