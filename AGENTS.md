@@ -345,10 +345,16 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
     para escritores (cuentos, novelas), luego para cualquiera que tome notas y para
     desarrolladores. Left se puede mencionar como inspiración (con crédito a Hundred Rabbits), pero
     nunca como competencia ni en comparaciones.
-  - **Portada** (`components/Portada.astro`): horizontal, temática de hormiguero. Cada
-    `<section class="camara">` es una cámara unida por un túnel y se recorre de izquierda a
-    derecha (la rueda vertical se traduce a horizontal en `layouts/Nido.astro`); no agregarle
-    scroll vertical.
+  - **Portada** (`components/Portada.astro`): temática de hormiguero. Cada
+    `<section class="camara">` es una cámara unida por un túnel. En pantallas anchas
+    `lib/hormiguero.ts` las acomoda en pisos de tres en zigzag (derecha, baja, izquierda, baja…)
+    y la rueda, el trackpad y las flechas mueven la vista por un camino que sigue el túnel
+    (`lib/camino.ts`) y dobla suavemente hacia abajo al final de cada piso; no hay scroll a mano.
+    Una cámara con `data-ramal` («Cámaras cifradas») queda en un ramal sin salida al costado de la
+    anterior: se llega con un chevron (`.desvio`, en `layouts/Nido.astro`) y sin hoyo propio. En
+    pantallas angostas (≤ 720 px) todo va en una columna con el scroll vertical normal; sin
+    JavaScript, una fila horizontal. El túnel lo dibuja `dibujarTunel` (`lib/cavar.ts`) por las
+    líneas que le pasa el recorrido.
   - **Documentación** (`components/Documentacion.astro`): vertical, una sola cámara gigante
     (`.hueco.gigante`) pegada a los bordes de la ventana, con índice fijo y un tema tras otro.
     Al cambiar algo de la app (atajos, ajustes, comandos), actualizarla en los dos idiomas.

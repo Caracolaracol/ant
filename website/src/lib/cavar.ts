@@ -1,5 +1,10 @@
 // Dibuja las cámaras y el túnel del nido con bordes imperfectos, como cavados por hormigas.
 //
+// El túnel sigue las líneas que le pasa quien arma el nido (`hormiguero.ts`): en la portada va de
+// cámara en cámara, baja al final de cada piso y tiene un ramal sin salida; en pantallas angostas
+// baja derecho. Sus bordes ondulan a lo largo de la línea, así se ven igual de cavados en un tramo
+// horizontal, en uno vertical o en una curva.
+//
 // CSS solo da curvas perfectas (border-radius), así que cada hueco recibe un SVG detrás con un
 // contorno irregular: una forma entre rectángulo y elipse (superelipse) a la que se le suman
 // ondulaciones de distinto tamaño y un temblor fino en cada punto, y que luego se suaviza con
@@ -7,11 +12,11 @@
 // cambia de tamaño. Cada hueco usa su propia semilla, así su forma es distinta a la de los demás
 // pero no cambia al redibujar. Sin JavaScript, quedan los bordes redondeados del CSS.
 
+import { muestrearLinea, type Punto } from './camino';
+
 const NS = 'http://www.w3.org/2000/svg';
 /** Cuánto sobresale el SVG del hueco por cada lado, para que las ondas no corten el contenido. */
 const MARGEN = 14;
-
-type Punto = [number, number];
 
 /** Números pseudoaleatorios repetibles a partir de una semilla (mulberry32). */
 function azar(semilla: number) {
@@ -121,15 +126,35 @@ function contornoRectangular(ancho: number, alto: number, semilla: number): stri
   return curva(puntos, true);
 }
 
-/** Borde de arriba o de abajo del túnel: una línea ondulada a lo largo de todo el nido. */
-function bordeTunel(ancho: number, y: number, r: () => number): Punto[] {
-  const fases = [r(), r(), r()].map((f) => f * Math.PI * 2);
-  const puntos: Punto[] = [];
-  for (let x = 0; x <= ancho + 24; x += 24) {
-    const ola = 4 * Math.sin(x / 140 + fases[0]) + 2.5 * Math.sin(x / 53 + fases[1]) + 1.5 * Math.sin(x / 23 + fases[2]);
-    puntos.push([x, y + ola + (r() - 0.5) * 2]);
-  }
-  return puntos;
+/** Mitad del ancho del túnel, sin contar las ondas de sus bordes. */
+const MEDIO_ANCHO_DEL_TUNEL = 26;
+
+/**
+ * Contorno cerrado de un tramo de túnel que sigue la línea de `vertices`: los dos bordes se
+ * apartan de la línea hacia cada lado, con ondas de distinto largo que se miden a lo largo del
+ * camino (así un tramo vertical ondula igual que uno horizontal) y un temblor fino.
+ */
+function contornoDelTunel(vertices: Punto[], azarDelTunel: () => number): string {
+  const centro = muestrearLinea(vertices, 70, 24);
+  if (centro.length < 2) return '';
+  const fasesDeUnLado = [azarDelTunel(), azarDelTunel(), azarDelTunel()].map((fase) => fase * Math.PI * 2);
+  const fasesDelOtroLado = [azarDelTunel(), azarDelTunel(), azarDelTunel()].map((fase) => fase * Math.PI * 2);
+  const ondaDelBorde = (recorrido: number, fases: number[]) =>
+    4 * Math.sin(recorrido / 140 + fases[0]) + 2.5 * Math.sin(recorrido / 53 + fases[1]) + 1.5 * Math.sin(recorrido / 23 + fases[2]);
+  const unLado: Punto[] = [], otroLado: Punto[] = [];
+  let recorrido = 0;
+  centro.forEach((punto, i) => {
+    const anterior = centro[Math.max(0, i - 1)], siguiente = centro[Math.min(centro.length - 1, i + 1)];
+    if (i > 0) recorrido += Math.hypot(punto[0] - anterior[0], punto[1] - anterior[1]);
+    const largo = Math.hypot(siguiente[0] - anterior[0], siguiente[1] - anterior[1]) || 1;
+    // Perpendicular a la línea en este punto.
+    const normalX = -(siguiente[1] - anterior[1]) / largo, normalY = (siguiente[0] - anterior[0]) / largo;
+    const apartadoDeUnLado = MEDIO_ANCHO_DEL_TUNEL + ondaDelBorde(recorrido, fasesDeUnLado) + (azarDelTunel() - 0.5) * 2;
+    const apartadoDelOtroLado = MEDIO_ANCHO_DEL_TUNEL + ondaDelBorde(recorrido, fasesDelOtroLado) + (azarDelTunel() - 0.5) * 2;
+    unLado.push([punto[0] + normalX * apartadoDeUnLado, punto[1] + normalY * apartadoDeUnLado]);
+    otroLado.push([punto[0] - normalX * apartadoDelOtroLado, punto[1] - normalY * apartadoDelOtroLado]);
+  });
+  return curva(unLado, false) + curva(otroLado.reverse(), false).replace(/^M/, 'L') + 'Z';
 }
 
 /** Filtro de sombra interior (la tierra hace sombra hacia adentro del hueco), compartido por todos. */
@@ -168,55 +193,49 @@ function forma(contenedor: HTMLElement, clase: string): SVGPathElement {
 }
 
 /**
- * Dibuja los bordes imperfectos de todas las cámaras y del túnel (si `tunel`), y los rehace al
- * cambiar de tamaño.
+ * Dibuja los bordes imperfectos de todas las cámaras (los huecos) dentro de `fila`, y los rehace
+ * cuando una cambia de tamaño. El túnel va aparte (`dibujarTunel`), porque depende de dónde quedó
+ * cada cámara.
  */
-export function cavar(fila: HTMLElement, { tunel = true } = {}) {
+export function cavarHuecos(fila: HTMLElement) {
   crearFiltro();
   const huecos = [...fila.querySelectorAll<HTMLElement>('.hueco')];
 
   const dibujarHueco = (hueco: HTMLElement, i: number) => {
-    const { offsetWidth: w, offsetHeight: h } = hueco;
-    if (!w || !h) return;
+    const { offsetWidth: ancho, offsetHeight: alto } = hueco;
+    if (!ancho || !alto) return;
     const path = forma(hueco, 'hueco-forma');
     const svg = path.ownerSVGElement!;
-    svg.setAttribute('width', String(w + MARGEN * 2));
-    svg.setAttribute('height', String(h + MARGEN * 2));
+    svg.setAttribute('width', String(ancho + MARGEN * 2));
+    svg.setAttribute('height', String(alto + MARGEN * 2));
     const semilla = 7919 * (i + 1);
-    path.setAttribute('d', hueco.classList.contains('gigante') ? contornoRectangular(w, h, semilla) : contornoCamara(w, h, semilla));
+    path.setAttribute('d', hueco.classList.contains('gigante') ? contornoRectangular(ancho, alto, semilla) : contornoCamara(ancho, alto, semilla));
     hueco.classList.add('cavado');
-  };
-
-  // El túnel nace en el borde izquierdo y termina dentro de la última cámara (a la mitad de su
-  // hueco, tapado por ella): es el final del nido y no sale otro túnel hacia la derecha.
-  const dibujarTunel = () => {
-    const ultimo = huecos[huecos.length - 1];
-    const w = ultimo
-      ? ultimo.getBoundingClientRect().left - fila.getBoundingClientRect().left + ultimo.offsetWidth / 2
-      : fila.scrollWidth;
-    const alto = 70;
-    const path = forma(fila, 'tunel');
-    const svg = path.ownerSVGElement!;
-    svg.setAttribute('width', String(w));
-    svg.setAttribute('height', String(alto));
-    const r = azar(424242);
-    const arriba = bordeTunel(w, 9, r);
-    const abajo = bordeTunel(w, alto - 9, r).reverse();
-    path.setAttribute('d', curva(arriba, false) + curva(abajo, false).replace(/^M/, 'L') + 'Z');
-    fila.classList.add('con-tunel');
   };
 
   // Redibuja en el siguiente cuadro, una sola vez aunque cambien varios tamaños a la vez.
   let pendiente = 0;
   const redibujar = () => {
     cancelAnimationFrame(pendiente);
-    pendiente = requestAnimationFrame(() => {
-      huecos.forEach(dibujarHueco);
-      if (tunel) dibujarTunel();
-    });
+    pendiente = requestAnimationFrame(() => huecos.forEach(dibujarHueco));
   };
   const observador = new ResizeObserver(redibujar);
-  huecos.forEach((h) => observador.observe(h));
-  observador.observe(fila);
+  huecos.forEach((hueco) => observador.observe(hueco));
   redibujar();
+}
+
+/**
+ * Dibuja el túnel detrás de las cámaras de `fila`: un tramo por cada línea de `lineas` (puntos
+ * en píxeles desde la esquina de arriba a la izquierda de `fila`), en un SVG del tamaño del plano.
+ * Siempre con la misma semilla, así no cambia de forma al redibujarlo.
+ */
+export function dibujarTunel(fila: HTMLElement, lineas: Punto[][], anchoDelPlano: number, altoDelPlano: number) {
+  crearFiltro();
+  const path = forma(fila, 'tunel');
+  const svg = path.ownerSVGElement!;
+  svg.setAttribute('width', String(Math.ceil(anchoDelPlano)));
+  svg.setAttribute('height', String(Math.ceil(altoDelPlano)));
+  const azarDelTunel = azar(424242);
+  path.setAttribute('d', lineas.map((linea) => contornoDelTunel(linea, azarDelTunel)).join(''));
+  fila.classList.add('con-tunel');
 }

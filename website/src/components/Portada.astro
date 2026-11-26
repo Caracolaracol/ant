@@ -1,5 +1,7 @@
 ---
-// Portada del sitio en inglés o español: una cámara por idea, de izquierda a derecha. Presenta
+// Portada del sitio en inglés o español: una cámara por idea, en pisos de tres que se recorren en
+// zigzag (ver `lib/hormiguero.ts`); «Cámaras cifradas» (`data-ramal`) queda en un ramal que sale
+// del costado de «El hormiguero» y se visita con un chevron. Presenta
 // Ant como un lugar simple, inteligente y sin distracciones para escribir: primero para
 // escritores (cuentos, novelas); después el hormiguero y sus cámaras (cómo se ordenan las notas),
 // las cámaras cifradas, las notas de todos los días, los desarrolladores, lo que la hace
@@ -70,11 +72,11 @@ const capturaDeLasCamaras = idioma === 'es' ? capturaDeLasCamarasEnEspanol : cap
         <p>{t('Your notes live in one folder, the anthill. Each chamber inside is one context: a novel, your diary, your work.', 'Tus notas viven en una carpeta, el hormiguero. Cada cámara es un contexto: una novela, tu diario, tu trabajo.')}</p>
         <p class="tenue">{t('Each one with its own pins, diary and editor.', 'Cada una con sus fijados, su diario y su editor.')}</p>
       </div>
-      <Image class="captura" src={capturaDeLasCamaras} width={400} densities={[1, 2]} alt={t('Ant’s Settings: the anthill folder and its chambers (Entrance, Novel, Personal, Work and Vault, which is encrypted), each with Open and Encrypt buttons, and New chamber at the end', 'Ajustes de Ant: la carpeta del hormiguero y sus cámaras (Entrada, Novela, Personal, Trabajo y Bóveda, que está cifrada), cada una con Abrir y Cifrar, y Cámara nueva al final')} />
+      <Image class="captura" src={capturaDeLasCamaras} width={400} densities={[1, 2]} loading="eager" alt={t('Ant’s Settings: the anthill folder and its chambers (Entrance, Novel, Personal, Work and Vault, which is encrypted), each with Open and Encrypt buttons, and New chamber at the end', 'Ajustes de Ant: la carpeta del hormiguero y sus cámaras (Entrada, Novela, Personal, Trabajo y Bóveda, que está cifrada), cada una con Abrir y Cifrar, y Cámara nueva al final')} />
     </div>
   </section>
 
-  <section class="camara" id={t('vault', 'boveda')} data-nombre={t('Encrypted chambers', 'Cámaras cifradas')}>
+  <section class="camara" id={t('vault', 'boveda')} data-nombre={t('Encrypted chambers', 'Cámaras cifradas')} data-ramal>
     <div class="hueco bloques">
       <div class="bloque">
         <p class="etiqueta">{t('Encrypted chambers', 'Cámaras cifradas')}</p>

@@ -68,7 +68,8 @@ a:hover { text-decoration-thickness: 2px; }
 .idiomas { display: flex; gap: 6px; color: var(--linea); padding-left: 16px; border-left: 1px solid var(--linea); }
 .superficie .idiomas a[aria-current] { color: var(--amarillo); }
 
-/* ── Nido: la fila de cámaras que se recorre en horizontal ── */
+/* ── Nido: las cámaras unidas por el túnel. Sin JavaScript, una fila horizontal; con él, en
+   pantallas anchas, pisos en zigzag (`.doblado`, ver lib/hormiguero.ts) ── */
 .nido {
   position: fixed;
   inset: var(--alto-superficie) 0 var(--alto-recorrido) 0;
@@ -129,9 +130,38 @@ a:hover { text-decoration-thickness: 2px; }
 .hueco-forma path, .tunel path { fill: var(--hueco); }
 .fila.con-tunel::before { display: none; }
 .tunel {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  position: absolute; left: 0; top: 0;
   overflow: visible; pointer-events: none;
 }
+
+/* Nido doblado en pisos: el recorrido mueve la vista por el túnel (no hay scroll a mano) y pone
+   cada cámara en su lugar del plano. */
+.nido.doblado { overflow: hidden; }
+.fila.doblada { display: block; padding: 0; }
+.fila.doblada > .camara { position: absolute; }
+
+/* Chevrons del ramal: flotan dentro del túnel del ramal, entre las dos cámaras (el recorrido los
+   ubica en la pantalla), y solo se ven cerca de la cámara de la que sale el ramal (adelante) o en
+   la del ramal (atrás). */
+.desvio {
+  position: fixed; z-index: 5; left: 50%; top: 50%;
+  width: 58px; height: 58px; padding: 0;
+  display: grid; place-items: center;
+  border: 2px solid var(--amarillo); border-radius: 50%;
+  background: var(--hueco); color: var(--amarillo);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  opacity: 0; pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s;
+}
+.desvio svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.desvio.adelante { animation: flotar-adelante 1.8s ease-in-out infinite; }
+.desvio.atras { animation: flotar-atras 1.8s ease-in-out infinite; }
+.desvio.visible { opacity: 1; pointer-events: auto; }
+.desvio:hover { background: var(--amarillo); color: var(--hueco); }
+@keyframes flotar-adelante { 50% { translate: 7px 0; } }
+@keyframes flotar-atras { 50% { translate: -7px 0; } }
 
 .etiqueta {
   margin: 0 0 8px;
@@ -314,6 +344,17 @@ li::marker { color: var(--amarillo); }
   .indice { columns: 1; }
   .atajos.dos { grid-template-columns: auto auto; }
   .ventana-lateral { display: none; }
+
+  /* En pantallas angostas la portada es una columna que se recorre con el scroll vertical, con el
+     túnel bajando por el centro. */
+  .nido.horizontal { overflow-x: hidden; overflow-y: auto; }
+  .nido.horizontal .fila { flex-direction: column; align-items: stretch; width: 100%; height: auto; padding: 0 0 6vh; }
+  .nido.horizontal .fila::before { left: 50%; right: auto; top: 0; bottom: 6vh; width: 56px; height: auto; transform: translateX(-50%); }
+  .nido.horizontal .camara { height: auto; padding: 5vh 26px; justify-content: center; }
+  .nido.horizontal .portada { width: 100%; }
+  .nido.horizontal .hueco.bloques { flex-direction: column; }
+  .nido.horizontal .tarjetas { grid-template-rows: none; grid-auto-flow: row; grid-template-columns: 1fr; }
+  .desvio { display: none; }
 }
 
 @media (max-height: 640px) {
