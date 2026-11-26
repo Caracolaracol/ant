@@ -17,7 +17,7 @@
 // CSS deja la fila horizontal de siempre.
 
 import { crearCamino, direccionDelCamino, distanciaMasCercana, puntoDelCamino, type Camino, type Punto } from './camino';
-import { dibujarTunel } from './cavar';
+import { dibujarTunel, type TramoDelTunel } from './cavar';
 
 /** Cámaras en cada piso antes de que el túnel doble hacia abajo. */
 const CAMARAS_POR_PISO = 3;
@@ -171,22 +171,35 @@ export function recorrerHormiguero(nido: HTMLElement, fila: HTMLElement, opcione
       lugarDeLosChevrons = [(bordesDeLosHuecos[1] + bordesDeLosHuecos[2]) / 2, centroDelHueco(camaraDeLaBifurcacion)[1]];
     }
 
-    // El túnel baja desde la superficie: nace arriba, en la esquina izquierda de lo que se ve al
-    // entrar, baja en diagonal (a 45°, o más empinado si no hay espacio) y se endereza para entrar
-    // a la primera cámara; después pasa por el centro de cada cámara. El ramal va del centro de su
-    // cámara al de la cámara del ramal.
+    // El túnel baja desde la superficie: nace en el borde izquierdo de lo que se ve al entrar,
+    // cerca de la esquina de arriba, abierto como una boca que se angosta; baja en diagonal y se
+    // endereza para entrar a la primera cámara. Después pasa por el centro de cada cámara, y al
+    // final de cada piso sale por el costado hacia el que iba el piso (no por el centro) y baja
+    // curvándose hasta la primera cámara del piso siguiente.
     const centros = paradas.map(centroDelHueco);
     const [centroXDeLaPrimera, centroYDeLaPrimera] = centros[0];
     const bordeDeLaVistaInicial = vistaDeLaCamara(paradas[0])[0];
     const espacioHastaLaPrimera = centroXDeLaPrimera - bordeDeLaVistaInicial;
-    const finDeLaBajada = bordeDeLaVistaInicial + Math.min(centroYDeLaPrimera, espacioHastaLaPrimera * 0.6);
-    const lineasDelTunel: Punto[][] = [[
-      [bordeDeLaVistaInicial, -40],
-      [finDeLaBajada, centroYDeLaPrimera],
-      ...centros,
-    ]];
-    if (camaraDelRamal && camaraDeLaBifurcacion) lineasDelTunel.push([centroDelHueco(camaraDeLaBifurcacion), centroDelHueco(camaraDelRamal)]);
-    dibujarTunel(fila, lineasDelTunel, anchoDelPlano, altoDelPlano);
+    const inicioDelTunel: Punto = [bordeDeLaVistaInicial - 30, centroYDeLaPrimera * 0.22];
+    const finDeLaBajada: Punto = [bordeDeLaVistaInicial + Math.min(centroYDeLaPrimera * 0.78, espacioHastaLaPrimera * 0.6), centroYDeLaPrimera];
+    const verticesDelCamino: Punto[] = [inicioDelTunel, finDeLaBajada];
+    centros.forEach((centro, i) => {
+      verticesDelCamino.push(centro);
+      const esLaUltimaDelPiso = i % CAMARAS_POR_PISO === CAMARAS_POR_PISO - 1 && i < centros.length - 1;
+      if (!esLaUltimaDelPiso) return;
+      const sentidoDelPiso = Math.floor(i / CAMARAS_POR_PISO) % 2 === 0 ? 1 : -1;
+      const hueco = paradas[i].querySelector<HTMLElement>('.hueco') ?? paradas[i];
+      const salidaX = centro[0] + sentidoDelPiso * hueco.offsetWidth * 0.3;
+      const siguiente = centros[i + 1];
+      verticesDelCamino.push([salidaX, centro[1]], [salidaX, centro[1] + (siguiente[1] - centro[1]) * 0.5]);
+    });
+    const tramosDelTunel: TramoDelTunel[] = [{
+      vertices: verticesDelCamino,
+      ensancheAlInicio: 16,
+      largoDelEnsanche: Math.hypot(finDeLaBajada[0] - inicioDelTunel[0], finDeLaBajada[1] - inicioDelTunel[1]),
+    }];
+    if (camaraDelRamal && camaraDeLaBifurcacion) tramosDelTunel.push({ vertices: [centroDelHueco(camaraDeLaBifurcacion), centroDelHueco(camaraDelRamal)] });
+    dibujarTunel(fila, tramosDelTunel, anchoDelPlano, altoDelPlano);
 
     opciones.alCambiarLasParadas(paradas, irALaParada);
     avanceEnElCamino = distanciasDeLasParadas[limitar(indiceQueSeMostraba, 0, paradas.length - 1)];
@@ -222,7 +235,7 @@ export function recorrerHormiguero(nido: HTMLElement, fila: HTMLElement, opcione
     scrollEsperado = [nido.scrollLeft, nido.scrollTop];
     opciones.alMoverse(indiceDeLaParadaActual(), caminoPrincipal.largo > 0 ? avanceEnElCamino / caminoPrincipal.largo : 0);
     const estaCercaDeLaBifurcacion = !estaEnElRamal && camaraDelRamal !== null
-      && Math.abs(avanceEnElCamino - distanciaDeLaBifurcacion) < nido.clientWidth * 0.25;
+      && Math.abs(avanceEnElCamino - distanciaDeLaBifurcacion) < Math.min(nido.clientWidth, nido.clientHeight) * 0.2;
     botonHaciaElRamal?.classList.toggle('visible', estaCercaDeLaBifurcacion);
     botonDeVuelta?.classList.toggle('visible', estaEnElRamal && caminoDelRamal !== null && avanceEnElRamal > caminoDelRamal.largo * 0.6);
     // Los chevrons siguen al túnel del ramal en la pantalla, sin salirse de la vista.
@@ -331,7 +344,7 @@ export function recorrerHormiguero(nido: HTMLElement, fila: HTMLElement, opcione
     botonDeVuelta?.classList.remove('visible');
     paradas = camaras;
     const centros = paradas.map(centroDelHueco);
-    dibujarTunel(fila, [[[centros[0][0], 0], ...centros]], fila.offsetWidth, fila.offsetHeight);
+    dibujarTunel(fila, [{ vertices: [[centros[0][0], 0], ...centros] }], fila.offsetWidth, fila.offsetHeight);
     opciones.alCambiarLasParadas(paradas, irALaParada);
     nido.scrollTop = paradas[limitar(indiceQueSeMostraba, 0, paradas.length - 1)].offsetTop;
     avisarEnColumna();

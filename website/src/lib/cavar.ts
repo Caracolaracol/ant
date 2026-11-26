@@ -129,13 +129,25 @@ function contornoRectangular(ancho: number, alto: number, semilla: number): stri
 /** Mitad del ancho del túnel, sin contar las ondas de sus bordes. */
 const MEDIO_ANCHO_DEL_TUNEL = 26;
 
+/** Un tramo del túnel: la línea que sigue y, si se abre como una boca al empezar, cuánto. */
+export interface TramoDelTunel {
+  vertices: Punto[];
+  /** Cuánto más ancho (en píxeles, de cada lado) es el tramo en su inicio. */
+  ensancheAlInicio?: number;
+  /** En cuántos píxeles de recorrido se va angostando hasta el ancho normal. */
+  largoDelEnsanche?: number;
+}
+
 /**
- * Contorno cerrado de un tramo de túnel que sigue la línea de `vertices`: los dos bordes se
+ * Contorno cerrado de un tramo de túnel que sigue la línea de sus `vertices`: los dos bordes se
  * apartan de la línea hacia cada lado, con ondas de distinto largo que se miden a lo largo del
- * camino (así un tramo vertical ondula igual que uno horizontal) y un temblor fino.
+ * camino (así un tramo vertical ondula igual que uno horizontal) y un temblor fino. Si el tramo
+ * tiene ensanche, empieza más ancho y se angosta suavemente.
  */
-function contornoDelTunel(vertices: Punto[], azarDelTunel: () => number): string {
+function contornoDelTunel({ vertices, ensancheAlInicio = 0, largoDelEnsanche = 1 }: TramoDelTunel, azarDelTunel: () => number): string {
   const centro = muestrearLinea(vertices, 160, 24);
+  /** Ancho extra en un punto del recorrido: todo el ensanche al inicio, nada al final de su largo. */
+  const ensancheEn = (recorrido: number) => ensancheAlInicio * Math.pow(Math.max(0, 1 - recorrido / largoDelEnsanche), 1.6);
   if (centro.length < 2) return '';
   const fasesDeUnLado = [azarDelTunel(), azarDelTunel(), azarDelTunel()].map((fase) => fase * Math.PI * 2);
   const fasesDelOtroLado = [azarDelTunel(), azarDelTunel(), azarDelTunel()].map((fase) => fase * Math.PI * 2);
@@ -149,8 +161,8 @@ function contornoDelTunel(vertices: Punto[], azarDelTunel: () => number): string
     const largo = Math.hypot(siguiente[0] - anterior[0], siguiente[1] - anterior[1]) || 1;
     // Perpendicular a la línea en este punto.
     const normalX = -(siguiente[1] - anterior[1]) / largo, normalY = (siguiente[0] - anterior[0]) / largo;
-    const apartadoDeUnLado = MEDIO_ANCHO_DEL_TUNEL + ondaDelBorde(recorrido, fasesDeUnLado) + (azarDelTunel() - 0.5) * 2;
-    const apartadoDelOtroLado = MEDIO_ANCHO_DEL_TUNEL + ondaDelBorde(recorrido, fasesDelOtroLado) + (azarDelTunel() - 0.5) * 2;
+    const apartadoDeUnLado = MEDIO_ANCHO_DEL_TUNEL + ensancheEn(recorrido) + ondaDelBorde(recorrido, fasesDeUnLado) + (azarDelTunel() - 0.5) * 2;
+    const apartadoDelOtroLado = MEDIO_ANCHO_DEL_TUNEL + ensancheEn(recorrido) + ondaDelBorde(recorrido, fasesDelOtroLado) + (azarDelTunel() - 0.5) * 2;
     unLado.push([punto[0] + normalX * apartadoDeUnLado, punto[1] + normalY * apartadoDeUnLado]);
     otroLado.push([punto[0] - normalX * apartadoDelOtroLado, punto[1] - normalY * apartadoDelOtroLado]);
   });
@@ -225,17 +237,17 @@ export function cavarHuecos(fila: HTMLElement) {
 }
 
 /**
- * Dibuja el túnel detrás de las cámaras de `fila`: un tramo por cada línea de `lineas` (puntos
- * en píxeles desde la esquina de arriba a la izquierda de `fila`), en un SVG del tamaño del plano.
- * Siempre con la misma semilla, así no cambia de forma al redibujarlo.
+ * Dibuja el túnel detrás de las cámaras de `fila`: un contorno por cada tramo (puntos en píxeles
+ * desde la esquina de arriba a la izquierda de `fila`), en un SVG del tamaño del plano. Siempre
+ * con la misma semilla, así no cambia de forma al redibujarlo.
  */
-export function dibujarTunel(fila: HTMLElement, lineas: Punto[][], anchoDelPlano: number, altoDelPlano: number) {
+export function dibujarTunel(fila: HTMLElement, tramos: TramoDelTunel[], anchoDelPlano: number, altoDelPlano: number) {
   crearFiltro();
   const path = forma(fila, 'tunel');
   const svg = path.ownerSVGElement!;
   svg.setAttribute('width', String(Math.ceil(anchoDelPlano)));
   svg.setAttribute('height', String(Math.ceil(altoDelPlano)));
   const azarDelTunel = azar(424242);
-  path.setAttribute('d', lineas.map((linea) => contornoDelTunel(linea, azarDelTunel)).join(''));
+  path.setAttribute('d', tramos.map((tramo) => contornoDelTunel(tramo, azarDelTunel)).join(''));
   fila.classList.add('con-tunel');
 }
