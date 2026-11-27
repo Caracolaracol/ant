@@ -1,5 +1,5 @@
 // Ajustes de la app: lo que es de este computador (idioma, modo escritor, el hormiguero y la cámara
-// abierta, ancho de la barra lateral, modo diario y colores), guardados como JSON en la carpeta de
+// abierta, ancho de la barra lateral y del texto, modo diario y colores), guardados como JSON en la carpeta de
 // configuración de la app (en macOS, ~/Library/Application Support/cl.agus.ant/ajustes.json).
 // Cada vez que se guardan, se avisa a la interfaz con el evento `ajustes-cambiados`. Si cambió el
 // idioma, además se rehace el menú de la app en el idioma nuevo.
@@ -59,6 +59,9 @@ pub struct Ajustes {
     /// Ancho de la barra lateral en píxeles, si el usuario la ensanchó o achicó.
     #[serde(default, alias = "ancho_barra")]
     pub ancho_de_la_barra_lateral: Option<f64>,
+    /// Ancho máximo del texto en píxeles: `None` sigue la tipografía y `Some(0)` usa todo el ancho.
+    #[serde(default)]
+    pub ancho_del_texto: Option<u32>,
     /// Idioma de la interfaz: `"en"` (por defecto) o `"es"`.
     #[serde(default = "idioma_por_defecto")]
     pub idioma: String,
@@ -148,6 +151,7 @@ impl Default for Ajustes {
             modo_diario: false,
             colores_elegidos: BTreeMap::new(),
             ancho_de_la_barra_lateral: None,
+            ancho_del_texto: None,
             idioma: idioma_por_defecto(),
             modo_escritor: true,
             opciones_del_modo_escritor: OpcionesDelModoEscritor::default(),
@@ -232,6 +236,19 @@ mod pruebas {
         assert!(ajustes.opciones_de_compilacion_por_carpeta.contains_key("/notas"));
         let ajustes_guardados = serde_json::to_string(&ajustes).unwrap();
         assert!(ajustes_guardados.contains("\"hormiguero\"") && !ajustes_guardados.contains("\"carpeta\""));
+    }
+
+    /// Los ajustes antiguos conservan el ancho automático; los anchos elegidos se guardan tal cual.
+    #[test]
+    fn lee_y_guarda_el_ancho_del_texto() {
+        let ajustes_anteriores: Ajustes = serde_json::from_str("{}").unwrap();
+        assert_eq!(ajustes_anteriores.ancho_del_texto, None);
+        for ancho_del_texto in [None, Some(0), Some(800)] {
+            let ajustes = Ajustes { ancho_del_texto, ..Ajustes::default() };
+            let texto_guardado = serde_json::to_string(&ajustes).unwrap();
+            let ajustes_leidos: Ajustes = serde_json::from_str(&texto_guardado).unwrap();
+            assert_eq!(ajustes_leidos.ancho_del_texto, ancho_del_texto);
+        }
     }
 
     #[test]

@@ -121,7 +121,7 @@
   scroll-snap-align: center;
 }
 
-/* El hueco de la cámara. Sin JavaScript sería una forma redondeada; `cavar` le pone el borde
+/* El hueco de la cámara. Sin JavaScript sería una forma redondeada; `cavarHuecos` le pone el borde
    irregular (un SVG detrás) y le agrega la clase `cavado`. */
 .bienvenida .hueco {
   position: relative;

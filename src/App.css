@@ -159,7 +159,7 @@ body,
   opacity: 0.6;
 }
 
-/* Barra lateral: notas abiertas y, bajo la activa, sus títulos. Texto tenue salvo lo seleccionado.
+/* Barra lateral: notas de la cámara y, bajo la activa, sus títulos. Texto tenue salvo lo seleccionado.
    El ancho lo pone BarraLateral (se cambia arrastrando el borde derecho); el contenido va en
    `.barra-contenido`, que es el que tiene scroll, para que el borde no se desplace con él. */
 .barra {
@@ -346,7 +346,7 @@ body,
   color: var(--acento);
 }
 
-/* Título de cada sección: «Abiertas» o el nombre de una carpeta fijada desplegada. */
+/* Título de una carpeta fijada desplegada. */
 .barra-encabezado {
   padding-left: 4px;
   font-weight: 700;
@@ -381,11 +381,6 @@ body,
 }
 
 .barra-nota:hover {
-  color: var(--texto);
-}
-
-/* Las notas abiertas (aunque no estén visibles) se ven un poco más claras que las demás. */
-.barra-nota.abierta {
   color: var(--texto);
 }
 
@@ -424,19 +419,6 @@ body,
 .fijado.desplegado {
   color: var(--acento);
   border-color: var(--acento);
-}
-
-/* Nota fijada abierta pero no visible: un punto abajo. */
-.fijado.abierto::after {
-  content: "";
-  position: absolute;
-  bottom: 3px;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  margin-left: -1.5px;
-  border-radius: 50%;
-  background: var(--texto);
 }
 
 /* Fijado que ya no existe en el hormiguero (se borró o se movió). */
@@ -632,22 +614,6 @@ body,
   text-overflow: ellipsis;
 }
 
-/* El botón de cerrar solo aparece al pasar el mouse por la nota. */
-.barra-cerrar {
-  visibility: hidden;
-  border: none;
-  background: none;
-  color: var(--tenue);
-  font: inherit;
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.barra-nota:hover .barra-cerrar {
-  visibility: visible;
-}
-
-.barra-cerrar:hover,
 .barra-marcador:hover {
   color: var(--texto);
 }

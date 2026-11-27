@@ -207,7 +207,7 @@ function forma(contenedor: HTMLElement, clase: string): SVGPathElement {
 /**
  * Dibuja los bordes imperfectos de todas las cámaras (los huecos) dentro de `fila`, y los rehace
  * cuando una cambia de tamaño. El túnel va aparte (`dibujarTunel`), porque depende de dónde quedó
- * cada cámara.
+ * cada cámara. Devuelve una limpieza para quien vuelva a desmontar la fila.
  */
 export function cavarHuecos(fila: HTMLElement) {
   crearFiltro();
@@ -234,6 +234,10 @@ export function cavarHuecos(fila: HTMLElement) {
   const observador = new ResizeObserver(redibujar);
   huecos.forEach((hueco) => observador.observe(hueco));
   redibujar();
+  return () => {
+    observador.disconnect();
+    cancelAnimationFrame(pendiente);
+  };
 }
 
 /**

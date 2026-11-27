@@ -11,8 +11,14 @@ release with that section as its notes, so this file is always written in Englis
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-26
+
 ### Added
 
+- **Rename chambers**: use the pencil next to a chamber in Settings → General. Its notes, pins,
+  and options move with it. Encrypted chambers must be unlocked again after renaming.
+- **Text width**: choose an automatic width, a fixed maximum width, or the full editor width in
+  Settings → Editor → Page. The preference applies to all chambers on this computer.
 - **Images in notes**: drag images onto a note or paste them (a screenshot, a copied image), and
   they show up right below their line. Images from outside the anthill are copied to an `Images`
   folder next to the note; one that is already in the anthill is linked where it is. The note
@@ -25,6 +31,8 @@ release with that section as its notes, so this file is always written in Englis
 
 ### Changed
 
+- **Settings** grows with the app window, and its larger checkboxes use an ant antenna instead of
+  a checkmark.
 - **Editor settings per chamber**: each chamber has its own editor settings (Settings → Editor).
   Three quick presets (**Writer**, **Programmer**, **Simple**) check a set of options at once, and
   every option can then be changed on its own, so a chamber can be a writer's and a programmer's
@@ -36,9 +44,10 @@ release with that section as its notes, so this file is always written in Englis
   line; bullets in lists; checkboxes in tasks that you click to check; `---` as a line; and images.
   On the line where the cursor is, the marks show again so you can edit them. Bold text is also a
   bit brighter, so it stands out in the book font.
-- **No empty note out of nowhere**: Ant opens the last note you had open. If there is none (or you
-  close the last one), the editor shows an invitation to start a new note, with a button that
-  creates it at the root of the open chamber.
+- **One chamber at a time**: switching chambers saves the current note and clears it from the
+  editor. The sidebar shows only the active chamber, with no Open section or close buttons.
+- **No empty note out of nowhere**: Ant opens the last note you had open. With no note open, the
+  editor shows an invitation to start one at the root of the active chamber.
 
 ## [0.3.0] - 2026-11-21
 
@@ -166,7 +175,8 @@ First public release.
 - Website and documentation in English and Spanish: https://caracolaracol.github.io/ant/
 - MIT license.
 
-[Unreleased]: https://github.com/Caracolaracol/ant/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Caracolaracol/ant/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Caracolaracol/ant/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Caracolaracol/ant/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Caracolaracol/ant/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Caracolaracol/ant/releases/tag/v0.1.0

@@ -26,8 +26,8 @@ import { ModalAjustes } from "./ajustes/ModalAjustes";
 import { useAjustesGuardados } from "./ajustes/useAjustesGuardados";
 import { Bienvenida } from "./bienvenida/Bienvenida";
 import { Compilar } from "./compilar/Compilar";
-import { carpetaQueContieneA, estaEnLaCamara } from "./arbolDeCarpetas";
-import { cambiosParaElegirHormiguero, carpetaDeLaCamaraAbierta, esLaEntrada, nombreVisibleDeLaCamara , rutaDeLaCamara } from "./hormigueros/hormigueros";
+import { carpetaQueContieneA, estaDentroDe, estaEnLaCamara } from "./arbolDeCarpetas";
+import { cambiosAlRenombrarCamara, cambiosParaElegirHormiguero, carpetaDeLaCamaraAbierta, esLaEntrada, nombreVisibleDeLaCamara, renombrarCamara, rutaDeLaCamara } from "./hormigueros/hormigueros";
 import { NuevaCamara } from "./hormigueros/NuevaCamara";
 import { useArbolDeLaCamara } from "./hormigueros/useArbolDeLaCamara";
 import { useCamarasDelHormiguero } from "./hormigueros/useCamarasDelHormiguero";
@@ -85,8 +85,14 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     camarasDelHormiguero,
     carpetaDeLaCamara,
     async prepararseParaBloquear(carpeta) {
-      seCierranNotasPorBloqueo.current = true;
-      await cerrarNotasDentroDe.current(carpeta);
+      const seCierraLaNotaVisible = notaVisible?.rutaDelArchivo && estaDentroDe(notaVisible.rutaDelArchivo, carpeta);
+      if (seCierraLaNotaVisible) seCierranNotasPorBloqueo.current = true;
+      try {
+        await cerrarNotasDentroDe.current(carpeta);
+      } catch (error) {
+        if (seCierraLaNotaVisible) seCierranNotasPorBloqueo.current = false;
+        throw error;
+      }
       controlDelEditor.current?.olvidarNotasDentroDe(carpeta);
     },
     mostrarError,
@@ -94,7 +100,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   // Mientras no se sabe si está bloqueada (un instante, al cambiar de cámara) se trata como bloqueada.
   const laCamaraSeVe = cifrado.estadoDeLaCamaraAbierta === "sin_cifrar" || cifrado.estadoDeLaCamaraAbierta === "desbloqueada";
   const { arbolDeLaCamara, releerArbolDeLaCamara } = useArbolDeLaCamara(laCamaraSeVe ? carpetaDeLaCamara : null, laCamaraEsLaEntrada, mostrarError);
-  const { datosDeLaCamara, cambiarDatosDeLaCamara } = useDatosDeLaCamara({
+  const { datosDeLaCamara, cambiarDatosDeLaCamara, esperarGuardadoDeLaCamara } = useDatosDeLaCamara({
     carpetaDelHormiguero,
     nombreDeLaCamara: ajustes.camara_abierta,
     carpetaDeLaCamara,
@@ -109,7 +115,8 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
     mostrarError,
   });
   const { notaVisible } = notas;
-  cerrarNotasDentroDe.current = notas.cerrarNotasDentroDe;
+  const cerrarNotasConArchivo = notas.cerrarNotasConArchivo;
+  cerrarNotasDentroDe.current = cerrarNotasConArchivo;
 
   /**
    * Desbloquea la cámara abierta con su contraseña y, si no hay ninguna nota a la vista, abre la
@@ -180,20 +187,66 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
   const bienvenidaVisible = bienvenidaPedida || faltaElegirLaCamara;
 
   /** Usa la carpeta elegida en la bienvenida como hormiguero; la cámara se elige en la página siguiente. */
-  const elegirHormiguero = useCallback((carpetaDelHormigueroElegido: string) => {
-    if (carpetaDelHormigueroElegido !== ajustesVigentes.current.hormiguero) cambiarAjustes(cambiosParaElegirHormiguero(carpetaDelHormigueroElegido));
-  }, [cambiarAjustes, ajustesVigentes]);
+  const elegirHormiguero = useCallback(async (carpetaDelHormigueroElegido: string) => {
+    if (carpetaDelHormigueroElegido === ajustesVigentes.current.hormiguero) return;
+    await cerrarNotasConArchivo();
+    cambiarAjustes({ ...cambiosParaElegirHormiguero(carpetaDelHormigueroElegido), ultima_nota_abierta: null });
+  }, [cerrarNotasConArchivo, cambiarAjustes, ajustesVigentes]);
 
   /**
    * Abre una cámara (recién cavada o que ya existía) y cierra lo que se abrió para elegirla. Antes
    * relee la lista de cámaras, así una recién cavada ya está en ella y no parece que falta.
    */
   const abrirCamara = useCallback(async (nombreDeLaCamara: string) => {
-    await releerCamarasDelHormiguero();
-    cambiarAjustes({ camara_abierta: nombreDeLaCamara });
+    if (nombreDeLaCamara !== ajustesVigentes.current.camara_abierta) {
+      await releerCamarasDelHormiguero();
+      // Si no se puede guardar la nota, no cambia de cámara ni pierde lo escrito.
+      await cerrarNotasConArchivo();
+      cambiarAjustes({ camara_abierta: nombreDeLaCamara, ultima_nota_abierta: null });
+    }
     setCavandoCamaraNueva(false);
     setBienvenidaPedida(false);
-  }, [cambiarAjustes, releerCamarasDelHormiguero]);
+  }, [ajustesVigentes, cerrarNotasConArchivo, cambiarAjustes, releerCamarasDelHormiguero]);
+
+  /** Guarda lo abierto antes de mover la carpeta y vuelve a abrir la nota con su nueva ruta. */
+  const renombrarUnaCamara = async (nombreAnterior: string, nombreNuevo: string) => {
+    const hormiguero = ajustesVigentes.current.hormiguero;
+    if (!hormiguero) return;
+    const rutaAnterior = rutaDeLaCamara(hormiguero, nombreAnterior);
+    await esperarGuardadoDeLaCamara(rutaAnterior);
+    const rutaVisible = notaVisible?.rutaDelArchivo;
+    const notaQueSeMueve = rutaVisible && estaDentroDe(rutaVisible, rutaAnterior) ? rutaVisible : null;
+    const estaCifrada = cifrado.camarasCifradas.includes(nombreAnterior) ||
+      (rutaAnterior === carpetaDeLaCamara && cifrado.estadoDeLaCamaraAbierta === "desbloqueada");
+    if (notaQueSeMueve) seCierranNotasPorBloqueo.current = true;
+    try {
+      await cerrarNotasConArchivo(rutaAnterior);
+    } catch (error) {
+      if (notaQueSeMueve) seCierranNotasPorBloqueo.current = false;
+      throw error;
+    }
+
+    let nombreEnDisco: string;
+    try {
+      nombreEnDisco = await renombrarCamara(hormiguero, nombreAnterior, nombreNuevo);
+    } catch (error) {
+      if (notaQueSeMueve) await notas.abrirNotaDeArchivo(notaQueSeMueve).catch(mostrarError);
+      throw error;
+    }
+    controlDelEditor.current?.olvidarNotasDentroDe(rutaAnterior);
+    await releerCamarasDelHormiguero();
+    const ajustesAhora = ajustesVigentes.current;
+    const cambios = cambiosAlRenombrarCamara(
+      notaQueSeMueve ? { ...ajustesAhora, ultima_nota_abierta: notaQueSeMueve } : ajustesAhora,
+      nombreAnterior,
+      nombreEnDisco,
+    );
+    cambiarAjustes(cambios);
+    // Si era cifrada, la nota se volverá a abrir solo después de desbloquear la nueva ruta.
+    if (notaQueSeMueve && cambios.ultima_nota_abierta && !estaCifrada) {
+      await notas.abrirNotaDeArchivo(cambios.ultima_nota_abierta).catch(mostrarError);
+    }
+  };
 
   // Fijados de la cámara abierta: se guardan en su archivo de `.ant/`, no en los ajustes.
 
@@ -332,17 +385,14 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
             clavesDeFijados={datosDeLaCamara.fijados}
             iconosElegidosPorFijado={datosDeLaCamara.iconos_de_fijados}
             modoDiarioActivo={ajustes.modo_diario}
-            notasAbiertas={notas.notasAbiertas}
-            idNotaVisible={notaVisible?.id ?? null}
+            notaVisible={notaVisible}
             titulosDeLaNotaVisible={titulosDeLaNotaVisible}
             indiceDelTituloConElCursor={indiceDelTituloEnLaPosicion(titulosDeLaNotaVisible, posicionDelCursor.current)}
             anchoEnPixeles={anchoDelPanel}
             alCambiarAncho={(anchoEnPixeles) => cambiarAjustes({ ancho_de_la_barra_lateral: anchoEnPixeles })}
-            alMostrarNotaAbierta={notas.mostrarNotaAbierta}
             alAbrirNotaDeArchivo={(rutaDelArchivo) => ejecutarMostrandoErrores(notas.abrirNotaDeArchivo(rutaDelArchivo))}
             alAbrirCapitulo={(rutaDeLaNota, titulo) => ejecutarMostrandoErrores(notas.abrirCapitulo(rutaDeLaNota, titulo))}
             alAbrirNotaDelDia={(diaElegido) => ejecutarMostrandoErrores(notas.abrirNotaDelDia(diaElegido))}
-            alCerrarNota={(idNota) => ejecutarMostrandoErrores(notas.cerrarNota(idNota))}
             alSaltarATitulo={(posicionDelTitulo) => controlDelEditor.current?.llevarCursorA(posicionDelTitulo)}
             alFijar={fijar}
             alQuitarFijado={quitarFijado}
@@ -358,6 +408,7 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           alCambiarTexto={notas.alCambiarTextoEnElEditor}
           alMoverCursor={alMoverCursor}
           configuracionDelEditor={configuracionDelEditor}
+          anchoDelTexto={ajustes.ancho_del_texto}
           rutaDeLaNotaVisible={rutaDeLaNotaVisible}
           carpetaDelHormiguero={carpetaDelHormiguero}
           alPegarImagenes={pegarImagenes}
@@ -404,6 +455,9 @@ function App({ ajustesIniciales }: { ajustesIniciales: Ajustes }) {
           ajustes={ajustes}
           cambiarAjustes={cambiarAjustes}
           camarasDelHormiguero={camarasDelHormiguero ?? []}
+          alAbrirCamara={(nombreDeLaCamara) => ejecutarMostrandoErrores(abrirCamara(nombreDeLaCamara))}
+          alElegirHormiguero={(carpetaElegida) => ejecutarMostrandoErrores(elegirHormiguero(carpetaElegida))}
+          alRenombrarCamara={renombrarUnaCamara}
           alPedirCamaraNueva={() => setCavandoCamaraNueva(true)}
           camarasCifradas={cifrado.camarasCifradas}
           nombreDeLaCamaraAbierta={ajustes.camara_abierta ? nombreVisibleDeLaCamara(ajustes.camara_abierta, textosDeLaInterfaz.entrada) : null}

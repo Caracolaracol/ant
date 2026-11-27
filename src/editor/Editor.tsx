@@ -19,7 +19,7 @@
 // la app (`alPegarImagenes`), que las guarda; las arrastradas llegan por Tauri a la app, que las
 // inserta con `insertarEnLineaPropia`.
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, type CSSProperties } from "react";
 import { Annotation, Compartment, EditorSelection, EditorState, Transaction } from "@codemirror/state";
 import { EditorView, keymap, drawSelection, highlightActiveLine } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
@@ -98,6 +98,8 @@ interface Props {
   alMoverCursor(posicion: number): void;
   /** Opciones del editor de la cámara abierta (escritor y programador, sumables). */
   configuracionDelEditor: ConfiguracionDelEditorResuelta;
+  /** Ancho local del texto: `null` lo deja a la tipografía y `0` usa todo el espacio. */
+  anchoDelTexto: number | null;
   /** Archivo de la nota visible (o `null`) y el hormiguero, para encontrar sus imágenes. */
   rutaDeLaNotaVisible: string | null;
   carpetaDelHormiguero: string | null;
@@ -135,7 +137,7 @@ const transaccionDesdeDisco = (estado: EditorState, textoNuevo: string) => ({
 });
 
 export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
-  { alCambiarTexto, alMoverCursor, configuracionDelEditor, rutaDeLaNotaVisible, carpetaDelHormiguero, alPegarImagenes, estaOculto },
+  { alCambiarTexto, alMoverCursor, configuracionDelEditor, anchoDelTexto, rutaDeLaNotaVisible, carpetaDelHormiguero, alPegarImagenes, estaOculto },
   referenciaDelControl,
 ) {
   const contenedorDelEditor = useRef<HTMLDivElement>(null);
@@ -299,5 +301,9 @@ export const Editor = forwardRef<ControlDelEditor, Props>(function Editor(
     },
   }));
 
-  return <div className={`editor${estaOculto ? " oculto" : ""}`} ref={contenedorDelEditor} />;
+  // Cambiar el ancho solo afecta a CSS: no reconfigura CodeMirror ni los estados de las notas.
+  const estiloDelAncho = anchoDelTexto == null ? undefined : {
+    "--ancho-del-texto": anchoDelTexto === 0 ? "100%" : `${anchoDelTexto}px`,
+  } as CSSProperties;
+  return <div className={`editor${estaOculto ? " oculto" : ""}`} ref={contenedorDelEditor} style={estiloDelAncho} />;
 });

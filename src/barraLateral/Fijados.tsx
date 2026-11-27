@@ -13,7 +13,6 @@ import { useGloboDeAyuda } from "../GloboDeAyuda";
 import { Icono } from "../Icono";
 import { useTextos } from "../idioma";
 import { nombreDelArchivo } from "../archivosDeNotas";
-import type { NotaAbierta } from "../notasAbiertas/notaAbierta";
 import { useBarraLateral } from "./contextoDeLaBarraLateral";
 import { ElegirIconoDeFijado } from "./ElegirIconoDeFijado";
 import { EntradasDelArbol, FilaDeNota, nombreSinExtension } from "./FilasDelArbol";
@@ -25,7 +24,6 @@ interface Props {
   arbolDeLaCamara: EntradaDelArbol[];
   /** Icono elegido para cada fijado, por su clave. */
   iconosElegidosPorFijado: Record<string, string>;
-  notaVisible: NotaAbierta | undefined;
   alAbrirCapitulo(rutaDeLaNota: string, tituloDelCapitulo: string): void;
   alQuitarFijado(clave: string): void;
   /** Cambia el icono de un fijado (`null` vuelve al de su tipo). */
@@ -36,7 +34,6 @@ export function Fijados({
   fijadosVisibles,
   arbolDeLaCamara,
   iconosElegidosPorFijado,
-  notaVisible,
   alAbrirCapitulo,
   alQuitarFijado,
   alCambiarIconoDeFijado,
@@ -52,7 +49,7 @@ export function Fijados({
   const cerrarEleccionDeIcono = useCallback(() => setEleccionDeIcono(null), []);
 
   // Al abrir una nota que está dentro de una carpeta fijada, esa carpeta se despliega bajo la grilla.
-  const rutaDeLaNotaVisible = notaVisible?.rutaDelArchivo ?? null;
+  const rutaDeLaNotaVisible = barra.rutaDeLaNotaVisible;
   const clavesFijadasComoTexto = fijadosVisibles.map((fijado) => fijado.clave).join("\n");
   useEffect(() => {
     if (!rutaDeLaNotaVisible || barra.clavesFijadasVisibles.has(rutaDeLaNotaVisible)) return;
@@ -77,8 +74,7 @@ export function Fijados({
       : entradaEnElArbol?.esCarpeta
         ? entradaEnElArbol.nombre
         : nombreDeLaNota;
-    const notaAbierta = barra.notasAbiertasPorRuta.get(fijado.ruta);
-    const esLaNotaVisible = !!notaAbierta && notaAbierta.id === barra.idNotaVisible;
+    const esLaNotaVisible = fijado.ruta === rutaDeLaNotaVisible;
     // Un capítulo está activo si su nota es la visible y el cursor está en su título.
     const estaActivo = fijado.tituloDelCapitulo
       ? esLaNotaVisible && barra.titulosDeLaNotaVisible[barra.indiceDelTituloConElCursor]?.texto === fijado.tituloDelCapitulo
@@ -88,7 +84,6 @@ export function Fijados({
       estaActivo && "activo",
       !entradaEnElArbol && "perdido",
       tipo === "carpeta" && carpetaFijadaDesplegada === fijado.ruta && "desplegado",
-      tipo === "nota" && notaAbierta && !esLaNotaVisible && "abierto",
     ].filter(Boolean).join(" ");
 
     /** Abre la nota o el capítulo, o despliega la carpeta. */
@@ -128,21 +123,19 @@ export function Fijados({
     carpetaFijadaDesplegada && barra.clavesFijadasVisibles.has(carpetaFijadaDesplegada)
       ? buscarEntradaPorRuta(arbolDeLaCamara, carpetaFijadaDesplegada)
       : undefined;
-  const notaVisibleEstaFijada = !!rutaDeLaNotaVisible && barra.clavesFijadasVisibles.has(rutaDeLaNotaVisible);
-
   return (
     <section className="barra-seccion barra-fijados" aria-label={textosDeLaInterfaz.fijados}>
       <div className="fijados-grilla">
         {fijadosVisibles.map(dibujarBotonDeFijado)}
       </div>
-      {notaVisibleEstaFijada && notaVisible && (
+      {rutaDeLaNotaVisible && barra.clavesFijadasVisibles.has(rutaDeLaNotaVisible) && (
         <div className="fijados-carpeta">
           <FilaDeNota
             nombreVisible={nombreSinExtension(nombreDelArchivo(rutaDeLaNotaVisible))}
             nivelDeProfundidad={0}
-            notaAbierta={notaVisible}
-            alHacerClic={() => {}}
-            rutaParaFijar={rutaDeLaNotaVisible}
+            rutaDelArchivo={rutaDeLaNotaVisible}
+            alHacerClic={() => barra.alAbrirNotaDeArchivo(rutaDeLaNotaVisible)}
+            tieneMenuContextual
           />
         </div>
       )}

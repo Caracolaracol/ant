@@ -3,11 +3,12 @@
    izquierda y el panel de opciones a la derecha. Usa las mismas variables de color que la ventana
    principal (App.css). */
 
+/* Conserva el tamaño habitual hasta que la ventana ofrece espacio para crecer. */
 .ajustes {
   display: flex;
   flex-direction: column;
-  width: min(720px, 100%);
-  height: min(540px, 100%);
+  width: min(100%, max(720px, 86vw));
+  height: min(100%, max(540px, 86vh));
   padding: 0;
   overflow: hidden;
 }
@@ -53,7 +54,7 @@
 
 /* Columna de áreas. */
 .ajustes-areas {
-  width: 170px;
+  width: clamp(112px, 21vw, 170px);
   flex-shrink: 0;
   padding: 16px 8px;
   background: var(--fondo-bajo);
@@ -80,7 +81,7 @@
   position: relative;
   flex: 1;
   min-width: 0;
-  padding: 20px 28px 24px;
+  padding: 20px clamp(14px, 3.5vw, 28px) 24px;
   overflow-y: auto;
 }
 
@@ -132,6 +133,7 @@
 
 .ajuste-camara-nombre b {
   color: var(--titulo);
+  overflow-wrap: anywhere;
 }
 
 /* Debajo del nombre de la «Entrada»: qué es (las notas sueltas en la raíz del hormiguero). */
@@ -182,7 +184,7 @@
   color: var(--codigo);
 }
 
-/* Casilla con su título al lado (modo diario). */
+/* Casilla y su título. La antena se superpone al control nativo sin interceptar clics. */
 .ajuste-casilla {
   display: flex;
   align-items: center;
@@ -190,8 +192,56 @@
   cursor: pointer;
 }
 
-.ajuste-casilla input {
-  accent-color: var(--acento);
+.ajuste-marca-de-casilla {
+  display: inline-grid;
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.ajuste-marca-de-casilla > * {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+}
+
+.ajuste-marca-de-casilla input {
+  appearance: none;
+  margin: 0;
+  border: 1px solid var(--tenue);
+  border-radius: 5px;
+  background: var(--fondo-bajo);
+  cursor: pointer;
+}
+
+.ajuste-casilla:hover .ajuste-marca-de-casilla input,
+.ajuste-marca-de-casilla input:checked {
+  border-color: var(--acento);
+}
+
+.ajuste-marca-de-casilla input:checked {
+  background: var(--acento);
+}
+
+.ajuste-marca-de-casilla input:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.ajuste-marca-de-casilla svg {
+  visibility: hidden;
+  pointer-events: none;
+  color: var(--fondo-bajo);
+}
+
+.ajuste-marca-de-casilla input:checked + svg {
+  visibility: visible;
+}
+
+/* Deja que el sistema dibuje la marca si el usuario fuerza los colores. */
+@media (forced-colors: active) {
+  .ajuste-marca-de-casilla input { appearance: auto; }
+  .ajuste-marca-de-casilla svg { display: none; }
 }
 
 .ajuste-aviso {
@@ -261,7 +311,7 @@
    el que coincide con las opciones de abajo, con el borde de acento. */
 .ajuste-presets {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(116px, 100%), 1fr));
   gap: 8px;
 }
 
@@ -311,6 +361,15 @@
   margin-top: 10px;
 }
 
+/* Ancho de la columna: preferencia local, debajo de las opciones de página de la cámara. */
+.ajuste-ancho-del-texto {
+  margin-top: 6px;
+}
+
+.ajuste-ancho-del-texto .ajuste-select {
+  max-width: 100%;
+}
+
 /* Fila de un reemplazo: casilla, nombre y el ejemplo alineado a la derecha. */
 .ajuste-reemplazo {
   flex: 1;
@@ -321,19 +380,24 @@
   font-size: 12px;
 }
 
-/* Fila de las comillas, con el selector de estilo a la derecha del ejemplo. */
+/* El selector de comillas baja a otra línea cuando la fila no alcanza a mostrarlo todo. */
 .ajuste-con-opcion {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
+}
+
+.ajuste-con-opcion .ajuste-reemplazo {
+  flex-basis: 13rem;
 }
 
 .ajuste-casilla-ayuda {
   align-items: flex-start;
 }
 
-.ajuste-casilla-ayuda input {
-  margin-top: 3px;
+.ajuste-casilla-ayuda .ajuste-marca-de-casilla {
+  margin-top: 1px;
 }
 
 .ajuste-casilla-ayuda small {
@@ -436,9 +500,34 @@
   color: var(--texto);
 }
 
+.ajuste-camara button.ajuste-camara-renombrar {
+  display: inline-flex;
+  padding: 6px;
+}
+
 .ajuste-camara-cifrada {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   color: var(--acento);
+}
+
+/* En ventanas angostas los colores conservan espacio para su nombre y código. */
+@media (max-width: 680px) {
+  .ajuste-colores { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* En ventanas angostas se gana espacio al mover las áreas arriba; solo el panel se desplaza. */
+@media (max-width: 500px) {
+  .ajustes-fondo { padding: 32px 12px 12px; }
+  .ajustes-cuerpo { flex-direction: column; }
+  .ajustes-areas {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px 6px;
+  }
+  .ajustes-panel { min-height: 0; }
+  .ajuste-presets { grid-template-columns: minmax(0, 1fr); }
 }

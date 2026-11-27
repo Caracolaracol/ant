@@ -5,7 +5,7 @@
 //     `--` → raya de diálogo `—`, `...` → `…`, `<<` `>>` → `«` `»`, `->` `<-` → `→` `←`.
 //     Backspace justo después de un cambio lo deshace (vuelve lo que se tecleó). Nada se cambia
 //     dentro de código, HTML, URLs ni del encabezado YAML.
-//   · Letra de libro: con serifa, más grande y en una columna más angosta.
+//   · Letra de libro: con serifa, más grande y con una columna más angosta por defecto.
 //   · Corrector ortográfico del sistema.
 // El texto que ya existe nunca se convierte: solo cambia lo que se teclea con el modo activo.
 // `Editor.tsx` monta estas extensiones en un `Compartment` para encenderlas y apagarlas en vivo.
@@ -197,14 +197,14 @@ const deshacerReemplazoConBackspace = Prec.highest(
   ]),
 );
 
-/** Letra de libro: serifa del sistema, más grande y con una columna de lectura más angosta. */
+/** Letra de libro: serifa más grande y columna más angosta si no se eligió un ancho en Ajustes. */
 const letraDeLibro = Prec.highest(
   EditorView.theme({
     ".cm-content": {
       fontFamily: 'ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif',
       fontSize: "1.2em",
       lineHeight: "1.75",
-      maxWidth: "34em",
+      maxWidth: "min(100%, var(--ancho-del-texto, 34em))",
     },
   }),
 );

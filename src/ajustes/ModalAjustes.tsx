@@ -13,7 +13,8 @@ import { useEffect, useState } from "react";
 import { Ajustes, OpcionesDelEditor, PRESETS_DEL_EDITOR, PresetDelEditor, presetQueCoincide } from "../ajustes";
 import { COLORES_POR_DEFECTO, TEMAS, VARIABLES_DE_COLOR } from "../colores";
 import { NOMBRE_DE_LA_CARPETA_DEL_DIARIO } from "../diario";
-import { cambiosParaElegirHormiguero, elegirCarpetaConElDialogo, esLaEntrada, nombreVisibleDeLaCamara } from "../hormigueros/hormigueros";
+import { elegirCarpetaConElDialogo, esLaEntrada, nombreVisibleDeLaCamara } from "../hormigueros/hormigueros";
+import { RenombrarCamara } from "../hormigueros/RenombrarCamara";
 import { IDIOMAS, Idioma, idiomaValido, useTextos } from "../idioma";
 import { nombreDelArchivo } from "../archivosDeNotas";
 import { marcarComoTextoDeIzquierdaADerecha } from "../arbolDeCarpetas";
@@ -24,6 +25,9 @@ import "./ModalAjustes.css";
 /** Presets del editor, en el orden en que se ofrecen (sus nombres y ayudas en `idioma.tsx`). */
 const PRESETS: PresetDelEditor[] = ["escritor", "programador", "simple"];
 
+/** Anchos máximos de la columna del texto que ofrece el selector, en píxeles. */
+const ANCHOS_DEL_TEXTO_EN_PIXELES = [480, 640, 800, 1000, 1200];
+
 /** Áreas de ajustes que aparecen en la columna izquierda (sus nombres están en `idioma.tsx`). */
 const AREAS_DE_AJUSTES = ["general", "editor", "diario", "apariencia", "atajos"] as const;
 type AreaDeAjustes = (typeof AREAS_DE_AJUSTES)[number];
@@ -31,6 +35,19 @@ type AreaDeAjustes = (typeof AREAS_DE_AJUSTES)[number];
 interface PropsDeUnPanel {
   ajustes: Ajustes;
   cambiarAjustes(cambios: Partial<Ajustes>): void;
+}
+
+/** Casilla nativa para el teclado y los lectores de pantalla; la antena solo dibuja su marca. */
+function CasillaDeAjustes({ estaMarcada, alCambiar }: { estaMarcada: boolean; alCambiar(estaMarcada: boolean): void }) {
+  return (
+    <span className="ajuste-marca-de-casilla">
+      <input type="checkbox" checked={estaMarcada} onChange={(evento) => alCambiar(evento.target.checked)} />
+      <svg viewBox="0 0 20 20" aria-hidden="true">
+        <path d="M6.5 16.5 9 9l5.5-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="15" cy="5.7" r="1.7" fill="currentColor" />
+      </svg>
+    </span>
+  );
 }
 
 /**
@@ -46,14 +63,18 @@ function PanelGeneral({
   alPedirCamaraNueva,
   camarasCifradas,
   alPedirCifrado,
-}: PropsDeUnPanel & Pick<Props, "camarasDelHormiguero" | "alPedirCamaraNueva" | "camarasCifradas" | "alPedirCifrado">) {
+  alAbrirCamara,
+  alElegirHormiguero,
+  alRenombrarCamara,
+}: PropsDeUnPanel & Pick<Props, "camarasDelHormiguero" | "alPedirCamaraNueva" | "camarasCifradas" | "alPedirCifrado" | "alAbrirCamara" | "alElegirHormiguero" | "alRenombrarCamara">) {
   const textosDeLaInterfaz = useTextos();
   const carpetaDelHormiguero = ajustes.hormiguero;
+  const [nombreDeLaCamaraARenombrar, setNombreDeLaCamaraARenombrar] = useState<string | null>(null);
 
   /** Elige otra carpeta como hormiguero con el diálogo del sistema. */
   const cambiarDeHormiguero = () =>
     elegirCarpetaConElDialogo(carpetaDelHormiguero).then(
-      (carpetaElegida) => carpetaElegida && carpetaElegida !== carpetaDelHormiguero && cambiarAjustes(cambiosParaElegirHormiguero(carpetaElegida)),
+      (carpetaElegida) => carpetaElegida && carpetaElegida !== carpetaDelHormiguero && alElegirHormiguero(carpetaElegida),
       () => {},
     );
 
@@ -106,7 +127,17 @@ function PanelGeneral({
                       </span>
                     )}
                   </div>
-                  {/* Cifrar o quitar el cifrado (la Entrada es la raíz del hormiguero: no se cifra). */}
+                  {/* La Entrada no tiene carpeta propia: no se cambia su nombre ni se cifra. */}
+                  {!esLaEntrada(nombreDeLaCamara) && (
+                    <button
+                      className="ajuste-camara-secundario ajuste-camara-renombrar"
+                      title={textosDeLaInterfaz.renombrarCamaraTitulo(nombreDeLaCamara)}
+                      aria-label={textosDeLaInterfaz.renombrarCamaraTitulo(nombreDeLaCamara)}
+                      onClick={() => setNombreDeLaCamaraARenombrar(nombreDeLaCamara)}
+                    >
+                      <Icono nombreDelIcono="pencil" tamanoEnPixeles={14} />
+                    </button>
+                  )}
                   {!esLaEntrada(nombreDeLaCamara) && (
                     <button
                       className="ajuste-camara-secundario"
@@ -118,7 +149,7 @@ function PanelGeneral({
                   {estaAbierta ? (
                     <span className="ajuste-camara-abierta">{textosDeLaInterfaz.abierta}</span>
                   ) : (
-                    <button onClick={() => cambiarAjustes({ camara_abierta: nombreDeLaCamara })}>{textosDeLaInterfaz.abrir}</button>
+                    <button onClick={() => alAbrirCamara(nombreDeLaCamara)}>{textosDeLaInterfaz.abrir}</button>
                   )}
                 </div>
               );
@@ -126,6 +157,13 @@ function PanelGeneral({
           </div>
           <button className="ajuste-boton" onClick={alPedirCamaraNueva}>{textosDeLaInterfaz.camaraNuevaBoton}</button>
         </div>
+      )}
+      {nombreDeLaCamaraARenombrar !== null && (
+        <RenombrarCamara
+          nombreAnterior={nombreDeLaCamaraARenombrar}
+          alRenombrar={(nombreNuevo) => alRenombrarCamara(nombreDeLaCamaraARenombrar, nombreNuevo)}
+          alCerrar={() => setNombreDeLaCamaraARenombrar(null)}
+        />
       )}
     </>
   );
@@ -136,14 +174,16 @@ function PanelGeneral({
  * datos de `.ant/`). Arriba, tres presets rápidos (Escritor, Programador, Simple) que marcan las
  * opciones de una vez; el que coincide con lo marcado se ve elegido. Abajo, cada opción por
  * separado, en tres grupos: tipografía al escribir, página y código. Se pueden mezclar: una cámara
- * puede tener la tipografía del escritor y las ayudas para código a la vez.
+ * puede tener la tipografía del escritor y las ayudas para código a la vez. El ancho de la página
+ * es una preferencia local de la app y no cambia al elegir un preset ni al cambiar de cámara.
  */
 function PanelEditor({
   ajustes,
+  cambiarAjustes,
   nombreDeLaCamaraAbierta,
   opcionesDelEditor,
   cambiarOpcionesDelEditor,
-}: Pick<Props, "ajustes" | "nombreDeLaCamaraAbierta" | "opcionesDelEditor" | "cambiarOpcionesDelEditor">) {
+}: PropsDeUnPanel & Pick<Props, "nombreDeLaCamaraAbierta" | "opcionesDelEditor" | "cambiarOpcionesDelEditor">) {
   const textosDeLaInterfaz = useTextos();
   const presetElegido = presetQueCoincide(opcionesDelEditor);
   /** Si se usarán comillas latinas, para mostrar el ejemplo según el estilo elegido y el idioma de la app. */
@@ -154,10 +194,9 @@ function PanelEditor({
   /** Casilla de una opción, con su nombre y, a la derecha, un ejemplo (lo que se teclea → lo que queda). */
   const filaDeReemplazo = (opcion: keyof OpcionesDelEditor, nombreVisible: string, loQueSeTeclea: string, loQueQueda: string) => (
     <label className="ajuste-casilla ajuste-reemplazo">
-      <input
-        type="checkbox"
-        checked={opcionesDelEditor[opcion] as boolean}
-        onChange={(evento) => cambiarOpcionesDelEditor({ [opcion]: evento.target.checked })}
+      <CasillaDeAjustes
+        estaMarcada={opcionesDelEditor[opcion] as boolean}
+        alCambiar={(estaMarcada) => cambiarOpcionesDelEditor({ [opcion]: estaMarcada })}
       />
       <span>{nombreVisible}</span>
       <code>{loQueSeTeclea} → {loQueQueda}</code>
@@ -167,10 +206,9 @@ function PanelEditor({
   /** Casilla de una opción con su nombre y una línea de ayuda debajo. */
   const filaConAyuda = (opcion: keyof OpcionesDelEditor, nombreVisible: string, ayuda: string) => (
     <label className="ajuste-casilla ajuste-casilla-ayuda">
-      <input
-        type="checkbox"
-        checked={opcionesDelEditor[opcion] as boolean}
-        onChange={(evento) => cambiarOpcionesDelEditor({ [opcion]: evento.target.checked })}
+      <CasillaDeAjustes
+        estaMarcada={opcionesDelEditor[opcion] as boolean}
+        alCambiar={(estaMarcada) => cambiarOpcionesDelEditor({ [opcion]: estaMarcada })}
       />
       <span>{nombreVisible}<small>{ayuda}</small></span>
     </label>
@@ -230,6 +268,23 @@ function PanelEditor({
         <div className="ajuste-lista">
           {filaConAyuda("letra_de_libro", textosDeLaInterfaz.letraLibro, textosDeLaInterfaz.letraLibroAyuda)}
           {filaConAyuda("corrector_ortografico", textosDeLaInterfaz.corrector, textosDeLaInterfaz.correctorAyuda)}
+          <div className="ajuste-ancho-del-texto">
+            <label htmlFor="ancho-del-texto">{textosDeLaInterfaz.anchoDelTexto}</label>
+            <p className="ajuste-ayuda" id="ayuda-del-ancho-del-texto">{textosDeLaInterfaz.anchoDelTextoAyuda}</p>
+            <select
+              id="ancho-del-texto"
+              className="ajuste-select"
+              aria-describedby="ayuda-del-ancho-del-texto"
+              value={ajustes.ancho_del_texto ?? ""}
+              onChange={(evento) => cambiarAjustes({ ancho_del_texto: evento.target.value === "" ? null : Number(evento.target.value) })}
+            >
+              <option value="">{textosDeLaInterfaz.anchoDelTextoAutomatico}</option>
+              {ANCHOS_DEL_TEXTO_EN_PIXELES.map((anchoEnPixeles) => (
+                <option key={anchoEnPixeles} value={anchoEnPixeles}>{anchoEnPixeles} px</option>
+              ))}
+              <option value={0}>{textosDeLaInterfaz.anchoDelTextoCompleto}</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -271,11 +326,7 @@ function PanelDiario({ ajustes, cambiarAjustes }: PropsDeUnPanel) {
       <h1>{textosDeLaInterfaz.areas.diario}</h1>
       <div className="ajuste">
         <label className="ajuste-casilla">
-          <input
-            type="checkbox"
-            checked={ajustes.modo_diario}
-            onChange={(evento) => cambiarAjustes({ modo_diario: evento.target.checked })}
-          />
+          <CasillaDeAjustes estaMarcada={ajustes.modo_diario} alCambiar={(estaMarcada) => cambiarAjustes({ modo_diario: estaMarcada })} />
           <span className="ajuste-titulo">{textosDeLaInterfaz.activarDiario}</span>
         </label>
         <p className="ajuste-ayuda">
@@ -354,6 +405,9 @@ interface Props {
   cambiarAjustes(cambios: Partial<Ajustes>): void;
   /** Cámaras del hormiguero, para la lista del área General. */
   camarasDelHormiguero: string[];
+  alAbrirCamara(nombreDeLaCamara: string): void;
+  alElegirHormiguero(carpetaDelHormiguero: string): void;
+  alRenombrarCamara(nombreAnterior: string, nombreNuevo: string): Promise<void>;
   /** Abre la ventanita «Cámara nueva» encima de los Ajustes. */
   alPedirCamaraNueva(): void;
   /** Cámaras cifradas, para marcarlas y ofrecer quitarles el cifrado. */
@@ -374,6 +428,9 @@ export function ModalAjustes({
   ajustes,
   cambiarAjustes,
   camarasDelHormiguero,
+  alAbrirCamara,
+  alElegirHormiguero,
+  alRenombrarCamara,
   alPedirCamaraNueva,
   camarasCifradas,
   alPedirCifrado,
@@ -405,7 +462,7 @@ export function ModalAjustes({
   }, [alCerrar]);
 
   return (
-    <div className="modal-fondo" onMouseDown={(evento) => evento.target === evento.currentTarget && alCerrar()}>
+    <div className="modal-fondo ajustes-fondo" onMouseDown={(evento) => evento.target === evento.currentTarget && alCerrar()}>
       <div className="modal ajustes" role="dialog" aria-label={textosDeLaInterfaz.ajustes}>
         {/* Cabecera de la ventanita, a todo el ancho: el título y la × para cerrar, fuera de lo
             que se está configurando (y fijas, sin desplazarse con las opciones). */}
@@ -427,6 +484,9 @@ export function ModalAjustes({
               ajustes={ajustes}
               cambiarAjustes={cambiarAjustes}
               camarasDelHormiguero={camarasDelHormiguero}
+              alAbrirCamara={alAbrirCamara}
+              alElegirHormiguero={alElegirHormiguero}
+              alRenombrarCamara={alRenombrarCamara}
               alPedirCamaraNueva={alPedirCamaraNueva}
               camarasCifradas={camarasCifradas}
               alPedirCifrado={alPedirCifrado}
@@ -435,6 +495,7 @@ export function ModalAjustes({
           {areaElegida === "editor" && (
             <PanelEditor
               ajustes={ajustes}
+              cambiarAjustes={cambiarAjustes}
               nombreDeLaCamaraAbierta={nombreDeLaCamaraAbierta}
               opcionesDelEditor={opcionesDelEditor}
               cambiarOpcionesDelEditor={cambiarOpcionesDelEditor}

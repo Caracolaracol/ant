@@ -42,6 +42,13 @@ impl LlavesAbiertas {
     fn llave_de(&self, carpeta_de_la_camara: &Path) -> Option<age::x25519::Identity> {
         self.0.lock().ok()?.get(carpeta_de_la_camara).cloned()
     }
+
+    /// Olvida la llave al bloquear una cámara o mover la carpeta que la identifica.
+    pub fn olvidar_llave(&self, carpeta_de_la_camara: &Path) {
+        if let Ok(mut llaves) = self.0.lock() {
+            llaves.remove(carpeta_de_la_camara);
+        }
+    }
 }
 
 /// Las llaves abiertas de la app (se registran con `manage` al arrancar).
@@ -238,9 +245,7 @@ pub async fn desbloquear_camara(app: tauri::AppHandle, carpeta_de_la_camara: Str
 /// Bloquea una cámara: olvida su llave hasta que se vuelva a desbloquear.
 #[tauri::command]
 pub fn bloquear_camara(app: tauri::AppHandle, carpeta_de_la_camara: String) {
-    if let Ok(mut llaves) = llaves_de(&app).0.lock() {
-        llaves.remove(Path::new(&carpeta_de_la_camara));
-    }
+    llaves_de(&app).olvidar_llave(Path::new(&carpeta_de_la_camara));
 }
 
 /// Quita el cifrado de una cámara (ver `quitar_cifrado`), fuera del hilo principal.

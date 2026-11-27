@@ -14,7 +14,7 @@
 // `website/src/assets/tierra.svg`), así la app y el sitio se ven iguales.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cavar as cavarBordesDeLasCamaras } from "../../website/src/lib/cavar";
+import { cavarHuecos, dibujarTunel } from "../../website/src/lib/cavar";
 import imagenDeLaTierra from "../../website/src/assets/tierra.svg";
 import iconoDeAnt from "../../marca/ant-icono.svg";
 import { ElegirHormiguero } from "../hormigueros/ElegirHormiguero";
@@ -32,7 +32,7 @@ interface Props {
   /** Cámaras que ya tiene el hormiguero (para ofrecer abrir una). */
   camarasDelHormiguero: string[];
   /** Recibe la carpeta del hormiguero creado o elegido en la página 3. */
-  alElegirHormiguero(carpetaDelHormiguero: string): void;
+  alElegirHormiguero(carpetaDelHormiguero: string): void | Promise<void>;
   /** Recibe el nombre de la cámara cavada o elegida en la página 4. */
   alElegirCamara(nombreDeLaCamara: string): void | Promise<void>;
   /** Abre directo en la página de las cámaras (ya hay hormiguero, falta la cámara). */
@@ -59,9 +59,24 @@ export function Bienvenida(props: Props) {
   const pistaDelRecorrido = useRef<HTMLDivElement>(null);
   const hoyosDelRecorrido = useRef<HTMLOListElement>(null);
 
-  // Bordes imperfectos de las cámaras y del túnel, como en el sitio.
+  // Comparte los bordes cavados con el sitio, pero aquí el túnel va recto por la fila de cámaras.
   useEffect(() => {
-    if (filaDeCamaras.current) cavarBordesDeLasCamaras(filaDeCamaras.current);
+    const fila = filaDeCamaras.current;
+    if (!fila) return;
+    const dejarDeCavarHuecos = cavarHuecos(fila);
+    const redibujarTunelHorizontal = () => {
+      // Termina en el centro de la última cámara (todas las páginas miden lo mismo).
+      const largoDelTunel = fila.clientWidth * (1 - 0.5 / CANTIDAD_DE_PAGINAS);
+      const altoDelTunel = 70;
+      const centroDelTunel = altoDelTunel / 2;
+      dibujarTunel(fila, [{ vertices: [[0, centroDelTunel], [largoDelTunel, centroDelTunel]] }], largoDelTunel, altoDelTunel);
+    };
+    const observadorDeLaFila = new ResizeObserver(redibujarTunelHorizontal);
+    observadorDeLaFila.observe(fila);
+    return () => {
+      dejarDeCavarHuecos();
+      observadorDeLaFila.disconnect();
+    };
   }, []);
 
   /** Página que se ve ahora (la más cercana al scroll). */
@@ -90,8 +105,9 @@ export function Bienvenida(props: Props) {
   const [quiereOtroHormiguero, setQuiereOtroHormiguero] = useState(false);
 
   /** Guarda el hormiguero elegido y sigue el túnel hasta las cámaras. */
-  const elegirHormigueroYSeguir = (carpetaElegida: string) => {
-    props.alElegirHormiguero(carpetaElegida);
+  const elegirHormigueroYSeguir = async (carpetaElegida: string) => {
+    await props.alElegirHormiguero(carpetaElegida);
+    setQuiereOtroHormiguero(false);
     irAPagina(PAGINA_DE_LAS_CAMARAS);
   };
 
@@ -246,12 +262,7 @@ export function Bienvenida(props: Props) {
                   </button>
                 </>
               ) : (
-                <ElegirHormiguero
-                  alElegirCarpeta={(carpetaElegida) => {
-                    setQuiereOtroHormiguero(false);
-                    elegirHormigueroYSeguir(carpetaElegida);
-                  }}
-                />
+                <ElegirHormiguero alElegirCarpeta={elegirHormigueroYSeguir} />
               )}
             </div>
           </section>

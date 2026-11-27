@@ -11,7 +11,7 @@ import "./Hormigueros.css";
 
 interface Props {
   /** Recibe la carpeta del hormiguero, creada o elegida. */
-  alElegirCarpeta(carpetaDelHormiguero: string): void;
+  alElegirCarpeta(carpetaDelHormiguero: string): void | Promise<void>;
 }
 
 export function ElegirHormiguero({ alElegirCarpeta }: Props) {
@@ -32,7 +32,7 @@ export function ElegirHormiguero({ alElegirCarpeta }: Props) {
     setMensajeDeError(null);
     try {
       const carpetaObtenida = await obtenerCarpeta();
-      if (carpetaObtenida) alElegirCarpeta(carpetaObtenida);
+      if (carpetaObtenida) await alElegirCarpeta(carpetaObtenida);
     } catch (error) {
       setMensajeDeError(String(error));
     } finally {

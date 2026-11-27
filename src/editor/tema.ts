@@ -12,8 +12,11 @@ export const temaDelEditor = EditorView.theme(
     "&": { height: "100%", color: "var(--texto)", backgroundColor: "var(--fondo)" },
     "&.cm-focused": { outline: "none" },
     ".cm-scroller": { fontFamily: "var(--fuente)", lineHeight: "1.7", overflow: "auto" },
-    // Columna de texto centrada y de ancho limitado, cómoda para leer y escribir.
-    ".cm-content": { maxWidth: "72ch", margin: "0 auto", padding: "24px 24px 48px", caretColor: "var(--acento)" },
+    // Columna centrada: el ancho elegido en Ajustes prevalece sobre el de la tipografía.
+    ".cm-content": {
+      maxWidth: "min(100%, var(--ancho-del-texto, 72ch))",
+      margin: "0 auto", padding: "24px 24px 48px", caretColor: "var(--acento)",
+    },
     ".cm-cursor": { borderLeftColor: "var(--acento)", borderLeftWidth: "2px" },
     ".cm-activeLine": { backgroundColor: "transparent" },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {

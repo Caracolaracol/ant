@@ -10,6 +10,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { documentDir, homeDir } from "@tauri-apps/api/path";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { Ajustes } from "../ajustes";
+import { estaDentroDe } from "../arbolDeCarpetas.ts";
 
 /**
  * Nombre con que se guarda y se lista la «Entrada», la cámara de las notas sueltas en la raíz del
@@ -38,6 +39,10 @@ export const crearCarpetaNueva = (carpetaDondeCrearla: string, nombreDeLaCarpeta
  */
 export const listarCamarasDelHormiguero = (carpetaDelHormiguero: string) =>
   invoke<string[]>("listar_camaras", { carpetaDelHormiguero });
+
+/** Cambia el nombre de la carpeta y de sus datos en `.ant/`; devuelve el nuevo nombre. */
+export const renombrarCamara = (carpetaDelHormiguero: string, nombreAnterior: string, nombreNuevo: string) =>
+  invoke<string>("renombrar_camara", { carpetaDelHormiguero, nombreAnterior, nombreNuevo });
 
 /** Dónde se propone crear el hormiguero: la carpeta Documentos (o la del usuario). */
 export const carpetaDondeProponerCrearElHormiguero = () => documentDir().catch(() => homeDir());
@@ -70,6 +75,25 @@ export const laCamaraAbiertaExiste = (ajustes: Ajustes, camarasDelHormiguero: st
 /** Carpeta de la cámara abierta, o `null` si falta el hormiguero o la cámara (o ya no existe). */
 export const carpetaDeLaCamaraAbierta = (ajustes: Ajustes, camarasDelHormiguero: string[] | null) =>
   ajustes.hormiguero && laCamaraAbiertaExiste(ajustes, camarasDelHormiguero) ? rutaDeLaCamara(ajustes.hormiguero, ajustes.camara_abierta!) : null;
+
+/** Actualiza las referencias locales absolutas; los datos de `.ant/` conservan sus rutas relativas. */
+export function cambiosAlRenombrarCamara(ajustes: Ajustes, nombreAnterior: string, nombreNuevo: string): Partial<Ajustes> {
+  if (!ajustes.hormiguero) return {};
+  const rutaAnterior = rutaDeLaCamara(ajustes.hormiguero, nombreAnterior);
+  const rutaNueva = rutaDeLaCamara(ajustes.hormiguero, nombreNuevo);
+  /** Cambia la raíz solo si la ruta pertenece a la cámara renombrada. */
+  const cambiarRaiz = (ruta: string) => estaDentroDe(ruta, rutaAnterior) ? rutaNueva + ruta.slice(rutaAnterior.length) : ruta;
+  /** Los fijados y compilaciones antiguos pueden seguir en los ajustes hasta abrir la cámara. */
+  const cambiarClaves = <Valor,>(datos: Record<string, Valor>) =>
+    Object.fromEntries(Object.entries(datos).map(([ruta, valor]) => [cambiarRaiz(ruta), valor]));
+  return {
+    camara_abierta: ajustes.camara_abierta === nombreAnterior ? nombreNuevo : ajustes.camara_abierta,
+    ultima_nota_abierta: ajustes.ultima_nota_abierta ? cambiarRaiz(ajustes.ultima_nota_abierta) : null,
+    fijados: ajustes.fijados.map(cambiarRaiz),
+    iconos_de_fijados: cambiarClaves(ajustes.iconos_de_fijados),
+    opciones_de_compilacion_por_carpeta: cambiarClaves(ajustes.opciones_de_compilacion_por_carpeta),
+  };
+}
 
 /** Cambios de ajustes para usar otro hormiguero: su cámara se elige de nuevo (las del anterior no están ahí). */
 export const cambiosParaElegirHormiguero = (carpetaDelHormiguero: string): Partial<Ajustes> => ({

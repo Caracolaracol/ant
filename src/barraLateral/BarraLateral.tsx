@@ -8,9 +8,7 @@
 //      diarias se llega desde el calendario.
 //   2. Los fijados (`Fijados.tsx`): carpetas, notas y capítulos fijados con clic derecho → Fijar
 //      arriba, como una grilla de iconos.
-//   3. «Abiertas»: notas abiertas que no están en la cámara (nuevas sin guardar ya con algo
-//      escrito, o de otro lugar).
-//   4. La cámara abierta como árbol de subcarpetas y notas (`FilasDelArbol.tsx`). En la «Entrada»
+//   3. La cámara abierta como árbol de subcarpetas y notas (`FilasDelArbol.tsx`). En la «Entrada»
 //      son solo las notas sueltas de la raíz del hormiguero, y no hay diario (su carpeta `Daily`
 //      sería otra cámara).
 // Bajo la nota visible aparecen sus títulos (`#`, `##`, …) para saltar a ellos, como en Left.
@@ -62,9 +60,8 @@ interface Props {
   iconosElegidosPorFijado: Record<string, string>;
   /** Si el modo diario está activo (muestra el calendario). */
   modoDiarioActivo: boolean;
-  notasAbiertas: NotaAbierta[];
-  /** Nota que se ve en el editor, o `null` si no hay ninguna abierta. */
-  idNotaVisible: string | null;
+  /** Nota del editor; la barra solo la resalta si pertenece a la cámara abierta. */
+  notaVisible: NotaAbierta | null;
   /** Títulos de la nota visible (los calcula App tras una pausa al escribir). */
   titulosDeLaNotaVisible: TituloDeLaNota[];
   /** Índice del título donde está el cursor, o -1. */
@@ -73,13 +70,11 @@ interface Props {
   anchoEnPixeles: number;
   /** Se llama al soltar el borde tras arrastrarlo, con el ancho nuevo (o `null` para el de por defecto). */
   alCambiarAncho(anchoEnPixeles: number | null): void;
-  alMostrarNotaAbierta(idNota: string): void;
   alAbrirNotaDeArchivo(rutaDelArchivo: string): void;
   /** Abre una nota y lleva el cursor a su título `tituloDelCapitulo` (un capítulo fijado). */
   alAbrirCapitulo(rutaDeLaNota: string, tituloDelCapitulo: string): void;
   /** Abre (o crea) la nota diaria de `diaElegido`. */
   alAbrirNotaDelDia(diaElegido: Date): void;
-  alCerrarNota(idNota: string): void;
   alSaltarATitulo(posicionDelTitulo: number): void;
   alFijar(clave: string): void;
   alQuitarFijado(clave: string): void;
@@ -94,11 +89,11 @@ interface Props {
 }
 
 export function BarraLateral(props: Props) {
-  const { carpetaDeLaCamara, laCamaraEsLaEntrada, arbolDeLaCamara, notasAbiertas, idNotaVisible } = props;
+  const { carpetaDeLaCamara, laCamaraEsLaEntrada, arbolDeLaCamara } = props;
   /** Si una ruta es de la cámara abierta (en la «Entrada», solo lo que está suelto en la raíz). */
-  const esDeLaCamara = (ruta: string) => Boolean(carpetaDeLaCamara) && estaEnLaCamara(ruta, carpetaDeLaCamara!, laCamaraEsLaEntrada);
+  const esDeLaCamara = (ruta: string) => carpetaDeLaCamara !== null && estaEnLaCamara(ruta, carpetaDeLaCamara, laCamaraEsLaEntrada);
   const textosDeLaInterfaz = useTextos();
-  const notaVisible = notasAbiertas.find((nota) => nota.id === idNotaVisible);
+  const notaVisible = props.notaVisible?.rutaDelArchivo && esDeLaCamara(props.notaVisible.rutaDelArchivo) ? props.notaVisible : undefined;
   const rutaDeLaNotaVisible = notaVisible?.rutaDelArchivo ?? null;
 
   const elementoDeLaBarra = useRef<HTMLElement>(null);
@@ -152,15 +147,8 @@ export function BarraLateral(props: Props) {
       ? (buscarCarpetaDelDiario(arbolDeLaCamara)?.ruta ?? rutaDeLaCarpetaDelDiario(carpetaDeLaCamara))
       : null;
   const arbolSinElDiario = carpetaDelDiario ? arbolDeLaCamara.filter((entrada) => entrada.ruta !== carpetaDelDiario) : arbolDeLaCamara;
-  const notasDiariasAbiertas = carpetaDelDiario
-    ? notasAbiertas.filter((nota) => nota.rutaDelArchivo && estaDentroDe(nota.rutaDelArchivo, carpetaDelDiario))
-    : [];
-
-  // «Abiertas»: notas fuera de la cámara. Una nota en blanco (sin archivo) no se lista: solo
-  // aparece cuando se empieza a escribir en ella.
-  const notasFueraDeLaCamara = notasAbiertas.filter((nota) =>
-    nota.rutaDelArchivo ? !esDeLaCamara(nota.rutaDelArchivo) : nota.ultimoTextoConocido || nota.tieneCambiosSinGuardar,
-  );
+  const rutaDeLaNotaDiariaVisible = carpetaDelDiario && rutaDeLaNotaVisible && estaDentroDe(rutaDeLaNotaVisible, carpetaDelDiario)
+    ? rutaDeLaNotaVisible : null;
 
   /** Opciones del clic derecho para fijar algo, o para quitarlo si ya está fijado. */
   function opcionesParaFijarOQuitar(clave: string): OpcionDelMenu[] {
@@ -185,15 +173,10 @@ export function BarraLateral(props: Props) {
 
   // Lo que comparten las filas del árbol y los fijados.
   const datosCompartidos: DatosDeLaBarraLateral = {
-    idNotaVisible,
-    notasAbiertasPorRuta: new Map(
-      notasAbiertas.filter((nota) => nota.rutaDelArchivo).map((nota) => [nota.rutaDelArchivo!, nota]),
-    ),
+    notaVisible,
+    rutaDeLaNotaVisible,
     titulosDeLaNotaVisible: props.titulosDeLaNotaVisible,
     indiceDelTituloConElCursor: props.indiceDelTituloConElCursor,
-    // Los títulos de la nota visible se pueden fijar como capítulos si la nota está en la cámara.
-    rutaDeLaNotaVisibleQueSePuedeFijar:
-      rutaDeLaNotaVisible && esDeLaCamara(rutaDeLaNotaVisible) ? rutaDeLaNotaVisible : null,
     carpetasDesplegadas,
     desplegarOPlegarCarpeta,
     clavesFijadasVisibles: new Set(fijadosVisibles.map((fijado) => fijado.clave)),
@@ -210,7 +193,6 @@ export function BarraLateral(props: Props) {
       { texto: textosDeLaInterfaz.mostrarEnFinder, icono: "folder-open", alElegir: () => void mostrarArchivoEnSuCarpeta(ruta).catch(() => {}) },
     ],
     alAbrirNotaDeArchivo: props.alAbrirNotaDeArchivo,
-    alCerrarNota: props.alCerrarNota,
     alSaltarATitulo: props.alSaltarATitulo,
   };
 
@@ -242,18 +224,17 @@ export function BarraLateral(props: Props) {
             <section className="barra-seccion barra-diario">
               <Calendario
                 diasQueTienenNota={diasConNotaEnLaCamara}
-                diaDeLaNotaVisible={diaDeLaNotaDiaria(rutaDeLaNotaVisible)}
+                diaDeLaNotaVisible={diaDeLaNotaDiaria(rutaDeLaNotaDiariaVisible)}
                 alElegirDia={props.alAbrirNotaDelDia}
               />
-              {notasDiariasAbiertas.map((notaDiaria) => (
+              {rutaDeLaNotaDiariaVisible && (
                 <FilaDeNota
-                  key={notaDiaria.id}
-                  nombreVisible={nombreSinExtension(nombreDelArchivo(notaDiaria.rutaDelArchivo!))}
+                  nombreVisible={nombreSinExtension(nombreDelArchivo(rutaDeLaNotaDiariaVisible))}
                   nivelDeProfundidad={0}
-                  notaAbierta={notaDiaria}
-                  alHacerClic={() => props.alMostrarNotaAbierta(notaDiaria.id)}
+                  rutaDelArchivo={rutaDeLaNotaDiariaVisible}
+                  alHacerClic={() => props.alAbrirNotaDeArchivo(rutaDeLaNotaDiariaVisible)}
                 />
-              ))}
+              )}
             </section>
           )}
           {fijadosVisibles.length > 0 && (
@@ -261,25 +242,10 @@ export function BarraLateral(props: Props) {
               fijadosVisibles={fijadosVisibles}
               arbolDeLaCamara={arbolDeLaCamara}
               iconosElegidosPorFijado={props.iconosElegidosPorFijado}
-              notaVisible={notaVisible}
               alAbrirCapitulo={props.alAbrirCapitulo}
               alQuitarFijado={props.alQuitarFijado}
               alCambiarIconoDeFijado={props.alCambiarIconoDeFijado}
             />
-          )}
-          {notasFueraDeLaCamara.length > 0 && (
-            <section className="barra-seccion">
-              <div className="barra-encabezado">{textosDeLaInterfaz.abiertas}</div>
-              {notasFueraDeLaCamara.map((nota) => (
-                <FilaDeNota
-                  key={nota.id}
-                  nombreVisible={nota.rutaDelArchivo ? nombreDelArchivo(nota.rutaDelArchivo) : textosDeLaInterfaz.sinTitulo}
-                  nivelDeProfundidad={0}
-                  notaAbierta={nota}
-                  alHacerClic={() => props.alMostrarNotaAbierta(nota.id)}
-                />
-              ))}
-            </section>
           )}
           {carpetaDeLaCamara && (
             // Sin encabezado: el nombre de la cámara ya está arriba, en el selector.

@@ -1,11 +1,10 @@
-// Filas de la barra lateral: una nota (con su `*` si espera guardarse, su × para cerrarla y, si es
-// la visible, sus títulos debajo), una carpeta (con su flecha y su contenido si está desplegada) y
+// Filas de la barra lateral: una nota (con su `*` si espera guardarse y, si es la visible, sus
+// títulos debajo), una carpeta (con su flecha y su contenido si está desplegada) y
 // el árbol de entradas, que se dibuja recursivamente saltándose lo fijado (ya está arriba).
 // Leen lo compartido de `useBarraLateral()`.
 
-import { useTextos } from "../idioma";
 import type { EntradaDelArbol } from "../arbolDeCarpetas";
-import { esperaQueLaGuarden, type NotaAbierta } from "../notasAbiertas/notaAbierta";
+import { esperaQueLaGuarden } from "../notasAbiertas/notaAbierta";
 import { useBarraLateral } from "./contextoDeLaBarraLateral";
 import { claveDeCapitulo } from "./clavesDeFijados";
 
@@ -18,7 +17,7 @@ export const nombreSinExtension = (nombreDelArchivo: string) => nombreDelArchivo
 /** Títulos de la nota visible, con el título donde está el cursor resaltado. */
 function TitulosDeLaNotaVisible({ nivelDeProfundidad }: { nivelDeProfundidad: number }) {
   const barra = useBarraLateral();
-  const rutaFijable = barra.rutaDeLaNotaVisibleQueSePuedeFijar;
+  const rutaFijable = barra.rutaDeLaNotaVisible;
   return (
     <>
       {barra.titulosDeLaNotaVisible.map((titulo, indice) => (
@@ -44,43 +43,28 @@ function TitulosDeLaNotaVisible({ nivelDeProfundidad }: { nivelDeProfundidad: nu
 interface PropsDeFilaDeNota {
   nombreVisible: string;
   nivelDeProfundidad: number;
-  /** La nota, si está abierta. */
-  notaAbierta: NotaAbierta | undefined;
+  rutaDelArchivo: string;
   alHacerClic(): void;
-  /** Ruta de la nota en el árbol de la cámara, para su clic derecho (crear, fijar…); sin ella, la fila no tiene menú. */
-  rutaParaFijar?: string;
+  /** El calendario no ofrece el menú contextual que tienen las filas del árbol. */
+  tieneMenuContextual?: boolean;
 }
 
-/** Fila de una nota: su nombre y, si está abierta, el botón para cerrarla; si es la visible, sus títulos debajo. */
-export function FilaDeNota({ nombreVisible, nivelDeProfundidad, notaAbierta, alHacerClic, rutaParaFijar }: PropsDeFilaDeNota) {
+/** Fila de una nota: muestra sus títulos debajo solo si es la nota visible. */
+export function FilaDeNota({ nombreVisible, nivelDeProfundidad, rutaDelArchivo, alHacerClic, tieneMenuContextual = false }: PropsDeFilaDeNota) {
   const barra = useBarraLateral();
-  const textosDeLaInterfaz = useTextos();
-  const esLaNotaVisible = notaAbierta?.id === barra.idNotaVisible;
+  const esLaNotaVisible = rutaDelArchivo === barra.rutaDeLaNotaVisible;
   return (
     <>
       <div
-        className={`barra-nota${esLaNotaVisible ? " activa" : ""}${notaAbierta ? " abierta" : ""}`}
+        className={`barra-nota${esLaNotaVisible ? " activa" : ""}`}
         style={{ paddingLeft: sangriaEnPixeles(nivelDeProfundidad) }}
         onClick={alHacerClic}
-        onContextMenu={rutaParaFijar ? (evento) => barra.abrirMenuContextual(evento, barra.opcionesDeUnaEntrada(rutaParaFijar, false)) : undefined}
+        onContextMenu={tieneMenuContextual ? (evento) => barra.abrirMenuContextual(evento, barra.opcionesDeUnaEntrada(rutaDelArchivo, false)) : undefined}
       >
         <span className="barra-nombre">
           {nombreVisible}
-          {notaAbierta && esperaQueLaGuarden(notaAbierta) && " *"}
+          {esLaNotaVisible && barra.notaVisible && esperaQueLaGuarden(barra.notaVisible) && " *"}
         </span>
-        {notaAbierta && (
-          <button
-            className="barra-cerrar"
-            title={textosDeLaInterfaz.cerrarNota}
-            // Detiene el clic para no mostrar la nota al mismo tiempo que se cierra.
-            onClick={(evento) => {
-              evento.stopPropagation();
-              barra.alCerrarNota(notaAbierta.id);
-            }}
-          >
-            ×
-          </button>
-        )}
       </div>
       {esLaNotaVisible && <TitulosDeLaNotaVisible nivelDeProfundidad={nivelDeProfundidad + 1} />}
     </>
@@ -122,9 +106,9 @@ export function EntradasDelArbol({ entradas, nivelDeProfundidad }: { entradas: E
               key={entrada.ruta}
               nombreVisible={nombreSinExtension(entrada.nombre)}
               nivelDeProfundidad={nivelDeProfundidad}
-              notaAbierta={barra.notasAbiertasPorRuta.get(entrada.ruta)}
+              rutaDelArchivo={entrada.ruta}
               alHacerClic={() => barra.alAbrirNotaDeArchivo(entrada.ruta)}
-              rutaParaFijar={entrada.ruta}
+              tieneMenuContextual
             />
           ),
         )}

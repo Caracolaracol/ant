@@ -44,6 +44,24 @@ export function useDatosDeLaCamara({ carpetaDelHormiguero, nombreDeLaCamara, car
   const camaraVigente = useRef({ camaraAbierta, identificadorDeLaCamara });
   camaraVigente.current = { camaraAbierta, identificadorDeLaCamara };
   const datosVigentes = useRef<{ identificador: string | null; datos: DatosDeLaCamara }>({ identificador: null, datos: DATOS_VACIOS_DE_LA_CAMARA });
+  const guardadosEnCurso = useRef(new Map<string, Promise<void>>());
+
+  /** Serializa las escrituras de `.ant/` para que la última no se pise con una anterior. */
+  const guardarDatos = useCallback((camara: { carpetaDelHormiguero: string; nombreDeLaCamara: string; carpetaDeLaCamara: string }, datos: DatosDeLaCamara) => {
+    const carpeta = camara.carpetaDeLaCamara;
+    const guardadoAnterior = guardadosEnCurso.current.get(carpeta);
+    const guardado = (async () => {
+      await guardadoAnterior?.catch(() => {});
+      await guardarDatosDeLaCamara(camara.carpetaDelHormiguero, camara.nombreDeLaCamara, datosParaGuardar(datos, carpeta));
+    })().finally(() => {
+      if (guardadosEnCurso.current.get(carpeta) === guardado) guardadosEnCurso.current.delete(carpeta);
+    });
+    guardadosEnCurso.current.set(carpeta, guardado);
+    return guardado;
+  }, []);
+
+  /** Espera a que terminen los cambios de Ajustes antes de mover el archivo de la cámara. */
+  const esperarGuardadoDeLaCamara = (carpeta: string) => guardadosEnCurso.current.get(carpeta);
 
   /** Deja los datos de una cámara como los de ahora. */
   const usarDatos = useCallback((identificador: string, datos: DatosDeLaCamara) => {
@@ -70,9 +88,9 @@ export function useDatosDeLaCamara({ carpetaDelHormiguero, nombreDeLaCamara, car
     usarDatos(identificador, datosDeLosAjustes);
     if (sonDatosVacios(datosDeLosAjustes)) return;
     // Primero se guarda el archivo y solo después se quita de los ajustes: si falla, no se pierde nada.
-    await guardarDatosDeLaCamara(camara.carpetaDelHormiguero, camara.nombreDeLaCamara, datosParaGuardar(datosDeLosAjustes, camara.carpetaDeLaCamara));
+    await guardarDatos(camara, datosDeLosAjustes);
     cambiarAjustes(ajustesSinEsosDatos);
-  }, [ajustesVigentes, cambiarAjustes, usarDatos]);
+  }, [ajustesVigentes, cambiarAjustes, guardarDatos, usarDatos]);
 
   useEffect(() => {
     releerDatosDeLaCamara().catch(mostrarError);
@@ -93,8 +111,8 @@ export function useDatosDeLaCamara({ carpetaDelHormiguero, nombreDeLaCamara, car
     if (!camara || datosVigentes.current.identificador !== identificador) return;
     const datosNuevos = { ...datosVigentes.current.datos, ...calcularCambios(datosVigentes.current.datos) };
     usarDatos(identificador!, datosNuevos);
-    guardarDatosDeLaCamara(camara.carpetaDelHormiguero, camara.nombreDeLaCamara, datosParaGuardar(datosNuevos, camara.carpetaDeLaCamara)).catch(mostrarError);
-  }, [usarDatos, mostrarError]);
+    guardarDatos(camara, datosNuevos).catch(mostrarError);
+  }, [guardarDatos, usarDatos, mostrarError]);
 
-  return { datosDeLaCamara, cambiarDatosDeLaCamara };
+  return { datosDeLaCamara, cambiarDatosDeLaCamara, esperarGuardadoDeLaCamara };
 }

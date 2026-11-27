@@ -77,11 +77,11 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - `src/hormigueros/useDatosDeLaCamara.ts` — datos de la cámara abierta en `.ant/` (fijados,
     iconos, compilaciones): se leen al abrirla y al volver el foco, y se guardan al cambiar.
   - `src/notasAbiertas/useNotasAbiertas.ts` — las notas abiertas (`NotaAbierta`, en
-    `notaAbierta.ts`): puede no haber ninguna (así arranca y así queda al cerrar la última; nunca
+    `notaAbierta.ts`): puede no haber ninguna (así arranca y así queda al cambiar de cámara; nunca
     se crea una de la nada, y en lugar del editor va `notasAbiertas/InvitacionANotaNueva.tsx`, con
     un botón que crea una nota en la raíz de la cámara), una sola con archivo a la vez
     (`dejarComoUnicaNotaAbierta`), guardado
-    automático (`guardarNotaEnDiscoAhora`, tras `PAUSA_ANTES_DE_GUARDAR`, al cambiar de nota, al
+    automático (`guardarNotaEnDiscoAhora`, tras `PAUSA_ANTES_DE_GUARDAR`, al cambiar de nota o cámara, al
     perder el foco, al cerrar la ventana y al salir: Rust avisa con `antes-de-salir` y espera a
     `salir`), no pisar cambios hechos fuera de Ant (cada nota recuerda `textoQueHayEnDisco`; al
     volver el foco se recargan las que cambiaron) y el último texto conocido para contar
@@ -102,6 +102,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   nombre y crea la nota vacía (`crear_nota_nueva`) o la carpeta (`crear_carpeta_nueva`), sin pisar
   nada. La nota de Cmd+N va junto a la nota visible si es de la cámara, o en la
   cámara; con clic derecho, donde se pidió.
+- `src/hormigueros/RenombrarCamara.tsx` — lápiz en Ajustes → General → Cámaras. Renombra la
+  carpeta y su archivo de `.ant/`, actualiza las rutas locales y vuelve a abrir la nota visible
+  si se movió. Una cámara cifrada vuelve a quedar bloqueada. La Entrada no se renombra.
 - `src/BarraDeEstado.tsx` — nombre de la nota visible y conteo de palabras, líneas y caracteres
   (o el último error); el conteo está en `src/conteoDelTexto.ts`.
 - **Hormiguero y cámaras**: el hormiguero es una sola carpeta con todas las notas del usuario (lo
@@ -159,8 +162,8 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
 - `src/barraLateral/` — la barra lateral (el «panel»), minimalista a propósito y sin líneas
   separadoras. De arriba abajo: el selector de cámaras (`SelectorDeCamara.tsx`, el nombre de la
   abierta; al tocarlo, la lista para cambiar y «Cámara nueva…», con `MenuContextual`), el
-  calendario si hay modo diario, los fijados, «Abiertas» (notas fuera de la cámara o nuevas ya con
-  algo escrito) y el árbol de la cámara. Bajo la nota visible, sus títulos. Clic derecho en una
+  calendario si hay modo diario, los fijados y el árbol de la cámara. Solo se muestra contenido de
+  la cámara abierta, sin lista de «Abiertas» ni botones de cerrar. Bajo la nota visible, sus títulos. Clic derecho en una
   nota o carpeta: nota nueva y carpeta nueva (junto a ella o dentro), fijar y mostrar en su
   carpeta; en el espacio libre, crear en la cámara (en la Entrada no hay carpeta nueva).
   - `BarraLateral.tsx` — junta las secciones y provee `ContextoDeLaBarraLateral`
@@ -206,8 +209,11 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   otra ventana), con una cabecera a todo el ancho (título y × para cerrar) y debajo dos columnas: áreas a la izquierda (`AREAS`: General —idioma, hormiguero y
   cámaras—, Editor —opciones de la cámara abierta, con presets escritor, programador y simple—, Diario, Apariencia, Atajos —`PanelAtajos.tsx`: clic en un atajo y
   pulsar las teclas nuevas—) y el panel del área elegida a la
-  derecha. Los cambios se guardan al instante; Escape, Cmd+W o clic fuera la cierran. El marco
-  de las ventanitas (`.modal-fondo`, `.modal`) está en `App.css`.
+  derecha. El cuadro crece con la ventana; si es angosta, las áreas van arriba. Las casillas de
+  Ajustes son controles nativos con una antena como marca. Editor → Página → Ancho del texto es
+  local al computador (`Ajustes.ancho_del_texto`, CSS `--ancho-del-texto`): automático según la
+  letra, un máximo en píxeles o todo el ancho, independiente de cámara y preset. Los cambios se
+  guardan al instante; Escape, Cmd+W o clic fuera la cierran. El marco de las ventanitas (`.modal-fondo`, `.modal`) está en `App.css`.
   Para agregar un ajuste: campo en `Ajustes` (TS y Rust, con `#[serde(default)]`) y su control
   en el panel.
 - `src/App.css` — variables de color del tema (`--fondo`, `--texto`, `--acento`, …) y la
@@ -306,8 +312,9 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   camelCase hacia la interfaz), o solo las notas sueltas (`solo_notas_sueltas`, la «Entrada»).
   `listar_camaras`: las carpetas de primer nivel del hormiguero, aunque estén vacías, y antes
   «.» si hay notas sueltas en la raíz. `crear_carpeta_nueva`: crea la carpeta del hormiguero o de
-  una cámara (nunca usa una que ya existe). `crear_nota_nueva`: crea una nota vacía sin pisar
-  otra (`create_new`). Con tests.
+  una cámara (nunca usa una que ya existe). `renombrar_camara`: cambia el nombre de la carpeta y
+  sus datos en `.ant/`, sin pisar una cámara o datos existentes. `crear_nota_nueva`: crea una nota
+  vacía sin pisar otra (`create_new`). Con tests.
 - `src-tauri/tauri.conf.json` — nombre, identificador y ventana principal. La barra de título
   nativa está oculta (`titleBarStyle: "Overlay"`, `hiddenTitle`): los botones de la ventana
   flotan sobre la franja `.arrastre`, que sirve para arrastrarla.
@@ -364,7 +371,7 @@ Left está hecho con Electron 7 y pesa ~150 MB; esta app debe ser bastante más 
   - La cámara «El hormiguero» de la portada muestra una captura del hormiguero y las cámaras de Ajustes → General
     (`src/assets/ajustes-camaras-en.png` y `-es.png`, a 2x). Si cambian esos Ajustes, volver a
     sacarla con Chrome sin ventana: `--headless=new --force-device-scale-factor=2
-    --window-size=540,595 --default-background-color=00000000 --screenshot=…` sobre
+    --window-size=540,600 --default-background-color=00000000 --screenshot=…` sobre
     `http://localhost:1420/prueba/barra.html?ajustes&captura` (y `&es`), con `pnpm dev` corriendo.
   - La tierra de fondo es `src/assets/tierra.svg`: granos y piedritas al azar (semilla fija) que
     genera `website/scripts/tierra.mjs`; para cambiarla, editar el script y correrlo con node.

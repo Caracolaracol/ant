@@ -21,6 +21,7 @@ import {
 } from "../../src/diario.ts";
 import {
   CAMARA_DE_ENTRADA,
+  cambiosAlRenombrarCamara,
   cambiosParaElegirHormiguero,
   carpetaDeLaCamaraAbierta,
   esLaEntrada,
@@ -91,6 +92,29 @@ test("la cámara abierta: se da por buena mientras se leen las cámaras, y falta
   assert.equal(carpetaDeLaCamaraAbierta(conCamara, ["Trabajo"]), null, "se borró o renombró su carpeta");
   assert.ok(!laCamaraAbiertaExiste({ ...conCamara, camara_abierta: null }, ["Novela"]));
   assert.equal(carpetaDeLaCamaraAbierta({ ...conCamara, hormiguero: null }, null), null);
+});
+
+test("renombrar una cámara actualiza las referencias de esa cámara, no las de una vecina", () => {
+  const opciones = { titulo: "Prueba" } as OpcionesDeCompilacion;
+  const ajustes = {
+    ...AJUSTES_POR_DEFECTO,
+    hormiguero: "/h",
+    camara_abierta: "Novela",
+    ultima_nota_abierta: "/h/Novela/parte/a.md",
+    fijados: ["/h/Novela/parte/a.md#Inicio", "/h/Novela", "/h/Novelas/a.md"],
+    iconos_de_fijados: { "/h/Novela/parte/a.md#Inicio": "book" },
+    opciones_de_compilacion_por_carpeta: { "/h/Novela": opciones },
+  };
+  assert.deepEqual(cambiosAlRenombrarCamara(ajustes, "Novela", "Libro"), {
+    camara_abierta: "Libro",
+    ultima_nota_abierta: "/h/Libro/parte/a.md",
+    fijados: ["/h/Libro/parte/a.md#Inicio", "/h/Libro", "/h/Novelas/a.md"],
+    iconos_de_fijados: { "/h/Libro/parte/a.md#Inicio": "book" },
+    opciones_de_compilacion_por_carpeta: { "/h/Libro": opciones },
+  });
+  const otrosCambios = cambiosAlRenombrarCamara({ ...ajustes, hormiguero: "C:\\h", ultima_nota_abierta: "C:\\h\\Libro\\a.md" }, "Libro", "Otro");
+  assert.equal(otrosCambios.camara_abierta, "Novela");
+  assert.equal(otrosCambios.ultima_nota_abierta, "C:\\h\\Otro\\a.md");
 });
 
 test("la «Entrada» es la raíz del hormiguero y solo son suyas las notas sueltas", () => {

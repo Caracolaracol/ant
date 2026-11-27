@@ -171,6 +171,7 @@ pub fn run() {
             carpeta::leer_arbol_de_carpeta,
             carpeta::crear_carpeta_nueva,
             carpeta::listar_camaras,
+            carpeta::renombrar_camara,
             carpeta::crear_nota_nueva,
             datos_del_hormiguero::leer_datos_de_la_camara,
             datos_del_hormiguero::guardar_datos_de_la_camara,

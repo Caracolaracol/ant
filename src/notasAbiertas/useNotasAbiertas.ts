@@ -3,8 +3,8 @@
 //
 // Reglas:
 //   · Puede no haber ninguna nota abierta: así arranca la app (salvo que vuelva a abrir la última,
-//     ver `App`) y así queda al cerrar la última. Nunca se crea una nota de la nada.
-//   · Una sola nota con archivo abierta a la vez: abrir otra guarda y cierra la anterior. Solo
+//     ver `App`) y así queda al salir de una cámara. Nunca se crea una nota de la nada.
+//   · Una sola nota con archivo abierta a la vez: abrir otra o cambiar de cámara guarda y cierra la anterior. Solo
 //     siguen abiertas las notas nuevas (sin archivo) que ya tienen algo escrito, para no perderlas.
 //   · Guardado automático: una nota con archivo se guarda `PAUSA_ANTES_DE_GUARDAR` después de la
 //     última tecla, al abrir otra, al salir de la ventana, al cerrarla y al salir de la app (Rust
@@ -18,7 +18,6 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { ask } from "@tauri-apps/plugin-dialog";
 import type { ControlDelEditor } from "../editor/Editor";
 import { abrirOCrearNotaDelDia } from "../diario";
 import { useTextos } from "../idioma";
@@ -75,6 +74,8 @@ export function useNotasAbiertas({
 
   // Un temporizador de guardado por nota con cambios.
   const temporizadoresDeGuardado = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  // Espera una escritura que ya empezó antes de guardar y cerrar la misma nota.
+  const escriturasEnCurso = useRef(new Map<string, Promise<void>>());
   // Cuántos cambios lleva cada nota: al terminar de guardar, si cambió el número es que se siguió
   // escribiendo, y la nota sigue con cambios sin guardar.
   const cantidadDeCambiosPorNota = useRef(new Map<string, number>());
@@ -107,23 +108,43 @@ export function useNotasAbiertas({
   const guardarNotaEnDiscoAhora = useCallback(async (idNota: string, aunqueHayaCambiadoFueraDeAnt = false) => {
     clearTimeout(temporizadoresDeGuardado.current.get(idNota));
     temporizadoresDeGuardado.current.delete(idNota);
+    for (let escritura = escriturasEnCurso.current.get(idNota); escritura; escritura = escriturasEnCurso.current.get(idNota)) {
+      try {
+        await escritura;
+      } catch (error) {
+        if (!aunqueHayaCambiadoFueraDeAnt) throw error;
+      }
+    }
     const notaAGuardar = notasAbiertasVigentes.current.find((nota) => nota.id === idNota);
     if (!notaAGuardar?.rutaDelArchivo || !notaAGuardar.tieneCambiosSinGuardar) return;
     const rutaDelArchivo = notaAGuardar.rutaDelArchivo;
     const textoAGuardar = textoActualDeNota(notaAGuardar);
     const cambiosAlEmpezarAGuardar = cantidadDeCambiosPorNota.current.get(idNota) ?? 0;
-    if (!aunqueHayaCambiadoFueraDeAnt) {
-      // Si el archivo ya no existe (se borró o movió), se vuelve a crear con lo que hay en Ant.
-      const textoQueHayAhoraEnDisco = await leerNotaDelDisco(rutaDelArchivo).catch(() => null);
-      const cambioFueraDeAnt =
-        textoQueHayAhoraEnDisco !== null &&
-        textoQueHayAhoraEnDisco !== notaAGuardar.textoQueHayEnDisco &&
-        textoQueHayAhoraEnDisco !== textoAGuardar;
-      if (cambioFueraDeAnt) throw errorCambiadaFueraDeAnt(rutaDelArchivo);
+    /** Comprueba el archivo antes de escribir y pone al día la versión guardada. */
+    const guardar = async () => {
+      if (!aunqueHayaCambiadoFueraDeAnt) {
+        // Si el archivo ya no existe (se borró o movió), se vuelve a crear con lo que hay en Ant.
+        const textoQueHayAhoraEnDisco = await leerNotaDelDisco(rutaDelArchivo).catch(() => null);
+        const cambioFueraDeAnt =
+          textoQueHayAhoraEnDisco !== null &&
+          textoQueHayAhoraEnDisco !== notaAGuardar.textoQueHayEnDisco &&
+          textoQueHayAhoraEnDisco !== textoAGuardar;
+        if (cambioFueraDeAnt) throw errorCambiadaFueraDeAnt(rutaDelArchivo);
+      }
+      await guardarNotaEnElDisco(rutaDelArchivo, textoAGuardar);
+      const seSiguioEscribiendo = (cantidadDeCambiosPorNota.current.get(idNota) ?? 0) !== cambiosAlEmpezarAGuardar;
+      const cambios = { textoQueHayEnDisco: textoAGuardar, tieneCambiosSinGuardar: seSiguioEscribiendo };
+      // Quien espera esta escritura puede leer la ref antes de que React actualice la vista.
+      notasAbiertasVigentes.current = notasAbiertasVigentes.current.map((nota) => nota.id === idNota ? { ...nota, ...cambios } : nota);
+      cambiarDatosDeNota(idNota, cambios);
+    };
+    const escritura = guardar();
+    escriturasEnCurso.current.set(idNota, escritura);
+    try {
+      await escritura;
+    } finally {
+      escriturasEnCurso.current.delete(idNota);
     }
-    await guardarNotaEnElDisco(rutaDelArchivo, textoAGuardar);
-    const seSiguioEscribiendo = (cantidadDeCambiosPorNota.current.get(idNota) ?? 0) !== cambiosAlEmpezarAGuardar;
-    cambiarDatosDeNota(idNota, { textoQueHayEnDisco: textoAGuardar, tieneCambiosSinGuardar: seSiguioEscribiendo });
   }, [textoActualDeNota, cambiarDatosDeNota]);
 
   /** Guarda ya todas las notas con archivo que tienen cambios (al salir de la ventana o de la app). */
@@ -329,47 +350,23 @@ export function useNotasAbiertas({
   }, [guardarNotaEnDiscoAhora, textoActualDeNota, cambiarDatosDeNota, releerArbolDeLaCamara]);
 
   /**
-   * Cierra una nota y muestra la vecina (o ninguna, si era la última). Si tiene archivo, antes guarda sus cambios; si es una
-   * nota nueva con algo escrito, pregunta antes de descartarla.
+   * Guarda y cierra notas de archivo al salir de una cámara, o solo las de la carpeta al bloquearla
+   * o renombrarla. Si no se pueden guardar, quedan abiertas para no perder los cambios.
    */
-  const cerrarNota = useCallback(async (idNota: string) => {
-    const notas = notasAbiertasVigentes.current;
-    const posicionEnLaLista = notas.findIndex((nota) => nota.id === idNota);
-    const notaQueSeCierra = notas[posicionEnLaLista];
-    if (!notaQueSeCierra) return;
-    if (notaQueSeCierra.rutaDelArchivo) await guardarNotaEnDiscoAhora(idNota);
-    else if (notaQueSeCierra.tieneCambiosSinGuardar) {
-      const textos = textosVigentes.current;
-      const quiereDescartarla = await ask(textos.cambiosSinGuardar(textos.sinTitulo), {
-        title: textos.cerrarNotaTitulo,
-        kind: "warning",
-        okLabel: textos.descartarCambios,
-        cancelLabel: textos.cancelar,
-      });
-      if (!quiereDescartarla) return;
-    }
-    // Las notas con archivo se siguen recordando en el editor por si se vuelven a abrir.
-    if (!notaQueSeCierra.rutaDelArchivo) controlDelEditor.current?.olvidarNota(idNota);
-    const notasQueQuedan = notas.filter((nota) => nota.id !== idNota);
+  const cerrarNotasConArchivo = useCallback(async (carpeta?: string) => {
+    const notasQueSeCierran = notasAbiertasVigentes.current.filter((nota) =>
+      nota.rutaDelArchivo && (carpeta === undefined || estaDentroDe(nota.rutaDelArchivo, carpeta)),
+    );
+    if (!notasQueSeCierran.length) return;
+    const idsQueSeCierran = new Set(notasQueSeCierran.map((nota) => nota.id));
+    // Si se escribió mientras guardaba, espera también esos cambios antes de cerrar la nota.
+    do {
+      await Promise.all(notasQueSeCierran.map((nota) => guardarNotaEnDiscoAhora(nota.id)));
+    } while (notasAbiertasVigentes.current.some((nota) => idsQueSeCierran.has(nota.id) && nota.tieneCambiosSinGuardar));
+    const notasQueQuedan = notasAbiertasVigentes.current.filter((nota) => !idsQueSeCierran.has(nota.id));
+    notasAbiertasVigentes.current = notasQueQuedan;
     setNotasAbiertas(notasQueQuedan);
-    // Si se cerró la visible, se ve la vecina; si era la última, no queda ninguna (la ventana
-    // muestra la invitación a crear una nota).
-    if (idNota === idNotaVisibleVigente.current) {
-      setIdNotaVisible(notasQueQuedan[Math.min(posicionEnLaLista, notasQueQuedan.length - 1)]?.id ?? null);
-    }
-  }, [controlDelEditor, guardarNotaEnDiscoAhora]);
-
-  /**
-   * Guarda y cierra todas las notas abiertas que están dentro de `carpeta` (al bloquear una cámara
-   * cifrada). Si la visible era una de ellas, se ve otra abierta, o ninguna.
-   */
-  const cerrarNotasDentroDe = useCallback(async (carpeta: string) => {
-    const notasDeLaCarpeta = notasAbiertasVigentes.current.filter((nota) => nota.rutaDelArchivo && estaDentroDe(nota.rutaDelArchivo, carpeta));
-    if (!notasDeLaCarpeta.length) return;
-    await Promise.all(notasDeLaCarpeta.map((nota) => guardarNotaEnDiscoAhora(nota.id).catch(() => {})));
-    const notasQueQuedan = notasAbiertasVigentes.current.filter((nota) => !notasDeLaCarpeta.includes(nota));
-    setNotasAbiertas(notasQueQuedan);
-    if (notasDeLaCarpeta.some((nota) => nota.id === idNotaVisibleVigente.current)) setIdNotaVisible(notasQueQuedan[0]?.id ?? null);
+    if (idNotaVisibleVigente.current && idsQueSeCierran.has(idNotaVisibleVigente.current)) setIdNotaVisible(null);
   }, [guardarNotaEnDiscoAhora]);
 
   /** Pasa a la nota abierta siguiente (`paso` = 1) o anterior (`paso` = -1), dando la vuelta al llegar al final. */
@@ -390,17 +387,14 @@ export function useNotasAbiertas({
   const notaVisible = notasAbiertas.find((nota) => nota.id === idNotaVisible) ?? null;
 
   return {
-    notasAbiertas,
     notaVisible,
-    mostrarNotaAbierta: setIdNotaVisible,
     abrirNotaDeArchivo,
     abrirCapitulo,
     abrirNotaDelDia,
     abrirNotaConElDialogo,
     abrirNotaEnBlanco,
     guardarNotaVisible,
-    cerrarNota,
-    cerrarNotasDentroDe,
+    cerrarNotasConArchivo,
     pasarANotaVecina,
     alCambiarTextoEnElEditor,
     textoDeNotaAbiertaPorRuta,

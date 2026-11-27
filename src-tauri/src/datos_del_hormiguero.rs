@@ -66,7 +66,7 @@ impl Default for DatosDeLaCamara {
 }
 
 /// Ruta del archivo de datos de una cámara. Rechaza nombres que podrían salirse de `.ant/`.
-fn archivo_de_la_camara(carpeta_del_hormiguero: &Path, nombre_de_la_camara: &str) -> Result<PathBuf, String> {
+pub(crate) fn archivo_de_la_camara(carpeta_del_hormiguero: &Path, nombre_de_la_camara: &str) -> Result<PathBuf, String> {
     let nombre_del_archivo = if nombre_de_la_camara == CAMARA_DE_ENTRADA {
         ARCHIVO_DE_LA_ENTRADA.to_string()
     } else if nombre_de_la_camara.is_empty() || nombre_de_la_camara.starts_with('.') || nombre_de_la_camara.contains(['/', '\\', ':']) {

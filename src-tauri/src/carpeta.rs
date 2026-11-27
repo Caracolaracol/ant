@@ -1,7 +1,7 @@
 // Carpetas del hormiguero y sus cámaras: las cámaras que tiene el hormiguero (sus carpetas de
 // primer nivel y, si hay notas sueltas en la raíz, la «Entrada»), el árbol de la cámara abierta
 // para la barra lateral (subcarpetas y notas .md, .markdown, .txt, con las carpetas primero y luego
-// por nombre), la creación de la carpeta de un hormiguero o una cámara nuevos y la de una nota nueva.
+// por nombre), la creación de carpetas y notas nuevas y el cambio de nombre de una cámara.
 
 use serde::Serialize;
 use std::fs;
@@ -166,6 +166,72 @@ pub async fn listar_camaras(carpeta_del_hormiguero: String) -> Result<Vec<String
     crate::en_segundo_plano(move || camaras_de(Path::new(&carpeta_del_hormiguero))).await
 }
 
+/// Comprueba que un cambio de nombre no pise otro elemento; acepta la misma entrada si el
+/// sistema de archivos no distingue mayúsculas y solo cambió la forma de escribir su nombre.
+fn comprobar_destino_de_renombrado(origen: &Path, destino: &Path) -> Result<(), String> {
+    match fs::symlink_metadata(destino) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Ok(datos) if !datos.is_symlink() && fs::canonicalize(origen).is_ok_and(|ruta| fs::canonicalize(destino).is_ok_and(|otra| ruta == otra)) => Ok(()),
+        Ok(_) => Err(format!("{} already exists", destino.display())),
+        Err(error) => Err(format!("Could not check {}: {error}", destino.display())),
+    }
+}
+
+/// Cambia el nombre de una cámara real y mueve su archivo de `.ant/` sin modificar su contenido.
+/// Las rutas de ese archivo son relativas, así que no se reescriben. Si falla el segundo cambio de
+/// nombre, intenta devolver la carpeta a su sitio y no borra nada.
+fn cambiar_nombre_de_camara(hormiguero: &Path, nombre_anterior: &str, nombre_nuevo: &str) -> Result<(), String> {
+    if nombre_anterior.is_empty() || es_carpeta_ignorada(nombre_anterior) || nombre_anterior.contains(['/', '\\', ':', '\0']) {
+        return Err(format!("“{nombre_anterior}” is not a chamber"));
+    }
+    if nombre_nuevo.is_empty() || es_carpeta_ignorada(nombre_nuevo) || nombre_nuevo.ends_with('.')
+        || nombre_nuevo.contains(['/', '\\', ':', '\0', '"', '*', '?', '<', '>', '|'])
+    {
+        return Err(format!("“{nombre_nuevo}” cannot be a chamber name"));
+    }
+    let carpeta_anterior = hormiguero.join(nombre_anterior);
+    let carpeta_nueva = hormiguero.join(nombre_nuevo);
+    if !fs::symlink_metadata(&carpeta_anterior).is_ok_and(|datos| datos.is_dir()) {
+        return Err(format!("{} is not a chamber folder", carpeta_anterior.display()));
+    }
+    if nombre_anterior == nombre_nuevo { return Ok(()); }
+
+    let archivo_anterior = crate::datos_del_hormiguero::archivo_de_la_camara(hormiguero, nombre_anterior)?;
+    let archivo_nuevo = crate::datos_del_hormiguero::archivo_de_la_camara(hormiguero, nombre_nuevo)?;
+    let hay_archivo = match fs::symlink_metadata(&archivo_anterior) {
+        Ok(datos) if datos.is_file() => true,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+        _ => return Err(format!("Could not access the chamber settings at {}", archivo_anterior.display())),
+    };
+    comprobar_destino_de_renombrado(&carpeta_anterior, &carpeta_nueva)?;
+    comprobar_destino_de_renombrado(&archivo_anterior, &archivo_nuevo)?;
+    fs::rename(&carpeta_anterior, &carpeta_nueva)
+        .map_err(|error| format!("Could not rename {}: {error}", carpeta_anterior.display()))?;
+    if hay_archivo && let Err(error) = fs::rename(&archivo_anterior, &archivo_nuevo) {
+        let mensaje = format!("Could not move the chamber settings at {}: {error}", archivo_anterior.display());
+        return match fs::rename(&carpeta_nueva, &carpeta_anterior) {
+            Ok(()) => Err(mensaje),
+            Err(error_al_volver) => Err(format!("{mensaje}. The folder is at {} and couldn't be moved back: {error_al_volver}", carpeta_nueva.display())),
+        };
+    }
+    Ok(())
+}
+
+/// Renombra en segundo plano; una cámara cifrada se vuelve a desbloquear con su nueva ruta.
+#[tauri::command]
+pub async fn renombrar_camara(app: tauri::AppHandle, carpeta_del_hormiguero: String, nombre_anterior: String, nombre_nuevo: String) -> Result<String, String> {
+    let llaves = crate::camaras_cifradas::llaves_de(&app);
+    crate::en_segundo_plano(move || {
+        let hormiguero = Path::new(&carpeta_del_hormiguero);
+        let nombre_nuevo = nombre_nuevo.trim();
+        cambiar_nombre_de_camara(hormiguero, &nombre_anterior, nombre_nuevo)?;
+        if nombre_anterior != nombre_nuevo {
+            llaves.olvidar_llave(&hormiguero.join(&nombre_anterior));
+        }
+        Ok(nombre_nuevo.to_string())
+    }).await
+}
+
 /// Crea la carpeta `nombre_de_la_carpeta` dentro de `carpeta_donde_crearla` y devuelve su ruta: un
 /// hormiguero nuevo (en Documentos u otro lugar) o una cámara nueva (dentro del hormiguero). No usa
 /// una carpeta que ya exista (para eso está «elegir una carpeta» o abrir esa cámara), así nunca
@@ -262,6 +328,36 @@ mod pruebas {
         assert_eq!(notas_de_la_entrada[0].nombre, "Suelta.MD");
         fs::remove_dir_all(&hormiguero).unwrap();
         assert!(camaras_de(&hormiguero).is_err());
+    }
+
+    /// Mueve notas y ajustes sin tocar sus bytes, y nunca mezcla cámaras ni pisa datos huérfanos.
+    #[test]
+    fn renombra_la_camara_y_sus_datos() {
+        let hormiguero = std::env::temp_dir().join(format!("ant-renombrar-camara-{}", std::process::id()));
+        for carpeta in ["Novela/Capitulos", "Trabajo", ".ant/camaras"] {
+            fs::create_dir_all(hormiguero.join(carpeta)).unwrap();
+        }
+        fs::write(hormiguero.join("Novela/Capitulos/01.md.age"), b"nota cifrada").unwrap();
+        fs::write(hormiguero.join("Novela/.ant-llave.age"), b"llave cifrada").unwrap();
+        let ajustes = br#"{"fijados":["Capitulos/01.md"]}"#;
+        fs::write(hormiguero.join(".ant/camaras/Novela.json"), ajustes).unwrap();
+        fs::write(hormiguero.join(".ant/camaras/Personal.json"), b"datos previos").unwrap();
+        for nombre_nuevo in ["Trabajo", "Personal", "..", "../otra", "target", "con/barra"] {
+            assert!(cambiar_nombre_de_camara(&hormiguero, "Novela", nombre_nuevo).is_err(), "{nombre_nuevo}");
+        }
+        assert!(cambiar_nombre_de_camara(&hormiguero, CAMARA_DE_ENTRADA, "Entrada real").is_err());
+        assert!(hormiguero.join("Novela").is_dir());
+        assert_eq!(fs::read(hormiguero.join(".ant/camaras/Personal.json")).unwrap(), b"datos previos");
+
+        cambiar_nombre_de_camara(&hormiguero, "Novela", "Libro").unwrap();
+        assert!(!hormiguero.join("Novela").exists());
+        assert!(!hormiguero.join(".ant/camaras/Novela.json").exists());
+        assert_eq!(fs::read(hormiguero.join("Libro/Capitulos/01.md.age")).unwrap(), b"nota cifrada");
+        assert_eq!(fs::read(hormiguero.join("Libro/.ant-llave.age")).unwrap(), b"llave cifrada");
+        assert_eq!(fs::read(hormiguero.join(".ant/camaras/Libro.json")).unwrap(), ajustes);
+        cambiar_nombre_de_camara(&hormiguero, "Libro", "libro").unwrap();
+        assert_eq!(camaras_de(&hormiguero).unwrap(), vec!["libro", "Trabajo"]);
+        fs::remove_dir_all(&hormiguero).unwrap();
     }
 
     #[test]

@@ -34,6 +34,8 @@ export interface Ajustes {
   colores_elegidos: Record<string, string>;
   /** Ancho de la barra lateral en píxeles, o `null` para el de por defecto. */
   ancho_de_la_barra_lateral: number | null;
+  /** Ancho máximo de la columna del editor en px; `null` sigue la tipografía y `0` usa todo el ancho. */
+  ancho_del_texto: number | null;
   /** Idioma de la interfaz: inglés (por defecto) o español. */
   idioma: Idioma;
   /**
@@ -237,6 +239,7 @@ export const AJUSTES_POR_DEFECTO: Ajustes = {
   modo_diario: false,
   colores_elegidos: {},
   ancho_de_la_barra_lateral: null,
+  ancho_del_texto: null,
   idioma: "en",
   modo_escritor: true,
   opciones_del_modo_escritor: OPCIONES_DEL_MODO_ESCRITOR_POR_DEFECTO,

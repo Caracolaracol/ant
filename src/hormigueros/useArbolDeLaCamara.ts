@@ -8,12 +8,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { EntradaDelArbol, leerArbolDeCarpeta } from "../arbolDeCarpetas";
 
+const ARBOL_VACIO: EntradaDelArbol[] = [];
+
+/** Mantiene el árbol de la carpeta vigente a medida que se abre o se actualiza. */
 export function useArbolDeLaCamara(
   carpetaDeLaCamara: string | null,
   soloNotasSueltas: boolean,
   mostrarError: (error: unknown) => void,
 ) {
-  const [arbolDeLaCamara, setArbolDeLaCamara] = useState<EntradaDelArbol[]>([]);
+  // Etiqueta cada lectura: mientras llega el árbol nuevo no se muestra el de la cámara anterior.
+  const [arbolLeido, setArbolLeido] = useState<{ carpeta: string; soloLasSueltas: boolean; entradas: EntradaDelArbol[] } | null>(null);
+  const arbolDeLaCamara = arbolLeido?.carpeta === carpetaDeLaCamara && arbolLeido.soloLasSueltas === soloNotasSueltas
+    ? arbolLeido.entradas : ARBOL_VACIO;
   const carpetaVigente = useRef(carpetaDeLaCamara);
   carpetaVigente.current = carpetaDeLaCamara;
   const soloNotasSueltasVigente = useRef(soloNotasSueltas);
@@ -22,15 +28,16 @@ export function useArbolDeLaCamara(
   /** Vuelve a leer el árbol (tras crear una nota, o al volver a la ventana). */
   const releerArbolDeLaCamara = useCallback(() => {
     const carpeta = carpetaVigente.current;
-    if (!carpeta) return setArbolDeLaCamara([]);
+    if (!carpeta) return setArbolLeido(null);
     const soloLasSueltas = soloNotasSueltasVigente.current;
     leerArbolDeCarpeta(carpeta, soloLasSueltas).then(
-      (arbolLeido) => {
+      (entradas) => {
         // Si mientras se leía se cambió de cámara, este árbol ya no sirve.
-        if (carpetaVigente.current === carpeta && soloNotasSueltasVigente.current === soloLasSueltas) setArbolDeLaCamara(arbolLeido);
+        if (carpetaVigente.current === carpeta && soloNotasSueltasVigente.current === soloLasSueltas) setArbolLeido({ carpeta, soloLasSueltas, entradas });
       },
       (error) => {
-        setArbolDeLaCamara([]);
+        if (carpetaVigente.current !== carpeta || soloNotasSueltasVigente.current !== soloLasSueltas) return;
+        setArbolLeido(null);
         mostrarError(error);
       },
     );

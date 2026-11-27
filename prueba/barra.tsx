@@ -58,9 +58,14 @@ const datosDeLaCamara = {
   fijados: [`${base}/Libro I`, `${base}/Ideas.md`, `${base}/Libro I/02 - La lluvia.md#La cueva`, `${base}/Personajes`, `${base}/Borrado.md`],
   iconos_de_fijados: { [`${base}/Personajes`]: "drama", [`${base}/Ideas.md`]: "lightbulb" },
 };
-const notasAbiertas = [
-  { id: "a", rutaDelArchivo: `${base}/Libro I/02 - La lluvia.md`, ultimoTextoConocido: texto, tieneCambiosSinGuardar: false, textoQueHayEnDisco: texto },
-];
+// Con `?fuera`, la nota del editor es de otra cámara y no aparece en la barra lateral.
+const notaVisible = {
+  id: "a",
+  rutaDelArchivo: parametrosDeLaDireccion.has("fuera") ? `${hormiguero}/Personal/Nota de otra cámara.md` : `${base}/Libro I/02 - La lluvia.md`,
+  ultimoTextoConocido: texto,
+  tieneCambiosSinGuardar: false,
+  textoQueHayEnDisco: texto,
+};
 const nada = () => {};
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -80,17 +85,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           clavesDeFijados={datosDeLaCamara.fijados}
           iconosElegidosPorFijado={datosDeLaCamara.iconos_de_fijados}
           modoDiarioActivo={parametrosDeLaDireccion.has("diario")}
-          notasAbiertas={notasAbiertas}
-          idNotaVisible="a"
+          notaVisible={notaVisible}
           titulosDeLaNotaVisible={extraerTitulosDeLaNota(texto)}
           indiceDelTituloConElCursor={1}
           anchoEnPixeles={240}
           alCambiarAncho={nada}
-          alMostrarNotaAbierta={nada}
           alAbrirNotaDeArchivo={nada}
           alAbrirCapitulo={nada}
           alAbrirNotaDelDia={nada}
-          alCerrarNota={nada}
           alSaltarATitulo={nada}
           alFijar={nada}
           alQuitarFijado={nada}
@@ -110,7 +112,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       </div>
       <footer className="estado"><span>02 - La lluvia.md</span><span /></footer>
     </main>
-    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} camarasDelHormiguero={camaras} alPedirCamaraNueva={nada} camarasCifradas={[camaraCifrada]} alPedirCifrado={nada} nombreDeLaCamaraAbierta={camaraDeLaNovela} opcionesDelEditor={opcionesDelEditorDeLaCamara({}, ajustes)} cambiarOpcionesDelEditor={nada} alCerrar={nada} areaInicial={parametrosDeLaDireccion.get("ajustes") ?? undefined} />}
+    {parametrosDeLaDireccion.has("ajustes") && <ModalAjustes ajustes={ajustes} cambiarAjustes={nada} camarasDelHormiguero={camaras} alAbrirCamara={nada} alElegirHormiguero={nada} alRenombrarCamara={async () => {}} alPedirCamaraNueva={nada} camarasCifradas={[camaraCifrada]} alPedirCifrado={nada} nombreDeLaCamaraAbierta={camaraDeLaNovela} opcionesDelEditor={opcionesDelEditorDeLaCamara({}, ajustes)} cambiarOpcionesDelEditor={nada} alCerrar={nada} areaInicial={parametrosDeLaDireccion.get("ajustes") ?? undefined} />}
     {parametrosDeLaDireccion.has("nueva") && <NuevaCamara carpetaDelHormiguero={hormiguero} camarasDelHormiguero={camaras} alCavarCamara={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("nota") && <NuevaNotaOCarpeta queSeCrea="nota" carpetaDondeCrearla={`${base}/Libro I`} lugarVisible="Novela / Libro I" alCrear={nada} alCerrar={nada} />}
     {parametrosDeLaDireccion.has("carpeta") && <NuevaNotaOCarpeta queSeCrea="carpeta" carpetaDondeCrearla={base} lugarVisible={camaraDeLaNovela} alCrear={nada} alCerrar={nada} />}
